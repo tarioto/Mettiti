@@ -9,69 +9,71 @@
 /* Begin PBXBuildFile section */
 		06D9F8D1038CD45A790232C3 /* WidgetPlanTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852D5E1ACBDA922E732AC39F /* WidgetPlanTimeline.swift */; };
 		09886DBF4E055857849B1101 /* PlanTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF25927888A9142B7C9EB0B /* PlanTimelineProvider.swift */; };
-		0A2CE47EF8DC6B51635CB0F9 /* AppIconPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9D5C85981664AA30B098EE6 /* AppIconPreferenceStore.swift */; };
-		0C2C3DA6D788C9E6447F7653 /* WeatherAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEA54AF7E72D2AF87B8FBCFB /* WeatherAttributionView.swift */; };
 		0ECC658EBA52F5E2419F72D5 /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC80D2E51439534F4F024CB1 /* WeatherService.swift */; };
 		0F822D916C91828ED8587D1D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4258A411E1AD84FABBC377ED /* Assets.xcassets */; };
-		117663ED14CF666BAD5691C8 /* DailyWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5632105017C44FFE9909FF14 /* DailyWeather.swift */; };
-		11968D91E5A6DB5877C9230E /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB900F56A901E3F5E3D724FF /* AppTheme.swift */; };
 		180306CA19951BB86DA6649C /* AppIcon-Aurora.icon in Resources */ = {isa = PBXBuildFile; fileRef = EB1216AABBD42C547BE4D9C2 /* AppIcon-Aurora.icon */; };
-		1ADFA353743377C9465C97A5 /* OutfitRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A947A3BC25B7181CCEB2150 /* OutfitRecommendation.swift */; };
 		1C1274F0E23B931CB16553AA /* DayPlanViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */; };
+		1F0ED80B7B844EF7919A72C4 /* ErrorStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EC46EB73556E2FA604A1514 /* ErrorStateView.swift */; };
 		204962105CCF093CEA52931E /* AppIconPreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02D1A8D51E57A06A197684CA /* AppIconPreferenceStoreTests.swift */; };
+		21D8178824FA5D4D7036A718 /* CardType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C985AD59754D0385058546B /* CardType.swift */; };
 		21F7C19E902046B2E67CF2A7 /* WeatherProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */; };
 		241B9B9BEA697E1BD2B247F6 /* TemperatureUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A79BEE46D3A9A63D63C73B /* TemperatureUnit.swift */; };
+		24EBF2BC5713E761CFF7F218 /* WeatherAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D53059B3E838014506476E /* WeatherAttributionView.swift */; };
 		26F4E4AFBD0C174C2C5B9B06 /* OutfitAdvisorPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */; };
-		28ACF5C048B38A6127935BC2 /* DailyWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5632105017C44FFE9909FF14 /* DailyWeather.swift */; };
 		292FE55023362D9859EB24EF /* AppIcon-Dev.icon in Resources */ = {isa = PBXBuildFile; fileRef = B46F8D422DBEF88B22C30973 /* AppIcon-Dev.icon */; };
-		2FEA8949DF299DE90F0C04AD /* HourlyTemperatureChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1350036A5A4BEE70EE3D0C6F /* HourlyTemperatureChart.swift */; };
-		36F43150BD14BCFE9A9F1E63 /* ErrorStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AC57997A4360AF7EAB5BBA /* ErrorStateView.swift */; };
-		3A5529FDF2ABE0F231B6934F /* DayPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FC1CF7D16AC263E9CD553EC /* DayPlanViewModel.swift */; };
-		3AE7A8576AAEB8FF2154567A /* CardType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AED8FEAC5A2698BF641FCF6 /* CardType.swift */; };
 		3CAA5D287DC2CED186446B80 /* PlanSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */; };
+		40D7A45064DD9CEF5144111C /* DailyWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17648820A03F760374204482 /* DailyWeather.swift */; };
+		40E7BA3BA819305BAF3C9333 /* DayPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB5D5EA13231AFF54DF1457B /* DayPlanView.swift */; };
 		48949BC553739E814D0DDEED /* BackgroundPlanRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 272445904B4924EB0C8C7495 /* BackgroundPlanRefresh.swift */; };
 		4972FE09034A30AB2EF51BCD /* DisplayedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */; };
-		499DBD43FBA4AC98B0AA1E78 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9DE7AA66132A061E171488E /* SettingsView.swift */; };
 		55700F0574090A169F5528ED /* HourlyForecastService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF56FB0D8716881DD6B86696 /* HourlyForecastService.swift */; };
-		58FA99F7B0D647E6CF4ADE18 /* SkeletonLoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6D65105126355D8A85143E /* SkeletonLoadingView.swift */; };
-		5D5E7E8C7A1C1948629BE617 /* LocationPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3D302C705C0EAF9C34F2FAE /* LocationPreferenceStore.swift */; };
+		5B796F5B3DD68C30DE055DA3 /* TemperaturePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40DE379AB97AB9FDA3A80A43 /* TemperaturePreferenceStore.swift */; };
 		5DA8990F438756DEBDBF53E7 /* WeatherProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */; };
 		677C0D2B5F5B8BBB6D583649 /* MettitiWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575110F1EA9D7D74E3B5734A /* MettitiWidgetsBundle.swift */; };
 		694C9D37714DDF5BEDD8BE26 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 463C9BDC2137A1A038617881 /* TestSupport.swift */; };
 		6BAF11000C47AB0D17869F25 /* MettitiWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E0F20748B7D794EDFDD25CF3 /* MettitiWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6EAF5C81DE5F1C0BCA6A83EF /* RecommendedItemListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F24F553D93776EE20644077 /* RecommendedItemListTests.swift */; };
-		708BE893599062C1E1175836 /* OutfitRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A947A3BC25B7181CCEB2150 /* OutfitRecommendation.swift */; };
 		7202F98153E8C76EF5BDE190 /* TemperatureUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A79BEE46D3A9A63D63C73B /* TemperatureUnit.swift */; };
 		78F692245C9F0A44CA2CF188 /* AppIcon-Sunset.icon in Resources */ = {isa = PBXBuildFile; fileRef = CA92278BFD00779BF33A3538 /* AppIcon-Sunset.icon */; };
+		853AA46C5BE5F1C704DBFB25 /* DayPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75914F126959B2AAE4ABEDF2 /* DayPlanViewModel.swift */; };
 		8822F19E4CA5B57699A2DC69 /* EmojiWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3370B4271C590694D37B1BEC /* EmojiWidget.swift */; };
 		8A30EB00F9A949266296014D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1169A0DDECF191A9E6DAD135 /* ContentView.swift */; };
 		8E4897C2391E3F88BBCD4D31 /* WidgetPlanTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852D5E1ACBDA922E732AC39F /* WidgetPlanTimeline.swift */; };
 		8F5373DA4B93DA2AA5893707 /* BackgroundPlanRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6025660EBF339BC99DD24263 /* BackgroundPlanRefreshTests.swift */; };
+		907D385DB78DF59BC15FD066 /* AppIconPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47811AB898629A8110268D01 /* AppIconPreferenceStore.swift */; };
 		93B1B6F76049E17857078133 /* AppleWeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668F8428BBBFFCD235AE1111 /* AppleWeatherService.swift */; };
 		94692B408A0A81FFD5F0FC7A /* CombinedWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E231C8D3808FCBB15976C9 /* CombinedWidget.swift */; };
-		9A3D3EC682AE932D6D84CC20 /* DayPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E0B216BFD682A8404E45274 /* DayPlanView.swift */; };
 		9E08C22ABFCD699A8D0DEC0A /* DayPlanFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */; };
-		A1A3283E654D8F3AA78F8209 /* ThemePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A2EB4F7F4E68E0294976B5 /* ThemePreferenceStore.swift */; };
+		A4C2474336FE84EE971C7385 /* DailyWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17648820A03F760374204482 /* DailyWeather.swift */; };
+		AF8C4F88C4648F53F7C3847B /* ThemePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E787563EF8DF959D3C92ED1C /* ThemePreferenceStore.swift */; };
+		B5E7C6527EE9D646B616FEB7 /* HourlyForecast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595A8BCD6AF67733B1CFCCFA /* HourlyForecast.swift */; };
 		B6BD349BDFFFE31F5A8DE84E /* AppIcon-Midnight.icon in Resources */ = {isa = PBXBuildFile; fileRef = FD224A43A8B46F4476BE1E4D /* AppIcon-Midnight.icon */; };
 		BCFA1A4857E5A812AC3CEB9D /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABAA5E38B3ED44EB67EC5BD /* LocationManager.swift */; };
 		BD1A872DAA5D5E882DEE7525 /* MettitiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E29684554562655E6B0531E /* MettitiApp.swift */; };
-		BE6B7C596296430E54FC96D9 /* TemperaturePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2274DF963E07333D13C13F9B /* TemperaturePreferenceStore.swift */; };
 		C0EFF8A3E10700013957E1C9 /* BackgroundPlanRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0AC7C044DFAAB5CB2472A7 /* BackgroundPlanRefresher.swift */; };
 		C2944FCCB6FEB703D8D1B51F /* WeatherAttributionLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B550D55202482A729D01EB75 /* WeatherAttributionLabel.swift */; };
+		C29C4C40D3A04F017AEAE262 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF02175CFC638146DBFB8B80 /* AppTheme.swift */; };
+		C75789BC4B49B75887460BF0 /* OutfitRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC3B818C88DB31994FCBDC2 /* OutfitRecommendation.swift */; };
 		CDBAE51DE89D9B58AFDE2763 /* PlanSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */; };
 		D091C4CD571283FA174BF765 /* DescriptionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F7F9AB25CA3B39F9F5BD6C /* DescriptionWidget.swift */; };
 		D64B351AD06FDEE568DC1295 /* TemperaturePreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74AF60E97BAE1AD91452EF22 /* TemperaturePreferenceStoreTests.swift */; };
 		DADBC2B24DB39095813FD5D6 /* WeatherOnlyPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0216BF673086136CBCB4197C /* WeatherOnlyPlanView.swift */; };
 		DDB9D4ABA8C92302BBAEE3BF /* AppIcon-Ocean.icon in Resources */ = {isa = PBXBuildFile; fileRef = B3BC0BA00374A97BCBB85183 /* AppIcon-Ocean.icon */; };
+		DE4A591ECA889E59EB4CA184 /* LocationPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0FE0EBDCD6A71467260FE02 /* LocationPreferenceStore.swift */; };
 		DE93527F5E7FC775E7C223D5 /* WeatherServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F735BBDBE3437765D0A5EC9B /* WeatherServiceTests.swift */; };
-		E4F174F9AB38DE0FB7E468E9 /* CardPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3991AC77EE006F7045BF44 /* CardPreferenceStore.swift */; };
+		E2A97CF4533C7EB145F5D79A /* WeatherProviderPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 382A7CDF9958D5AE20A882C9 /* WeatherProviderPreferenceStore.swift */; };
 		E4FFDF136E81D30372949280 /* AppIcon-Beta.icon in Resources */ = {isa = PBXBuildFile; fileRef = 1F02E3E2E4EAB90C8C5FC2EC /* AppIcon-Beta.icon */; };
 		E6884B41028DD96F6001FE20 /* DisplayedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */; };
 		E84BF9813F6DE7B61F8F02F4 /* WidgetPlanTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88158BB15FF22E7B4D23559A /* WidgetPlanTimelineTests.swift */; };
-		EEF975DD03CEA503177DA166 /* WeatherProviderPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70925BD2D1B20F1E5E68EB14 /* WeatherProviderPreferenceStore.swift */; };
 		F1CDAF56F215F17FCCA4B743 /* EmptyPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26083B123692217C0408627C /* EmptyPlanView.swift */; };
+		F24DB7EA6A74E1042EB31FB2 /* OutfitRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC3B818C88DB31994FCBDC2 /* OutfitRecommendation.swift */; };
 		F289267E1C6ED89D4E7A4CD8 /* PlanSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */; };
+		F42D537596E9F08258B9763F /* RecommendationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E2F427185CEFE591E18329 /* RecommendationState.swift */; };
+		F4D8C5FB63D61CD52E44BE77 /* SkeletonLoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A50E6BD45FC9B22C17681F /* SkeletonLoadingView.swift */; };
 		F88E043A4EBCB5898A727211 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = D8999A866173F38C24ADDB7E /* AppIcon.icon */; };
+		FCDCE6B415820D404E7D860B /* CardPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F18E599EE20967D179339D /* CardPreferenceStore.swift */; };
+		FD12626622983A9D84C676EF /* HourlyTemperatureChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = D966737D68177FDD437F8E59 /* HourlyTemperatureChart.swift */; };
+		FD5D27442A7FD42FAA1BB493 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49C154E60C20C8E675F55A6 /* SettingsView.swift */; };
 		FEE65AB6C3EDB3B1B4A63A04 /* OutfitAdvisor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 547C0A75E924593B5A7D7C23 /* OutfitAdvisor.swift */; };
 /* End PBXBuildFile section */
 
@@ -111,62 +113,64 @@
 		02D1A8D51E57A06A197684CA /* AppIconPreferenceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconPreferenceStoreTests.swift; sourceTree = "<group>"; };
 		08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanSnapshotTests.swift; sourceTree = "<group>"; };
 		1169A0DDECF191A9E6DAD135 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		1350036A5A4BEE70EE3D0C6F /* HourlyTemperatureChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyTemperatureChart.swift; sourceTree = "<group>"; };
-		18AC57997A4360AF7EAB5BBA /* ErrorStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorStateView.swift; sourceTree = "<group>"; };
+		17648820A03F760374204482 /* DailyWeather.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyWeather.swift; sourceTree = "<group>"; };
 		1F02E3E2E4EAB90C8C5FC2EC /* AppIcon-Beta.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Beta.icon"; sourceTree = "<group>"; };
-		2274DF963E07333D13C13F9B /* TemperaturePreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperaturePreferenceStore.swift; sourceTree = "<group>"; };
+		20A50E6BD45FC9B22C17681F /* SkeletonLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonLoadingView.swift; sourceTree = "<group>"; };
 		26083B123692217C0408627C /* EmptyPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyPlanView.swift; sourceTree = "<group>"; };
 		272445904B4924EB0C8C7495 /* BackgroundPlanRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPlanRefresh.swift; sourceTree = "<group>"; };
 		27F7F9AB25CA3B39F9F5BD6C /* DescriptionWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescriptionWidget.swift; sourceTree = "<group>"; };
+		2C985AD59754D0385058546B /* CardType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardType.swift; sourceTree = "<group>"; };
+		2FC3B818C88DB31994FCBDC2 /* OutfitRecommendation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitRecommendation.swift; sourceTree = "<group>"; };
 		3041656CE1FBE7554AE57FEA /* Mettiti.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Mettiti.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3370B4271C590694D37B1BEC /* EmojiWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiWidget.swift; sourceTree = "<group>"; };
 		37E231C8D3808FCBB15976C9 /* CombinedWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedWidget.swift; sourceTree = "<group>"; };
-		3FC1CF7D16AC263E9CD553EC /* DayPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanViewModel.swift; sourceTree = "<group>"; };
+		382A7CDF9958D5AE20A882C9 /* WeatherProviderPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherProviderPreferenceStore.swift; sourceTree = "<group>"; };
 		409CA5998A0FD530AFD3E822 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		40DE379AB97AB9FDA3A80A43 /* TemperaturePreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperaturePreferenceStore.swift; sourceTree = "<group>"; };
 		41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanViewModelTests.swift; sourceTree = "<group>"; };
 		4258A411E1AD84FABBC377ED /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		463C9BDC2137A1A038617881 /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
+		47811AB898629A8110268D01 /* AppIconPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconPreferenceStore.swift; sourceTree = "<group>"; };
 		547C0A75E924593B5A7D7C23 /* OutfitAdvisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitAdvisor.swift; sourceTree = "<group>"; };
-		5632105017C44FFE9909FF14 /* DailyWeather.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyWeather.swift; sourceTree = "<group>"; };
 		575110F1EA9D7D74E3B5734A /* MettitiWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MettitiWidgetsBundle.swift; sourceTree = "<group>"; };
 		58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitAdvisorPromptTests.swift; sourceTree = "<group>"; };
-		5AED8FEAC5A2698BF641FCF6 /* CardType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardType.swift; sourceTree = "<group>"; };
+		595A8BCD6AF67733B1CFCCFA /* HourlyForecast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyForecast.swift; sourceTree = "<group>"; };
 		5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayedItem.swift; sourceTree = "<group>"; };
 		5E0AC7C044DFAAB5CB2472A7 /* BackgroundPlanRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPlanRefresher.swift; sourceTree = "<group>"; };
 		5F24F553D93776EE20644077 /* RecommendedItemListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendedItemListTests.swift; sourceTree = "<group>"; };
 		6025660EBF339BC99DD24263 /* BackgroundPlanRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPlanRefreshTests.swift; sourceTree = "<group>"; };
 		668F8428BBBFFCD235AE1111 /* AppleWeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleWeatherService.swift; sourceTree = "<group>"; };
-		6A947A3BC25B7181CCEB2150 /* OutfitRecommendation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitRecommendation.swift; sourceTree = "<group>"; };
 		6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherProvider.swift; sourceTree = "<group>"; };
-		70925BD2D1B20F1E5E68EB14 /* WeatherProviderPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherProviderPreferenceStore.swift; sourceTree = "<group>"; };
+		6EC46EB73556E2FA604A1514 /* ErrorStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorStateView.swift; sourceTree = "<group>"; };
 		73B1A624B1BE51019549880F /* MettitiTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MettitiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		74AF60E97BAE1AD91452EF22 /* TemperaturePreferenceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperaturePreferenceStoreTests.swift; sourceTree = "<group>"; };
-		7B3991AC77EE006F7045BF44 /* CardPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardPreferenceStore.swift; sourceTree = "<group>"; };
+		75914F126959B2AAE4ABEDF2 /* DayPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanViewModel.swift; sourceTree = "<group>"; };
 		852D5E1ACBDA922E732AC39F /* WidgetPlanTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPlanTimeline.swift; sourceTree = "<group>"; };
 		88158BB15FF22E7B4D23559A /* WidgetPlanTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPlanTimelineTests.swift; sourceTree = "<group>"; };
-		8E0B216BFD682A8404E45274 /* DayPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanView.swift; sourceTree = "<group>"; };
+		95F18E599EE20967D179339D /* CardPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardPreferenceStore.swift; sourceTree = "<group>"; };
 		9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanSnapshot.swift; sourceTree = "<group>"; };
 		9E29684554562655E6B0531E /* MettitiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MettitiApp.swift; sourceTree = "<group>"; };
-		A9DE7AA66132A061E171488E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		AF6D65105126355D8A85143E /* SkeletonLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonLoadingView.swift; sourceTree = "<group>"; };
+		A1D53059B3E838014506476E /* WeatherAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAttributionView.swift; sourceTree = "<group>"; };
+		A49C154E60C20C8E675F55A6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B0FE0EBDCD6A71467260FE02 /* LocationPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPreferenceStore.swift; sourceTree = "<group>"; };
 		B3BC0BA00374A97BCBB85183 /* AppIcon-Ocean.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Ocean.icon"; sourceTree = "<group>"; };
-		B3D302C705C0EAF9C34F2FAE /* LocationPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPreferenceStore.swift; sourceTree = "<group>"; };
 		B46F8D422DBEF88B22C30973 /* AppIcon-Dev.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Dev.icon"; sourceTree = "<group>"; };
-		B4A2EB4F7F4E68E0294976B5 /* ThemePreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemePreferenceStore.swift; sourceTree = "<group>"; };
 		B550D55202482A729D01EB75 /* WeatherAttributionLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAttributionLabel.swift; sourceTree = "<group>"; };
-		BEA54AF7E72D2AF87B8FBCFB /* WeatherAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAttributionView.swift; sourceTree = "<group>"; };
 		BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanFetcher.swift; sourceTree = "<group>"; };
 		BF56FB0D8716881DD6B86696 /* HourlyForecastService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyForecastService.swift; sourceTree = "<group>"; };
 		C4DE16260E778FDBF15A4462 /* Mettiti.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Mettiti.entitlements; sourceTree = "<group>"; };
+		C8E2F427185CEFE591E18329 /* RecommendationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationState.swift; sourceTree = "<group>"; };
 		CA92278BFD00779BF33A3538 /* AppIcon-Sunset.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Sunset.icon"; sourceTree = "<group>"; };
 		CC80D2E51439534F4F024CB1 /* WeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherService.swift; sourceTree = "<group>"; };
 		D8999A866173F38C24ADDB7E /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
-		D9D5C85981664AA30B098EE6 /* AppIconPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconPreferenceStore.swift; sourceTree = "<group>"; };
+		D966737D68177FDD437F8E59 /* HourlyTemperatureChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyTemperatureChart.swift; sourceTree = "<group>"; };
+		DB5D5EA13231AFF54DF1457B /* DayPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanView.swift; sourceTree = "<group>"; };
+		DF02175CFC638146DBFB8B80 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		DFF25927888A9142B7C9EB0B /* PlanTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanTimelineProvider.swift; sourceTree = "<group>"; };
 		E0F20748B7D794EDFDD25CF3 /* MettitiWidgetsExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = MettitiWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		E787563EF8DF959D3C92ED1C /* ThemePreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemePreferenceStore.swift; sourceTree = "<group>"; };
 		E7EFC7F301A8CE94B52D797E /* MettitiWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MettitiWidgets.entitlements; sourceTree = "<group>"; };
 		EB1216AABBD42C547BE4D9C2 /* AppIcon-Aurora.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Aurora.icon"; sourceTree = "<group>"; };
-		EB900F56A901E3F5E3D724FF /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		F5A79BEE46D3A9A63D63C73B /* TemperatureUnit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperatureUnit.swift; sourceTree = "<group>"; };
 		F735BBDBE3437765D0A5EC9B /* WeatherServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherServiceTests.swift; sourceTree = "<group>"; };
 		FABAA5E38B3ED44EB67EC5BD /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
@@ -178,24 +182,29 @@
 		2823B994CAF5AD144D4016CB /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				D9D5C85981664AA30B098EE6 /* AppIconPreferenceStore.swift */,
 				668F8428BBBFFCD235AE1111 /* AppleWeatherService.swift */,
-				EB900F56A901E3F5E3D724FF /* AppTheme.swift */,
 				272445904B4924EB0C8C7495 /* BackgroundPlanRefresh.swift */,
 				5E0AC7C044DFAAB5CB2472A7 /* BackgroundPlanRefresher.swift */,
-				7B3991AC77EE006F7045BF44 /* CardPreferenceStore.swift */,
-				5AED8FEAC5A2698BF641FCF6 /* CardType.swift */,
 				BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */,
 				BF56FB0D8716881DD6B86696 /* HourlyForecastService.swift */,
 				FABAA5E38B3ED44EB67EC5BD /* LocationManager.swift */,
-				B3D302C705C0EAF9C34F2FAE /* LocationPreferenceStore.swift */,
 				547C0A75E924593B5A7D7C23 /* OutfitAdvisor.swift */,
-				2274DF963E07333D13C13F9B /* TemperaturePreferenceStore.swift */,
-				B4A2EB4F7F4E68E0294976B5 /* ThemePreferenceStore.swift */,
-				70925BD2D1B20F1E5E68EB14 /* WeatherProviderPreferenceStore.swift */,
 				CC80D2E51439534F4F024CB1 /* WeatherService.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		283C0B35A04258C97EAB9CD8 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				47811AB898629A8110268D01 /* AppIconPreferenceStore.swift */,
+				95F18E599EE20967D179339D /* CardPreferenceStore.swift */,
+				B0FE0EBDCD6A71467260FE02 /* LocationPreferenceStore.swift */,
+				40DE379AB97AB9FDA3A80A43 /* TemperaturePreferenceStore.swift */,
+				E787563EF8DF959D3C92ED1C /* ThemePreferenceStore.swift */,
+				382A7CDF9958D5AE20A882C9 /* WeatherProviderPreferenceStore.swift */,
+			);
+			path = Persistence;
 			sourceTree = "<group>";
 		};
 		2A0F5A997482B538EA6DC888 /* MettitiTests */ = {
@@ -225,6 +234,19 @@
 			);
 			sourceTree = "<group>";
 		};
+		45ECF58F6028F5767CD47390 /* DayPlan */ = {
+			isa = PBXGroup;
+			children = (
+				DB5D5EA13231AFF54DF1457B /* DayPlanView.swift */,
+				75914F126959B2AAE4ABEDF2 /* DayPlanViewModel.swift */,
+				6EC46EB73556E2FA604A1514 /* ErrorStateView.swift */,
+				D966737D68177FDD437F8E59 /* HourlyTemperatureChart.swift */,
+				20A50E6BD45FC9B22C17681F /* SkeletonLoadingView.swift */,
+				A1D53059B3E838014506476E /* WeatherAttributionView.swift */,
+			);
+			path = DayPlan;
+			sourceTree = "<group>";
+		};
 		4CB37DA89A0223A47AFB8027 /* MettitiWidgets */ = {
 			isa = PBXGroup;
 			children = (
@@ -245,10 +267,20 @@
 		5F71B3E0D3326751D669C7D9 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				5632105017C44FFE9909FF14 /* DailyWeather.swift */,
-				6A947A3BC25B7181CCEB2150 /* OutfitRecommendation.swift */,
+				DF02175CFC638146DBFB8B80 /* AppTheme.swift */,
+				2C985AD59754D0385058546B /* CardType.swift */,
+				595A8BCD6AF67733B1CFCCFA /* HourlyForecast.swift */,
+				C8E2F427185CEFE591E18329 /* RecommendationState.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		9F72F8FD3ACB1218921D4C58 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A49C154E60C20C8E675F55A6 /* SettingsView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		AE89AB5195F6E79281916889 /* Mettiti */ = {
@@ -266,26 +298,22 @@
 				FEECD4FFD7DFA7C252C5E5B6 /* Info.plist */,
 				C4DE16260E778FDBF15A4462 /* Mettiti.entitlements */,
 				9E29684554562655E6B0531E /* MettitiApp.swift */,
+				BBA736A443811691849FCC40 /* Features */,
 				5F71B3E0D3326751D669C7D9 /* Models */,
+				283C0B35A04258C97EAB9CD8 /* Persistence */,
 				2823B994CAF5AD144D4016CB /* Services */,
 				EC64644505444163A90C07E5 /* Shared */,
-				B6E2E203C2F98F995B5B31C0 /* Views */,
 			);
 			path = Mettiti;
 			sourceTree = "<group>";
 		};
-		B6E2E203C2F98F995B5B31C0 /* Views */ = {
+		BBA736A443811691849FCC40 /* Features */ = {
 			isa = PBXGroup;
 			children = (
-				8E0B216BFD682A8404E45274 /* DayPlanView.swift */,
-				3FC1CF7D16AC263E9CD553EC /* DayPlanViewModel.swift */,
-				18AC57997A4360AF7EAB5BBA /* ErrorStateView.swift */,
-				1350036A5A4BEE70EE3D0C6F /* HourlyTemperatureChart.swift */,
-				A9DE7AA66132A061E171488E /* SettingsView.swift */,
-				AF6D65105126355D8A85143E /* SkeletonLoadingView.swift */,
-				BEA54AF7E72D2AF87B8FBCFB /* WeatherAttributionView.swift */,
+				45ECF58F6028F5767CD47390 /* DayPlan */,
+				9F72F8FD3ACB1218921D4C58 /* Settings */,
 			);
-			path = Views;
+			path = Features;
 			sourceTree = "<group>";
 		};
 		E2D42BC1FFC463DE36E94286 /* Products */ = {
@@ -301,7 +329,9 @@
 		EC64644505444163A90C07E5 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				17648820A03F760374204482 /* DailyWeather.swift */,
 				5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */,
+				2FC3B818C88DB31994FCBDC2 /* OutfitRecommendation.swift */,
 				9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */,
 				F5A79BEE46D3A9A63D63C73B /* TemperatureUnit.swift */,
 				6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */,
@@ -453,13 +483,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				94692B408A0A81FFD5F0FC7A /* CombinedWidget.swift in Sources */,
-				117663ED14CF666BAD5691C8 /* DailyWeather.swift in Sources */,
+				A4C2474336FE84EE971C7385 /* DailyWeather.swift in Sources */,
 				D091C4CD571283FA174BF765 /* DescriptionWidget.swift in Sources */,
 				E6884B41028DD96F6001FE20 /* DisplayedItem.swift in Sources */,
 				8822F19E4CA5B57699A2DC69 /* EmojiWidget.swift in Sources */,
 				F1CDAF56F215F17FCCA4B743 /* EmptyPlanView.swift in Sources */,
 				677C0D2B5F5B8BBB6D583649 /* MettitiWidgetsBundle.swift in Sources */,
-				708BE893599062C1E1175836 /* OutfitRecommendation.swift in Sources */,
+				C75789BC4B49B75887460BF0 /* OutfitRecommendation.swift in Sources */,
 				3CAA5D287DC2CED186446B80 /* PlanSnapshot.swift in Sources */,
 				09886DBF4E055857849B1101 /* PlanTimelineProvider.swift in Sources */,
 				241B9B9BEA697E1BD2B247F6 /* TemperatureUnit.swift in Sources */,
@@ -474,36 +504,38 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0A2CE47EF8DC6B51635CB0F9 /* AppIconPreferenceStore.swift in Sources */,
-				11968D91E5A6DB5877C9230E /* AppTheme.swift in Sources */,
+				907D385DB78DF59BC15FD066 /* AppIconPreferenceStore.swift in Sources */,
+				C29C4C40D3A04F017AEAE262 /* AppTheme.swift in Sources */,
 				93B1B6F76049E17857078133 /* AppleWeatherService.swift in Sources */,
 				48949BC553739E814D0DDEED /* BackgroundPlanRefresh.swift in Sources */,
 				C0EFF8A3E10700013957E1C9 /* BackgroundPlanRefresher.swift in Sources */,
-				E4F174F9AB38DE0FB7E468E9 /* CardPreferenceStore.swift in Sources */,
-				3AE7A8576AAEB8FF2154567A /* CardType.swift in Sources */,
+				FCDCE6B415820D404E7D860B /* CardPreferenceStore.swift in Sources */,
+				21D8178824FA5D4D7036A718 /* CardType.swift in Sources */,
 				8A30EB00F9A949266296014D /* ContentView.swift in Sources */,
-				28ACF5C048B38A6127935BC2 /* DailyWeather.swift in Sources */,
+				40D7A45064DD9CEF5144111C /* DailyWeather.swift in Sources */,
 				9E08C22ABFCD699A8D0DEC0A /* DayPlanFetcher.swift in Sources */,
-				9A3D3EC682AE932D6D84CC20 /* DayPlanView.swift in Sources */,
-				3A5529FDF2ABE0F231B6934F /* DayPlanViewModel.swift in Sources */,
+				40E7BA3BA819305BAF3C9333 /* DayPlanView.swift in Sources */,
+				853AA46C5BE5F1C704DBFB25 /* DayPlanViewModel.swift in Sources */,
 				4972FE09034A30AB2EF51BCD /* DisplayedItem.swift in Sources */,
-				36F43150BD14BCFE9A9F1E63 /* ErrorStateView.swift in Sources */,
+				1F0ED80B7B844EF7919A72C4 /* ErrorStateView.swift in Sources */,
+				B5E7C6527EE9D646B616FEB7 /* HourlyForecast.swift in Sources */,
 				55700F0574090A169F5528ED /* HourlyForecastService.swift in Sources */,
-				2FEA8949DF299DE90F0C04AD /* HourlyTemperatureChart.swift in Sources */,
+				FD12626622983A9D84C676EF /* HourlyTemperatureChart.swift in Sources */,
 				BCFA1A4857E5A812AC3CEB9D /* LocationManager.swift in Sources */,
-				5D5E7E8C7A1C1948629BE617 /* LocationPreferenceStore.swift in Sources */,
+				DE4A591ECA889E59EB4CA184 /* LocationPreferenceStore.swift in Sources */,
 				BD1A872DAA5D5E882DEE7525 /* MettitiApp.swift in Sources */,
 				FEE65AB6C3EDB3B1B4A63A04 /* OutfitAdvisor.swift in Sources */,
-				1ADFA353743377C9465C97A5 /* OutfitRecommendation.swift in Sources */,
+				F24DB7EA6A74E1042EB31FB2 /* OutfitRecommendation.swift in Sources */,
 				F289267E1C6ED89D4E7A4CD8 /* PlanSnapshot.swift in Sources */,
-				499DBD43FBA4AC98B0AA1E78 /* SettingsView.swift in Sources */,
-				58FA99F7B0D647E6CF4ADE18 /* SkeletonLoadingView.swift in Sources */,
-				BE6B7C596296430E54FC96D9 /* TemperaturePreferenceStore.swift in Sources */,
+				F42D537596E9F08258B9763F /* RecommendationState.swift in Sources */,
+				FD5D27442A7FD42FAA1BB493 /* SettingsView.swift in Sources */,
+				F4D8C5FB63D61CD52E44BE77 /* SkeletonLoadingView.swift in Sources */,
+				5B796F5B3DD68C30DE055DA3 /* TemperaturePreferenceStore.swift in Sources */,
 				7202F98153E8C76EF5BDE190 /* TemperatureUnit.swift in Sources */,
-				A1A3283E654D8F3AA78F8209 /* ThemePreferenceStore.swift in Sources */,
-				0C2C3DA6D788C9E6447F7653 /* WeatherAttributionView.swift in Sources */,
+				AF8C4F88C4648F53F7C3847B /* ThemePreferenceStore.swift in Sources */,
+				24EBF2BC5713E761CFF7F218 /* WeatherAttributionView.swift in Sources */,
 				5DA8990F438756DEBDBF53E7 /* WeatherProvider.swift in Sources */,
-				EEF975DD03CEA503177DA166 /* WeatherProviderPreferenceStore.swift in Sources */,
+				E2A97CF4533C7EB145F5D79A /* WeatherProviderPreferenceStore.swift in Sources */,
 				0ECC658EBA52F5E2419F72D5 /* WeatherService.swift in Sources */,
 				8E4897C2391E3F88BBCD4D31 /* WidgetPlanTimeline.swift in Sources */,
 			);

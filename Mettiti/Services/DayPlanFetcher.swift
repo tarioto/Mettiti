@@ -1,12 +1,6 @@
 import CoreLocation
 import FoundationModels
 
-/// Whether the on-device model can make outfit suggestions right now.
-enum RecommendationAvailability: Equatable, Sendable {
-    case available
-    case unavailable(RecommendationState.UnavailableReason)
-}
-
 /// The network and on-device model calls behind a day plan, so tests can stub them out.
 protocol DayPlanFetching: Sendable {
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?)

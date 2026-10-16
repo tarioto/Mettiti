@@ -82,10 +82,13 @@ git config core.hooksPath .githooks
 
 ```
 Mettiti/
-  Models/        Weather and recommendation models (shared with widgets)
-  Services/      Open-Meteo clients, location, OutfitAdvisor, preference stores
-  Shared/        Types shared between the app and widget extension
-  Views/         SwiftUI screens and components
+  Models/        App-only models and UI config (forecast, recommendation state, themes, cards)
+  Services/      Weather clients, location, OutfitAdvisor, DayPlanFetcher, background refresh
+  Persistence/   Preference stores
+  Features/
+    DayPlan/     Day plan screen, its view model and components
+    Settings/    Settings screen
+  Shared/        Models and types compiled into both the app and widget extension
 MettitiWidgets/  WidgetKit extension (emoji, summary, combined widgets)
 project.yml        XcodeGen spec
 ```
