@@ -1,4 +1,4 @@
-# WearToday
+# Mettiti
 
 A weather-driven outfit suggestion app for iOS, with home screen widgets.
 

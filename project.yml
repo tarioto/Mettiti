@@ -1,4 +1,4 @@
-name: WearToday
+name: Mettiti
 options:
   bundleIdPrefix: com.timarioto
   deploymentTarget:
@@ -17,20 +17,20 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     STRING_CATALOG_GENERATE_SYMBOLS: YES
 targets:
-  WearToday:
+  Mettiti:
     type: application
     platform: iOS
     deploymentTarget: "26.0"
     sources:
-      - path: WearToday
+      - path: Mettiti
     dependencies:
-      - target: WearTodayWidgetsExtension
+      - target: MettitiWidgetsExtension
         embed: true
     scheme:
       testTargets:
-        - WearTodayTests
+        - MettitiTests
     info:
-      path: WearToday/Info.plist
+      path: Mettiti/Info.plist
       properties:
         # Keep versions driven by build settings instead of XcodeGen's hard-coded defaults.
         CFBundleShortVersionString: $(MARKETING_VERSION)
@@ -38,56 +38,57 @@ targets:
         UIBackgroundModes:
           - fetch
         BGTaskSchedulerPermittedIdentifiers:
-          - com.timarioto.WearToday.planRefresh
+          - com.timarioto.Mettiti.planRefresh
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.timarioto.WearToday
+        PRODUCT_BUNDLE_IDENTIFIER: com.timarioto.Mettiti
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Mettiti
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "WearToday uses your location to check today's weather and recommend what to wear and bring."
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Mettiti uses your location to check today's weather and recommend what to wear and bring."
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIcon-Beta AppIcon-Sunset AppIcon-Ocean AppIcon-Aurora AppIcon-Midnight"
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: NO
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        CODE_SIGN_ENTITLEMENTS: WearToday/WearToday.entitlements
+        CODE_SIGN_ENTITLEMENTS: Mettiti/Mettiti.entitlements
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: Apple Development
         PROVISIONING_PROFILE_SPECIFIER: ""
       configs:
         Debug:
           ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon-Dev
-  WearTodayWidgetsExtension:
+  MettitiWidgetsExtension:
     type: app-extension
     platform: iOS
     deploymentTarget: "26.0"
     sources:
-      - path: WearTodayWidgets
-      - path: WearToday/Models
-      - path: WearToday/Shared
+      - path: MettitiWidgets
+      - path: Mettiti/Models
+      - path: Mettiti/Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.timarioto.WearToday.WearTodayWidgets
-        INFOPLIST_FILE: WearTodayWidgets/Info.plist
-        CODE_SIGN_ENTITLEMENTS: WearTodayWidgets/WearTodayWidgets.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: com.timarioto.Mettiti.MettitiWidgets
+        INFOPLIST_FILE: MettitiWidgets/Info.plist
+        CODE_SIGN_ENTITLEMENTS: MettitiWidgets/MettitiWidgets.entitlements
         SKIP_INSTALL: YES
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: Apple Development
         PROVISIONING_PROFILE_SPECIFIER: ""
-  WearTodayTests:
+  MettitiTests:
     type: bundle.unit-test
     platform: iOS
     deploymentTarget: "26.0"
     sources:
-      - path: WearTodayTests
+      - path: MettitiTests
     dependencies:
-      - target: WearToday
+      - target: Mettiti
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.timarioto.WearTodayTests
+        PRODUCT_BUNDLE_IDENTIFIER: com.timarioto.MettitiTests
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: Apple Development

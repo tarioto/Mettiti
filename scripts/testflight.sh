@@ -44,14 +44,14 @@ if [[ -n "${ASC_KEY_PATH:-}" ]]; then
 fi
 
 build_dir="build/testflight/$(date '+%Y%m%d-%H%M%S')"
-archive_path="$build_dir/WearToday.xcarchive"
+archive_path="$build_dir/Mettiti.xcarchive"
 export_options="$build_dir/ExportOptions.plist"
 mkdir -p "$build_dir"
 
-echo "==> Archiving WearToday"
+echo "==> Archiving Mettiti"
 xcodebuild archive \
-  -project WearToday.xcodeproj \
-  -scheme WearToday \
+  -project Mettiti.xcodeproj \
+  -scheme Mettiti \
   -configuration Release \
   -destination 'generic/platform=iOS' \
   -archivePath "$archive_path" \

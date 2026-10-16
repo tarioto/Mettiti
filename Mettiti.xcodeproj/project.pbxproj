@@ -1,0 +1,849 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		06D9F8D1038CD45A790232C3 /* WidgetPlanTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852D5E1ACBDA922E732AC39F /* WidgetPlanTimeline.swift */; };
+		09886DBF4E055857849B1101 /* PlanTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF25927888A9142B7C9EB0B /* PlanTimelineProvider.swift */; };
+		0A2CE47EF8DC6B51635CB0F9 /* AppIconPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9D5C85981664AA30B098EE6 /* AppIconPreferenceStore.swift */; };
+		0C2C3DA6D788C9E6447F7653 /* WeatherAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEA54AF7E72D2AF87B8FBCFB /* WeatherAttributionView.swift */; };
+		0ECC658EBA52F5E2419F72D5 /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC80D2E51439534F4F024CB1 /* WeatherService.swift */; };
+		0F822D916C91828ED8587D1D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4258A411E1AD84FABBC377ED /* Assets.xcassets */; };
+		117663ED14CF666BAD5691C8 /* DailyWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5632105017C44FFE9909FF14 /* DailyWeather.swift */; };
+		11968D91E5A6DB5877C9230E /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB900F56A901E3F5E3D724FF /* AppTheme.swift */; };
+		180306CA19951BB86DA6649C /* AppIcon-Aurora.icon in Resources */ = {isa = PBXBuildFile; fileRef = EB1216AABBD42C547BE4D9C2 /* AppIcon-Aurora.icon */; };
+		1ADFA353743377C9465C97A5 /* OutfitRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A947A3BC25B7181CCEB2150 /* OutfitRecommendation.swift */; };
+		1C1274F0E23B931CB16553AA /* DayPlanViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */; };
+		204962105CCF093CEA52931E /* AppIconPreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02D1A8D51E57A06A197684CA /* AppIconPreferenceStoreTests.swift */; };
+		21F7C19E902046B2E67CF2A7 /* WeatherProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */; };
+		241B9B9BEA697E1BD2B247F6 /* TemperatureUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A79BEE46D3A9A63D63C73B /* TemperatureUnit.swift */; };
+		26F4E4AFBD0C174C2C5B9B06 /* OutfitAdvisorPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */; };
+		28ACF5C048B38A6127935BC2 /* DailyWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5632105017C44FFE9909FF14 /* DailyWeather.swift */; };
+		292FE55023362D9859EB24EF /* AppIcon-Dev.icon in Resources */ = {isa = PBXBuildFile; fileRef = B46F8D422DBEF88B22C30973 /* AppIcon-Dev.icon */; };
+		2FEA8949DF299DE90F0C04AD /* HourlyTemperatureChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1350036A5A4BEE70EE3D0C6F /* HourlyTemperatureChart.swift */; };
+		36F43150BD14BCFE9A9F1E63 /* ErrorStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AC57997A4360AF7EAB5BBA /* ErrorStateView.swift */; };
+		3A5529FDF2ABE0F231B6934F /* DayPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FC1CF7D16AC263E9CD553EC /* DayPlanViewModel.swift */; };
+		3AE7A8576AAEB8FF2154567A /* CardType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AED8FEAC5A2698BF641FCF6 /* CardType.swift */; };
+		3CAA5D287DC2CED186446B80 /* PlanSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */; };
+		48949BC553739E814D0DDEED /* BackgroundPlanRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 272445904B4924EB0C8C7495 /* BackgroundPlanRefresh.swift */; };
+		4972FE09034A30AB2EF51BCD /* DisplayedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */; };
+		499DBD43FBA4AC98B0AA1E78 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9DE7AA66132A061E171488E /* SettingsView.swift */; };
+		55700F0574090A169F5528ED /* HourlyForecastService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF56FB0D8716881DD6B86696 /* HourlyForecastService.swift */; };
+		58FA99F7B0D647E6CF4ADE18 /* SkeletonLoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6D65105126355D8A85143E /* SkeletonLoadingView.swift */; };
+		5D5E7E8C7A1C1948629BE617 /* LocationPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3D302C705C0EAF9C34F2FAE /* LocationPreferenceStore.swift */; };
+		5DA8990F438756DEBDBF53E7 /* WeatherProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */; };
+		677C0D2B5F5B8BBB6D583649 /* MettitiWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575110F1EA9D7D74E3B5734A /* MettitiWidgetsBundle.swift */; };
+		694C9D37714DDF5BEDD8BE26 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 463C9BDC2137A1A038617881 /* TestSupport.swift */; };
+		6BAF11000C47AB0D17869F25 /* MettitiWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E0F20748B7D794EDFDD25CF3 /* MettitiWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6EAF5C81DE5F1C0BCA6A83EF /* RecommendedItemListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F24F553D93776EE20644077 /* RecommendedItemListTests.swift */; };
+		708BE893599062C1E1175836 /* OutfitRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A947A3BC25B7181CCEB2150 /* OutfitRecommendation.swift */; };
+		7202F98153E8C76EF5BDE190 /* TemperatureUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A79BEE46D3A9A63D63C73B /* TemperatureUnit.swift */; };
+		78F692245C9F0A44CA2CF188 /* AppIcon-Sunset.icon in Resources */ = {isa = PBXBuildFile; fileRef = CA92278BFD00779BF33A3538 /* AppIcon-Sunset.icon */; };
+		8822F19E4CA5B57699A2DC69 /* EmojiWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3370B4271C590694D37B1BEC /* EmojiWidget.swift */; };
+		8A30EB00F9A949266296014D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1169A0DDECF191A9E6DAD135 /* ContentView.swift */; };
+		8E4897C2391E3F88BBCD4D31 /* WidgetPlanTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852D5E1ACBDA922E732AC39F /* WidgetPlanTimeline.swift */; };
+		8F5373DA4B93DA2AA5893707 /* BackgroundPlanRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6025660EBF339BC99DD24263 /* BackgroundPlanRefreshTests.swift */; };
+		93B1B6F76049E17857078133 /* AppleWeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668F8428BBBFFCD235AE1111 /* AppleWeatherService.swift */; };
+		94692B408A0A81FFD5F0FC7A /* CombinedWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E231C8D3808FCBB15976C9 /* CombinedWidget.swift */; };
+		9A3D3EC682AE932D6D84CC20 /* DayPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E0B216BFD682A8404E45274 /* DayPlanView.swift */; };
+		9E08C22ABFCD699A8D0DEC0A /* DayPlanFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */; };
+		A1A3283E654D8F3AA78F8209 /* ThemePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A2EB4F7F4E68E0294976B5 /* ThemePreferenceStore.swift */; };
+		B6BD349BDFFFE31F5A8DE84E /* AppIcon-Midnight.icon in Resources */ = {isa = PBXBuildFile; fileRef = FD224A43A8B46F4476BE1E4D /* AppIcon-Midnight.icon */; };
+		BCFA1A4857E5A812AC3CEB9D /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABAA5E38B3ED44EB67EC5BD /* LocationManager.swift */; };
+		BD1A872DAA5D5E882DEE7525 /* MettitiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E29684554562655E6B0531E /* MettitiApp.swift */; };
+		BE6B7C596296430E54FC96D9 /* TemperaturePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2274DF963E07333D13C13F9B /* TemperaturePreferenceStore.swift */; };
+		C0EFF8A3E10700013957E1C9 /* BackgroundPlanRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0AC7C044DFAAB5CB2472A7 /* BackgroundPlanRefresher.swift */; };
+		C2944FCCB6FEB703D8D1B51F /* WeatherAttributionLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B550D55202482A729D01EB75 /* WeatherAttributionLabel.swift */; };
+		CDBAE51DE89D9B58AFDE2763 /* PlanSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */; };
+		D091C4CD571283FA174BF765 /* DescriptionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F7F9AB25CA3B39F9F5BD6C /* DescriptionWidget.swift */; };
+		D64B351AD06FDEE568DC1295 /* TemperaturePreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74AF60E97BAE1AD91452EF22 /* TemperaturePreferenceStoreTests.swift */; };
+		DADBC2B24DB39095813FD5D6 /* WeatherOnlyPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0216BF673086136CBCB4197C /* WeatherOnlyPlanView.swift */; };
+		DDB9D4ABA8C92302BBAEE3BF /* AppIcon-Ocean.icon in Resources */ = {isa = PBXBuildFile; fileRef = B3BC0BA00374A97BCBB85183 /* AppIcon-Ocean.icon */; };
+		DE93527F5E7FC775E7C223D5 /* WeatherServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F735BBDBE3437765D0A5EC9B /* WeatherServiceTests.swift */; };
+		E4F174F9AB38DE0FB7E468E9 /* CardPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3991AC77EE006F7045BF44 /* CardPreferenceStore.swift */; };
+		E4FFDF136E81D30372949280 /* AppIcon-Beta.icon in Resources */ = {isa = PBXBuildFile; fileRef = 1F02E3E2E4EAB90C8C5FC2EC /* AppIcon-Beta.icon */; };
+		E6884B41028DD96F6001FE20 /* DisplayedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */; };
+		E84BF9813F6DE7B61F8F02F4 /* WidgetPlanTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88158BB15FF22E7B4D23559A /* WidgetPlanTimelineTests.swift */; };
+		EEF975DD03CEA503177DA166 /* WeatherProviderPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70925BD2D1B20F1E5E68EB14 /* WeatherProviderPreferenceStore.swift */; };
+		F1CDAF56F215F17FCCA4B743 /* EmptyPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26083B123692217C0408627C /* EmptyPlanView.swift */; };
+		F289267E1C6ED89D4E7A4CD8 /* PlanSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */; };
+		F88E043A4EBCB5898A727211 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = D8999A866173F38C24ADDB7E /* AppIcon.icon */; };
+		FEE65AB6C3EDB3B1B4A63A04 /* OutfitAdvisor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 547C0A75E924593B5A7D7C23 /* OutfitAdvisor.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		6ED525DFF75A4CEE123EB8A9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DD8E7DA69D6D971F15E1BEB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5B487DCE5399ED49C5311B06;
+			remoteInfo = Mettiti;
+		};
+		DB043E32F614A46B208F2019 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DD8E7DA69D6D971F15E1BEB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 384685B2C8D6F8DA56FFDEB6;
+			remoteInfo = MettitiWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		87BCD76A09B373381ABFA74E /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				6BAF11000C47AB0D17869F25 /* MettitiWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0216BF673086136CBCB4197C /* WeatherOnlyPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherOnlyPlanView.swift; sourceTree = "<group>"; };
+		02D1A8D51E57A06A197684CA /* AppIconPreferenceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconPreferenceStoreTests.swift; sourceTree = "<group>"; };
+		08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanSnapshotTests.swift; sourceTree = "<group>"; };
+		1169A0DDECF191A9E6DAD135 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		1350036A5A4BEE70EE3D0C6F /* HourlyTemperatureChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyTemperatureChart.swift; sourceTree = "<group>"; };
+		18AC57997A4360AF7EAB5BBA /* ErrorStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorStateView.swift; sourceTree = "<group>"; };
+		1F02E3E2E4EAB90C8C5FC2EC /* AppIcon-Beta.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Beta.icon"; sourceTree = "<group>"; };
+		2274DF963E07333D13C13F9B /* TemperaturePreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperaturePreferenceStore.swift; sourceTree = "<group>"; };
+		26083B123692217C0408627C /* EmptyPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyPlanView.swift; sourceTree = "<group>"; };
+		272445904B4924EB0C8C7495 /* BackgroundPlanRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPlanRefresh.swift; sourceTree = "<group>"; };
+		27F7F9AB25CA3B39F9F5BD6C /* DescriptionWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescriptionWidget.swift; sourceTree = "<group>"; };
+		3041656CE1FBE7554AE57FEA /* Mettiti.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Mettiti.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3370B4271C590694D37B1BEC /* EmojiWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiWidget.swift; sourceTree = "<group>"; };
+		37E231C8D3808FCBB15976C9 /* CombinedWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedWidget.swift; sourceTree = "<group>"; };
+		3FC1CF7D16AC263E9CD553EC /* DayPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanViewModel.swift; sourceTree = "<group>"; };
+		409CA5998A0FD530AFD3E822 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanViewModelTests.swift; sourceTree = "<group>"; };
+		4258A411E1AD84FABBC377ED /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		463C9BDC2137A1A038617881 /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
+		547C0A75E924593B5A7D7C23 /* OutfitAdvisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitAdvisor.swift; sourceTree = "<group>"; };
+		5632105017C44FFE9909FF14 /* DailyWeather.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyWeather.swift; sourceTree = "<group>"; };
+		575110F1EA9D7D74E3B5734A /* MettitiWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MettitiWidgetsBundle.swift; sourceTree = "<group>"; };
+		58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitAdvisorPromptTests.swift; sourceTree = "<group>"; };
+		5AED8FEAC5A2698BF641FCF6 /* CardType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardType.swift; sourceTree = "<group>"; };
+		5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayedItem.swift; sourceTree = "<group>"; };
+		5E0AC7C044DFAAB5CB2472A7 /* BackgroundPlanRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPlanRefresher.swift; sourceTree = "<group>"; };
+		5F24F553D93776EE20644077 /* RecommendedItemListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendedItemListTests.swift; sourceTree = "<group>"; };
+		6025660EBF339BC99DD24263 /* BackgroundPlanRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPlanRefreshTests.swift; sourceTree = "<group>"; };
+		668F8428BBBFFCD235AE1111 /* AppleWeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleWeatherService.swift; sourceTree = "<group>"; };
+		6A947A3BC25B7181CCEB2150 /* OutfitRecommendation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitRecommendation.swift; sourceTree = "<group>"; };
+		6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherProvider.swift; sourceTree = "<group>"; };
+		70925BD2D1B20F1E5E68EB14 /* WeatherProviderPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherProviderPreferenceStore.swift; sourceTree = "<group>"; };
+		73B1A624B1BE51019549880F /* MettitiTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MettitiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		74AF60E97BAE1AD91452EF22 /* TemperaturePreferenceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperaturePreferenceStoreTests.swift; sourceTree = "<group>"; };
+		7B3991AC77EE006F7045BF44 /* CardPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardPreferenceStore.swift; sourceTree = "<group>"; };
+		852D5E1ACBDA922E732AC39F /* WidgetPlanTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPlanTimeline.swift; sourceTree = "<group>"; };
+		88158BB15FF22E7B4D23559A /* WidgetPlanTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPlanTimelineTests.swift; sourceTree = "<group>"; };
+		8E0B216BFD682A8404E45274 /* DayPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanView.swift; sourceTree = "<group>"; };
+		9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanSnapshot.swift; sourceTree = "<group>"; };
+		9E29684554562655E6B0531E /* MettitiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MettitiApp.swift; sourceTree = "<group>"; };
+		A9DE7AA66132A061E171488E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AF6D65105126355D8A85143E /* SkeletonLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonLoadingView.swift; sourceTree = "<group>"; };
+		B3BC0BA00374A97BCBB85183 /* AppIcon-Ocean.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Ocean.icon"; sourceTree = "<group>"; };
+		B3D302C705C0EAF9C34F2FAE /* LocationPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPreferenceStore.swift; sourceTree = "<group>"; };
+		B46F8D422DBEF88B22C30973 /* AppIcon-Dev.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Dev.icon"; sourceTree = "<group>"; };
+		B4A2EB4F7F4E68E0294976B5 /* ThemePreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemePreferenceStore.swift; sourceTree = "<group>"; };
+		B550D55202482A729D01EB75 /* WeatherAttributionLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAttributionLabel.swift; sourceTree = "<group>"; };
+		BEA54AF7E72D2AF87B8FBCFB /* WeatherAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAttributionView.swift; sourceTree = "<group>"; };
+		BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanFetcher.swift; sourceTree = "<group>"; };
+		BF56FB0D8716881DD6B86696 /* HourlyForecastService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyForecastService.swift; sourceTree = "<group>"; };
+		C4DE16260E778FDBF15A4462 /* Mettiti.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Mettiti.entitlements; sourceTree = "<group>"; };
+		CA92278BFD00779BF33A3538 /* AppIcon-Sunset.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Sunset.icon"; sourceTree = "<group>"; };
+		CC80D2E51439534F4F024CB1 /* WeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherService.swift; sourceTree = "<group>"; };
+		D8999A866173F38C24ADDB7E /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		D9D5C85981664AA30B098EE6 /* AppIconPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconPreferenceStore.swift; sourceTree = "<group>"; };
+		DFF25927888A9142B7C9EB0B /* PlanTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanTimelineProvider.swift; sourceTree = "<group>"; };
+		E0F20748B7D794EDFDD25CF3 /* MettitiWidgetsExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = MettitiWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		E7EFC7F301A8CE94B52D797E /* MettitiWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MettitiWidgets.entitlements; sourceTree = "<group>"; };
+		EB1216AABBD42C547BE4D9C2 /* AppIcon-Aurora.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Aurora.icon"; sourceTree = "<group>"; };
+		EB900F56A901E3F5E3D724FF /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		F5A79BEE46D3A9A63D63C73B /* TemperatureUnit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperatureUnit.swift; sourceTree = "<group>"; };
+		F735BBDBE3437765D0A5EC9B /* WeatherServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherServiceTests.swift; sourceTree = "<group>"; };
+		FABAA5E38B3ED44EB67EC5BD /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		FD224A43A8B46F4476BE1E4D /* AppIcon-Midnight.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Midnight.icon"; sourceTree = "<group>"; };
+		FEECD4FFD7DFA7C252C5E5B6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2823B994CAF5AD144D4016CB /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				D9D5C85981664AA30B098EE6 /* AppIconPreferenceStore.swift */,
+				668F8428BBBFFCD235AE1111 /* AppleWeatherService.swift */,
+				EB900F56A901E3F5E3D724FF /* AppTheme.swift */,
+				272445904B4924EB0C8C7495 /* BackgroundPlanRefresh.swift */,
+				5E0AC7C044DFAAB5CB2472A7 /* BackgroundPlanRefresher.swift */,
+				7B3991AC77EE006F7045BF44 /* CardPreferenceStore.swift */,
+				5AED8FEAC5A2698BF641FCF6 /* CardType.swift */,
+				BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */,
+				BF56FB0D8716881DD6B86696 /* HourlyForecastService.swift */,
+				FABAA5E38B3ED44EB67EC5BD /* LocationManager.swift */,
+				B3D302C705C0EAF9C34F2FAE /* LocationPreferenceStore.swift */,
+				547C0A75E924593B5A7D7C23 /* OutfitAdvisor.swift */,
+				2274DF963E07333D13C13F9B /* TemperaturePreferenceStore.swift */,
+				B4A2EB4F7F4E68E0294976B5 /* ThemePreferenceStore.swift */,
+				70925BD2D1B20F1E5E68EB14 /* WeatherProviderPreferenceStore.swift */,
+				CC80D2E51439534F4F024CB1 /* WeatherService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		2A0F5A997482B538EA6DC888 /* MettitiTests */ = {
+			isa = PBXGroup;
+			children = (
+				02D1A8D51E57A06A197684CA /* AppIconPreferenceStoreTests.swift */,
+				6025660EBF339BC99DD24263 /* BackgroundPlanRefreshTests.swift */,
+				41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */,
+				58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */,
+				08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */,
+				5F24F553D93776EE20644077 /* RecommendedItemListTests.swift */,
+				74AF60E97BAE1AD91452EF22 /* TemperaturePreferenceStoreTests.swift */,
+				463C9BDC2137A1A038617881 /* TestSupport.swift */,
+				F735BBDBE3437765D0A5EC9B /* WeatherServiceTests.swift */,
+				88158BB15FF22E7B4D23559A /* WidgetPlanTimelineTests.swift */,
+			);
+			path = MettitiTests;
+			sourceTree = "<group>";
+		};
+		2DAAE7F0BDB0EF0C2D5D569D = {
+			isa = PBXGroup;
+			children = (
+				AE89AB5195F6E79281916889 /* Mettiti */,
+				2A0F5A997482B538EA6DC888 /* MettitiTests */,
+				4CB37DA89A0223A47AFB8027 /* MettitiWidgets */,
+				E2D42BC1FFC463DE36E94286 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4CB37DA89A0223A47AFB8027 /* MettitiWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				37E231C8D3808FCBB15976C9 /* CombinedWidget.swift */,
+				27F7F9AB25CA3B39F9F5BD6C /* DescriptionWidget.swift */,
+				3370B4271C590694D37B1BEC /* EmojiWidget.swift */,
+				26083B123692217C0408627C /* EmptyPlanView.swift */,
+				409CA5998A0FD530AFD3E822 /* Info.plist */,
+				E7EFC7F301A8CE94B52D797E /* MettitiWidgets.entitlements */,
+				575110F1EA9D7D74E3B5734A /* MettitiWidgetsBundle.swift */,
+				DFF25927888A9142B7C9EB0B /* PlanTimelineProvider.swift */,
+				B550D55202482A729D01EB75 /* WeatherAttributionLabel.swift */,
+				0216BF673086136CBCB4197C /* WeatherOnlyPlanView.swift */,
+			);
+			path = MettitiWidgets;
+			sourceTree = "<group>";
+		};
+		5F71B3E0D3326751D669C7D9 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				5632105017C44FFE9909FF14 /* DailyWeather.swift */,
+				6A947A3BC25B7181CCEB2150 /* OutfitRecommendation.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AE89AB5195F6E79281916889 /* Mettiti */ = {
+			isa = PBXGroup;
+			children = (
+				EB1216AABBD42C547BE4D9C2 /* AppIcon-Aurora.icon */,
+				1F02E3E2E4EAB90C8C5FC2EC /* AppIcon-Beta.icon */,
+				B46F8D422DBEF88B22C30973 /* AppIcon-Dev.icon */,
+				FD224A43A8B46F4476BE1E4D /* AppIcon-Midnight.icon */,
+				B3BC0BA00374A97BCBB85183 /* AppIcon-Ocean.icon */,
+				CA92278BFD00779BF33A3538 /* AppIcon-Sunset.icon */,
+				D8999A866173F38C24ADDB7E /* AppIcon.icon */,
+				4258A411E1AD84FABBC377ED /* Assets.xcassets */,
+				1169A0DDECF191A9E6DAD135 /* ContentView.swift */,
+				FEECD4FFD7DFA7C252C5E5B6 /* Info.plist */,
+				C4DE16260E778FDBF15A4462 /* Mettiti.entitlements */,
+				9E29684554562655E6B0531E /* MettitiApp.swift */,
+				5F71B3E0D3326751D669C7D9 /* Models */,
+				2823B994CAF5AD144D4016CB /* Services */,
+				EC64644505444163A90C07E5 /* Shared */,
+				B6E2E203C2F98F995B5B31C0 /* Views */,
+			);
+			path = Mettiti;
+			sourceTree = "<group>";
+		};
+		B6E2E203C2F98F995B5B31C0 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				8E0B216BFD682A8404E45274 /* DayPlanView.swift */,
+				3FC1CF7D16AC263E9CD553EC /* DayPlanViewModel.swift */,
+				18AC57997A4360AF7EAB5BBA /* ErrorStateView.swift */,
+				1350036A5A4BEE70EE3D0C6F /* HourlyTemperatureChart.swift */,
+				A9DE7AA66132A061E171488E /* SettingsView.swift */,
+				AF6D65105126355D8A85143E /* SkeletonLoadingView.swift */,
+				BEA54AF7E72D2AF87B8FBCFB /* WeatherAttributionView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		E2D42BC1FFC463DE36E94286 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3041656CE1FBE7554AE57FEA /* Mettiti.app */,
+				73B1A624B1BE51019549880F /* MettitiTests.xctest */,
+				E0F20748B7D794EDFDD25CF3 /* MettitiWidgetsExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EC64644505444163A90C07E5 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */,
+				9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */,
+				F5A79BEE46D3A9A63D63C73B /* TemperatureUnit.swift */,
+				6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */,
+				852D5E1ACBDA922E732AC39F /* WidgetPlanTimeline.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		384685B2C8D6F8DA56FFDEB6 /* MettitiWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 44B9930EEFB8B582F96B34E6 /* Build configuration list for PBXNativeTarget "MettitiWidgetsExtension" */;
+			buildPhases = (
+				6C6E8293C626B8952FE7E665 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MettitiWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = MettitiWidgetsExtension;
+			productReference = E0F20748B7D794EDFDD25CF3 /* MettitiWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		524B237FD3956E6FC0763C7E /* MettitiTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 33AF92592AF80E686C165859 /* Build configuration list for PBXNativeTarget "MettitiTests" */;
+			buildPhases = (
+				17466DF24AA95C860DAA539B /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				67D19C4BB529FA3A71889279 /* PBXTargetDependency */,
+			);
+			name = MettitiTests;
+			packageProductDependencies = (
+			);
+			productName = MettitiTests;
+			productReference = 73B1A624B1BE51019549880F /* MettitiTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		5B487DCE5399ED49C5311B06 /* Mettiti */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 19481168D42DDC336AF83B6F /* Build configuration list for PBXNativeTarget "Mettiti" */;
+			buildPhases = (
+				8C14020CE02ED47A1CE09A41 /* Sources */,
+				F50ECBC18416CE1A03E18296 /* Resources */,
+				87BCD76A09B373381ABFA74E /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				99A3C90643471EF72A9A77C8 /* PBXTargetDependency */,
+			);
+			name = Mettiti;
+			packageProductDependencies = (
+			);
+			productName = Mettiti;
+			productReference = 3041656CE1FBE7554AE57FEA /* Mettiti.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8DD8E7DA69D6D971F15E1BEB /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					384685B2C8D6F8DA56FFDEB6 = {
+						DevelopmentTeam = TYXC29FT67;
+						ProvisioningStyle = Automatic;
+					};
+					524B237FD3956E6FC0763C7E = {
+						DevelopmentTeam = TYXC29FT67;
+						ProvisioningStyle = Automatic;
+					};
+					5B487DCE5399ED49C5311B06 = {
+						DevelopmentTeam = TYXC29FT67;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 957714788D506A3B309C59E1 /* Build configuration list for PBXProject "Mettiti" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 2DAAE7F0BDB0EF0C2D5D569D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = E2D42BC1FFC463DE36E94286 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5B487DCE5399ED49C5311B06 /* Mettiti */,
+				384685B2C8D6F8DA56FFDEB6 /* MettitiWidgetsExtension */,
+				524B237FD3956E6FC0763C7E /* MettitiTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F50ECBC18416CE1A03E18296 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				180306CA19951BB86DA6649C /* AppIcon-Aurora.icon in Resources */,
+				E4FFDF136E81D30372949280 /* AppIcon-Beta.icon in Resources */,
+				292FE55023362D9859EB24EF /* AppIcon-Dev.icon in Resources */,
+				B6BD349BDFFFE31F5A8DE84E /* AppIcon-Midnight.icon in Resources */,
+				DDB9D4ABA8C92302BBAEE3BF /* AppIcon-Ocean.icon in Resources */,
+				78F692245C9F0A44CA2CF188 /* AppIcon-Sunset.icon in Resources */,
+				F88E043A4EBCB5898A727211 /* AppIcon.icon in Resources */,
+				0F822D916C91828ED8587D1D /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		17466DF24AA95C860DAA539B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				204962105CCF093CEA52931E /* AppIconPreferenceStoreTests.swift in Sources */,
+				8F5373DA4B93DA2AA5893707 /* BackgroundPlanRefreshTests.swift in Sources */,
+				1C1274F0E23B931CB16553AA /* DayPlanViewModelTests.swift in Sources */,
+				26F4E4AFBD0C174C2C5B9B06 /* OutfitAdvisorPromptTests.swift in Sources */,
+				CDBAE51DE89D9B58AFDE2763 /* PlanSnapshotTests.swift in Sources */,
+				6EAF5C81DE5F1C0BCA6A83EF /* RecommendedItemListTests.swift in Sources */,
+				D64B351AD06FDEE568DC1295 /* TemperaturePreferenceStoreTests.swift in Sources */,
+				694C9D37714DDF5BEDD8BE26 /* TestSupport.swift in Sources */,
+				DE93527F5E7FC775E7C223D5 /* WeatherServiceTests.swift in Sources */,
+				E84BF9813F6DE7B61F8F02F4 /* WidgetPlanTimelineTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C6E8293C626B8952FE7E665 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				94692B408A0A81FFD5F0FC7A /* CombinedWidget.swift in Sources */,
+				117663ED14CF666BAD5691C8 /* DailyWeather.swift in Sources */,
+				D091C4CD571283FA174BF765 /* DescriptionWidget.swift in Sources */,
+				E6884B41028DD96F6001FE20 /* DisplayedItem.swift in Sources */,
+				8822F19E4CA5B57699A2DC69 /* EmojiWidget.swift in Sources */,
+				F1CDAF56F215F17FCCA4B743 /* EmptyPlanView.swift in Sources */,
+				677C0D2B5F5B8BBB6D583649 /* MettitiWidgetsBundle.swift in Sources */,
+				708BE893599062C1E1175836 /* OutfitRecommendation.swift in Sources */,
+				3CAA5D287DC2CED186446B80 /* PlanSnapshot.swift in Sources */,
+				09886DBF4E055857849B1101 /* PlanTimelineProvider.swift in Sources */,
+				241B9B9BEA697E1BD2B247F6 /* TemperatureUnit.swift in Sources */,
+				C2944FCCB6FEB703D8D1B51F /* WeatherAttributionLabel.swift in Sources */,
+				DADBC2B24DB39095813FD5D6 /* WeatherOnlyPlanView.swift in Sources */,
+				21F7C19E902046B2E67CF2A7 /* WeatherProvider.swift in Sources */,
+				06D9F8D1038CD45A790232C3 /* WidgetPlanTimeline.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8C14020CE02ED47A1CE09A41 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A2CE47EF8DC6B51635CB0F9 /* AppIconPreferenceStore.swift in Sources */,
+				11968D91E5A6DB5877C9230E /* AppTheme.swift in Sources */,
+				93B1B6F76049E17857078133 /* AppleWeatherService.swift in Sources */,
+				48949BC553739E814D0DDEED /* BackgroundPlanRefresh.swift in Sources */,
+				C0EFF8A3E10700013957E1C9 /* BackgroundPlanRefresher.swift in Sources */,
+				E4F174F9AB38DE0FB7E468E9 /* CardPreferenceStore.swift in Sources */,
+				3AE7A8576AAEB8FF2154567A /* CardType.swift in Sources */,
+				8A30EB00F9A949266296014D /* ContentView.swift in Sources */,
+				28ACF5C048B38A6127935BC2 /* DailyWeather.swift in Sources */,
+				9E08C22ABFCD699A8D0DEC0A /* DayPlanFetcher.swift in Sources */,
+				9A3D3EC682AE932D6D84CC20 /* DayPlanView.swift in Sources */,
+				3A5529FDF2ABE0F231B6934F /* DayPlanViewModel.swift in Sources */,
+				4972FE09034A30AB2EF51BCD /* DisplayedItem.swift in Sources */,
+				36F43150BD14BCFE9A9F1E63 /* ErrorStateView.swift in Sources */,
+				55700F0574090A169F5528ED /* HourlyForecastService.swift in Sources */,
+				2FEA8949DF299DE90F0C04AD /* HourlyTemperatureChart.swift in Sources */,
+				BCFA1A4857E5A812AC3CEB9D /* LocationManager.swift in Sources */,
+				5D5E7E8C7A1C1948629BE617 /* LocationPreferenceStore.swift in Sources */,
+				BD1A872DAA5D5E882DEE7525 /* MettitiApp.swift in Sources */,
+				FEE65AB6C3EDB3B1B4A63A04 /* OutfitAdvisor.swift in Sources */,
+				1ADFA353743377C9465C97A5 /* OutfitRecommendation.swift in Sources */,
+				F289267E1C6ED89D4E7A4CD8 /* PlanSnapshot.swift in Sources */,
+				499DBD43FBA4AC98B0AA1E78 /* SettingsView.swift in Sources */,
+				58FA99F7B0D647E6CF4ADE18 /* SkeletonLoadingView.swift in Sources */,
+				BE6B7C596296430E54FC96D9 /* TemperaturePreferenceStore.swift in Sources */,
+				7202F98153E8C76EF5BDE190 /* TemperatureUnit.swift in Sources */,
+				A1A3283E654D8F3AA78F8209 /* ThemePreferenceStore.swift in Sources */,
+				0C2C3DA6D788C9E6447F7653 /* WeatherAttributionView.swift in Sources */,
+				5DA8990F438756DEBDBF53E7 /* WeatherProvider.swift in Sources */,
+				EEF975DD03CEA503177DA166 /* WeatherProviderPreferenceStore.swift in Sources */,
+				0ECC658EBA52F5E2419F72D5 /* WeatherService.swift in Sources */,
+				8E4897C2391E3F88BBCD4D31 /* WidgetPlanTimeline.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		67D19C4BB529FA3A71889279 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5B487DCE5399ED49C5311B06 /* Mettiti */;
+			targetProxy = 6ED525DFF75A4CEE123EB8A9 /* PBXContainerItemProxy */;
+		};
+		99A3C90643471EF72A9A77C8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 384685B2C8D6F8DA56FFDEB6 /* MettitiWidgetsExtension */;
+			targetProxy = DB043E32F614A46B208F2019 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		01EB63E8F7F0C40259C039B0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.timarioto.MettitiTests;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Mettiti.app/Mettiti";
+			};
+			name = Debug;
+		};
+		1472F6135F418B837170BA4F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Beta AppIcon-Sunset AppIcon-Ocean AppIcon-Aurora AppIcon-Midnight";
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-Dev";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = Mettiti/Mettiti.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Mettiti/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Mettiti;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Mettiti uses your location to check today's weather and recommend what to wear and bring.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.timarioto.Mettiti;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		25949F48FC85518635423A05 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.timarioto.MettitiTests;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Mettiti.app/Mettiti";
+			};
+			name = Release;
+		};
+		27D82BA440F0BB2054619F0B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MettitiWidgets/MettitiWidgets.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = MettitiWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.timarioto.Mettiti.MettitiWidgets;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		35A4A5296517200CC8CAB874 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MettitiWidgets/MettitiWidgets.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = MettitiWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.timarioto.Mettiti.MettitiWidgets;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		38D3E8531DB0D0F3D13318E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = TYXC29FT67;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		8847D5FBA866ADC44AA9273D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Beta AppIcon-Sunset AppIcon-Ocean AppIcon-Aurora AppIcon-Midnight";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = Mettiti/Mettiti.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Mettiti/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Mettiti;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Mettiti uses your location to check today's weather and recommend what to wear and bring.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.timarioto.Mettiti;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		D83E7EA2FC815CF1D90F3907 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = TYXC29FT67;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		19481168D42DDC336AF83B6F /* Build configuration list for PBXNativeTarget "Mettiti" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1472F6135F418B837170BA4F /* Debug */,
+				8847D5FBA866ADC44AA9273D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		33AF92592AF80E686C165859 /* Build configuration list for PBXNativeTarget "MettitiTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				01EB63E8F7F0C40259C039B0 /* Debug */,
+				25949F48FC85518635423A05 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		44B9930EEFB8B582F96B34E6 /* Build configuration list for PBXNativeTarget "MettitiWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				27D82BA440F0BB2054619F0B /* Debug */,
+				35A4A5296517200CC8CAB874 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		957714788D506A3B309C59E1 /* Build configuration list for PBXProject "Mettiti" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D83E7EA2FC815CF1D90F3907 /* Debug */,
+				38D3E8531DB0D0F3D13318E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 8DD8E7DA69D6D971F15E1BEB /* Project object */;
+}
