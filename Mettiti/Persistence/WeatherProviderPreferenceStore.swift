@@ -3,16 +3,13 @@ import Foundation
 @MainActor
 final class WeatherProviderPreferenceStore: ObservableObject {
     @Published var provider: WeatherProvider {
-        didSet { UserDefaults.standard.set(provider.rawValue, forKey: Self.providerKey) }
+        didSet { storedProvider.save(provider) }
     }
 
-    private static let providerKey = "weatherProvider"
+    private let storedProvider: StoredPreference<WeatherProvider>
 
-    init() {
-        if let raw = UserDefaults.standard.string(forKey: Self.providerKey), let provider = WeatherProvider(rawValue: raw) {
-            self.provider = provider
-        } else {
-            self.provider = .apple
-        }
+    init(defaults: UserDefaults = .standard) {
+        storedProvider = .rawValue("weatherProvider", in: defaults)
+        provider = storedProvider.load() ?? .apple
     }
 }

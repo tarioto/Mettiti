@@ -48,7 +48,9 @@ final class DayPlanViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // removeDuplicates before dropFirst so reselecting the initial selection is skipped too.
         locationPreference.$selection
+            .removeDuplicates()
             .dropFirst()
             .sink { [weak self] selection in
                 self?.applySelection(selection)
@@ -56,8 +58,8 @@ final class DayPlanViewModel: ObservableObject {
             .store(in: &cancellables)
 
         providerPreference.$provider
-            .dropFirst()
             .removeDuplicates()
+            .dropFirst()
             .sink { [weak self] _ in
                 guard let self, self.hasStarted else { return }
                 Task { await self.refresh() }
