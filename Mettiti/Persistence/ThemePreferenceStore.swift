@@ -3,34 +3,19 @@ import Foundation
 @MainActor
 final class ThemePreferenceStore: ObservableObject {
     @Published var theme: AppTheme {
-        didSet { persistTheme() }
+        didSet { storedTheme.save(theme) }
     }
     @Published var appearance: AppAppearance {
-        didSet { persistAppearance() }
+        didSet { storedAppearance.save(appearance) }
     }
 
-    private static let themeKey = "appTheme"
-    private static let appearanceKey = "appAppearance"
+    private let storedTheme: StoredPreference<AppTheme>
+    private let storedAppearance: StoredPreference<AppAppearance>
 
-    init() {
-        if let raw = UserDefaults.standard.string(forKey: Self.themeKey), let theme = AppTheme(rawValue: raw) {
-            self.theme = theme
-        } else {
-            self.theme = .none
-        }
-
-        if let raw = UserDefaults.standard.string(forKey: Self.appearanceKey), let appearance = AppAppearance(rawValue: raw) {
-            self.appearance = appearance
-        } else {
-            self.appearance = .system
-        }
-    }
-
-    private func persistTheme() {
-        UserDefaults.standard.set(theme.rawValue, forKey: Self.themeKey)
-    }
-
-    private func persistAppearance() {
-        UserDefaults.standard.set(appearance.rawValue, forKey: Self.appearanceKey)
+    init(defaults: UserDefaults = .standard) {
+        storedTheme = .rawValue("appTheme", in: defaults)
+        storedAppearance = .rawValue("appAppearance", in: defaults)
+        theme = storedTheme.load() ?? .none
+        appearance = storedAppearance.load() ?? .system
     }
 }

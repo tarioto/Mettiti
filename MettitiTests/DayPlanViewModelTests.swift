@@ -8,12 +8,12 @@ struct DayPlanViewModelTests {
     @Test func pullToRefreshAfterLocationFailureLoadsPlanOnceLocationArrives() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
-            providerPreference: WeatherProviderPreferenceStore(),
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             publishSnapshot: { _ in }
         )
@@ -35,13 +35,13 @@ struct DayPlanViewModelTests {
     @Test func refreshInCurrentLocationAfterCustomCityDoesNotReloadThatCity() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
-            providerPreference: WeatherProviderPreferenceStore(),
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             publishSnapshot: { snapshots.append($0) }
         )
@@ -65,12 +65,12 @@ struct DayPlanViewModelTests {
     @Test func refreshInCurrentLocationReloadsLastGPSFixWithoutNewLocationRequest() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
-            providerPreference: WeatherProviderPreferenceStore(),
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             publishSnapshot: { _ in }
         )
@@ -90,13 +90,13 @@ struct DayPlanViewModelTests {
     @Test func refreshAfterReturningToCurrentLocationRequestsNewFixInsteadOfReloadingOldOne() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .currentLocation
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
-            providerPreference: WeatherProviderPreferenceStore(),
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             publishSnapshot: { snapshots.append($0) }
         )
@@ -121,12 +121,12 @@ struct DayPlanViewModelTests {
 
     @Test func refreshForCustomCityReloadsThatCity() async throws {
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
-            providerPreference: WeatherProviderPreferenceStore(),
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             publishSnapshot: { _ in }
         )
@@ -142,13 +142,13 @@ struct DayPlanViewModelTests {
 
     @Test func slowLoadForPreviousCityDoesNotOverwriteNewerCity() async throws {
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
-            providerPreference: WeatherProviderPreferenceStore(),
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             publishSnapshot: { snapshots.append($0) }
         )
@@ -171,12 +171,12 @@ struct DayPlanViewModelTests {
 
     @Test func supersededLoadThatFailsDoesNotReplaceNewerPlan() async throws {
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
-            providerPreference: WeatherProviderPreferenceStore(),
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             publishSnapshot: { _ in }
         )
@@ -198,12 +198,12 @@ struct DayPlanViewModelTests {
 
     @Test func pullToRefreshFinishesOnlyWhenTheRefreshedLoadFinishes() async throws {
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
-            providerPreference: WeatherProviderPreferenceStore(),
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             publishSnapshot: { _ in }
         )
@@ -321,13 +321,13 @@ struct DayPlanViewModelTests {
 
     @Test func lateRecommendationFromSupersededLoadDoesNotOverwriteNewerCity() async throws {
         let fetcher = GatedRecommendationFetcher()
-        let locationPreference = LocationPreferenceStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
-            providerPreference: WeatherProviderPreferenceStore(),
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             publishSnapshot: { snapshots.append($0) }
         )
@@ -352,12 +352,12 @@ struct DayPlanViewModelTests {
     @Test func retryCancelledBySwitchingToCurrentLocationLeavesPlanIdleSoNextGPSFixLoads() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher(recommendation: .failure(FakeFetchError()))
-        let locationPreference = LocationPreferenceStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
-            providerPreference: WeatherProviderPreferenceStore(),
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             publishSnapshot: { _ in }
         )
@@ -378,13 +378,13 @@ struct DayPlanViewModelTests {
 
     @Test func retrySupersededByLoadForAnotherCityNeverWritesStateOrPublishes() async throws {
         let fetcher = GatedRecommendationFetcher()
-        let locationPreference = LocationPreferenceStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
-            providerPreference: WeatherProviderPreferenceStore(),
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             publishSnapshot: { snapshots.append($0) }
         )
@@ -410,18 +410,41 @@ struct DayPlanViewModelTests {
         #expect(snapshots.map(\.weather.highTemperatureF) == [10, 20])
         #expect(snapshots.map(\.recommendation?.summary) == [nil, "City B"])
     }
+
+    @Test func reselectingTheSameCityKeepsThePlanWithoutRefetching() async throws {
+        let location = FakeLocationProvider()
+        let fetcher = FakeDayPlanFetcher()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            publishSnapshot: { _ in }
+        )
+
+        viewModel.start()
+        try await waitUntil { viewModel.state.isLoaded }
+
+        locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
+
+        #expect(viewModel.state.isLoaded)
+        let requested = await fetcher.requestedCoordinates
+        #expect(requested.count == 1)
+    }
 }
 
 // MARK: - Helpers
 
 @MainActor
 private func makeCustomCityViewModel(fetcher: DayPlanFetching, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
-    let locationPreference = LocationPreferenceStore()
+    let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
     locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
     return DayPlanViewModel(
         locationManager: FakeLocationProvider(),
         locationPreference: locationPreference,
-        providerPreference: WeatherProviderPreferenceStore(),
+        providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
         fetcher: fetcher,
         publishSnapshot: publishSnapshot
     )

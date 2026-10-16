@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		06D9F8D1038CD45A790232C3 /* WidgetPlanTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852D5E1ACBDA922E732AC39F /* WidgetPlanTimeline.swift */; };
 		09886DBF4E055857849B1101 /* PlanTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF25927888A9142B7C9EB0B /* PlanTimelineProvider.swift */; };
+		0AA3A969FAEACEF88C385E1E /* StoredPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A8B88813468D2AEC54765D /* StoredPreference.swift */; };
 		0ECC658EBA52F5E2419F72D5 /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC80D2E51439534F4F024CB1 /* WeatherService.swift */; };
 		0F822D916C91828ED8587D1D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4258A411E1AD84FABBC377ED /* Assets.xcassets */; };
 		180306CA19951BB86DA6649C /* AppIcon-Aurora.icon in Resources */ = {isa = PBXBuildFile; fileRef = EB1216AABBD42C547BE4D9C2 /* AppIcon-Aurora.icon */; };
@@ -35,6 +36,7 @@
 		6EAF5C81DE5F1C0BCA6A83EF /* RecommendedItemListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F24F553D93776EE20644077 /* RecommendedItemListTests.swift */; };
 		7202F98153E8C76EF5BDE190 /* TemperatureUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A79BEE46D3A9A63D63C73B /* TemperatureUnit.swift */; };
 		78F692245C9F0A44CA2CF188 /* AppIcon-Sunset.icon in Resources */ = {isa = PBXBuildFile; fileRef = CA92278BFD00779BF33A3538 /* AppIcon-Sunset.icon */; };
+		7E8C0765B97E916B567E5F72 /* PreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B36B9A8F2969786148CEC84 /* PreferenceStoreTests.swift */; };
 		853AA46C5BE5F1C704DBFB25 /* DayPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75914F126959B2AAE4ABEDF2 /* DayPlanViewModel.swift */; };
 		8822F19E4CA5B57699A2DC69 /* EmojiWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3370B4271C590694D37B1BEC /* EmojiWidget.swift */; };
 		8A30EB00F9A949266296014D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1169A0DDECF191A9E6DAD135 /* ContentView.swift */; };
@@ -54,6 +56,7 @@
 		C2944FCCB6FEB703D8D1B51F /* WeatherAttributionLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B550D55202482A729D01EB75 /* WeatherAttributionLabel.swift */; };
 		C29C4C40D3A04F017AEAE262 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF02175CFC638146DBFB8B80 /* AppTheme.swift */; };
 		C75789BC4B49B75887460BF0 /* OutfitRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC3B818C88DB31994FCBDC2 /* OutfitRecommendation.swift */; };
+		C94912957A59AB87AFC791A3 /* StoredPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A8B88813468D2AEC54765D /* StoredPreference.swift */; };
 		CDBAE51DE89D9B58AFDE2763 /* PlanSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */; };
 		D091C4CD571283FA174BF765 /* DescriptionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F7F9AB25CA3B39F9F5BD6C /* DescriptionWidget.swift */; };
 		D64B351AD06FDEE568DC1295 /* TemperaturePreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74AF60E97BAE1AD91452EF22 /* TemperaturePreferenceStoreTests.swift */; };
@@ -125,6 +128,7 @@
 		3370B4271C590694D37B1BEC /* EmojiWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiWidget.swift; sourceTree = "<group>"; };
 		37E231C8D3808FCBB15976C9 /* CombinedWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombinedWidget.swift; sourceTree = "<group>"; };
 		382A7CDF9958D5AE20A882C9 /* WeatherProviderPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherProviderPreferenceStore.swift; sourceTree = "<group>"; };
+		3B36B9A8F2969786148CEC84 /* PreferenceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferenceStoreTests.swift; sourceTree = "<group>"; };
 		409CA5998A0FD530AFD3E822 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		40DE379AB97AB9FDA3A80A43 /* TemperaturePreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperaturePreferenceStore.swift; sourceTree = "<group>"; };
 		41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanViewModelTests.swift; sourceTree = "<group>"; };
@@ -152,6 +156,7 @@
 		9E29684554562655E6B0531E /* MettitiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MettitiApp.swift; sourceTree = "<group>"; };
 		A1D53059B3E838014506476E /* WeatherAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAttributionView.swift; sourceTree = "<group>"; };
 		A49C154E60C20C8E675F55A6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A9A8B88813468D2AEC54765D /* StoredPreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredPreference.swift; sourceTree = "<group>"; };
 		B0FE0EBDCD6A71467260FE02 /* LocationPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPreferenceStore.swift; sourceTree = "<group>"; };
 		B3BC0BA00374A97BCBB85183 /* AppIcon-Ocean.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Ocean.icon"; sourceTree = "<group>"; };
 		B46F8D422DBEF88B22C30973 /* AppIcon-Dev.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Dev.icon"; sourceTree = "<group>"; };
@@ -215,6 +220,7 @@
 				41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */,
 				58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */,
 				08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */,
+				3B36B9A8F2969786148CEC84 /* PreferenceStoreTests.swift */,
 				5F24F553D93776EE20644077 /* RecommendedItemListTests.swift */,
 				74AF60E97BAE1AD91452EF22 /* TemperaturePreferenceStoreTests.swift */,
 				463C9BDC2137A1A038617881 /* TestSupport.swift */,
@@ -333,6 +339,7 @@
 				5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */,
 				2FC3B818C88DB31994FCBDC2 /* OutfitRecommendation.swift */,
 				9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */,
+				A9A8B88813468D2AEC54765D /* StoredPreference.swift */,
 				F5A79BEE46D3A9A63D63C73B /* TemperatureUnit.swift */,
 				6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */,
 				852D5E1ACBDA922E732AC39F /* WidgetPlanTimeline.swift */,
@@ -470,6 +477,7 @@
 				1C1274F0E23B931CB16553AA /* DayPlanViewModelTests.swift in Sources */,
 				26F4E4AFBD0C174C2C5B9B06 /* OutfitAdvisorPromptTests.swift in Sources */,
 				CDBAE51DE89D9B58AFDE2763 /* PlanSnapshotTests.swift in Sources */,
+				7E8C0765B97E916B567E5F72 /* PreferenceStoreTests.swift in Sources */,
 				6EAF5C81DE5F1C0BCA6A83EF /* RecommendedItemListTests.swift in Sources */,
 				D64B351AD06FDEE568DC1295 /* TemperaturePreferenceStoreTests.swift in Sources */,
 				694C9D37714DDF5BEDD8BE26 /* TestSupport.swift in Sources */,
@@ -492,6 +500,7 @@
 				C75789BC4B49B75887460BF0 /* OutfitRecommendation.swift in Sources */,
 				3CAA5D287DC2CED186446B80 /* PlanSnapshot.swift in Sources */,
 				09886DBF4E055857849B1101 /* PlanTimelineProvider.swift in Sources */,
+				0AA3A969FAEACEF88C385E1E /* StoredPreference.swift in Sources */,
 				241B9B9BEA697E1BD2B247F6 /* TemperatureUnit.swift in Sources */,
 				C2944FCCB6FEB703D8D1B51F /* WeatherAttributionLabel.swift in Sources */,
 				DADBC2B24DB39095813FD5D6 /* WeatherOnlyPlanView.swift in Sources */,
@@ -530,6 +539,7 @@
 				F42D537596E9F08258B9763F /* RecommendationState.swift in Sources */,
 				FD5D27442A7FD42FAA1BB493 /* SettingsView.swift in Sources */,
 				F4D8C5FB63D61CD52E44BE77 /* SkeletonLoadingView.swift in Sources */,
+				C94912957A59AB87AFC791A3 /* StoredPreference.swift in Sources */,
 				5B796F5B3DD68C30DE055DA3 /* TemperaturePreferenceStore.swift in Sources */,
 				7202F98153E8C76EF5BDE190 /* TemperatureUnit.swift in Sources */,
 				AF8C4F88C4648F53F7C3847B /* ThemePreferenceStore.swift in Sources */,

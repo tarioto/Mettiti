@@ -22,3 +22,8 @@ extension PlanSnapshot {
         PlanSnapshot(weather: .placeholder, recommendation: nil, generatedAt: date, provider: .apple)
     }
 }
+
+/// A throwaway defaults suite so preference tests never touch the app's real settings.
+func isolatedDefaults() -> UserDefaults {
+    UserDefaults(suiteName: "MettitiTests.\(UUID().uuidString)")!
+}

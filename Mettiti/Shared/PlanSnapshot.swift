@@ -29,7 +29,6 @@ enum SharedStore {
     static let appGroupID = Bundle.main.object(forInfoDictionaryKey: "AppGroupID") as? String
         ?? "group.com.timarioto.Mettiti"
     private static let snapshotKey = "latestPlanSnapshot"
-    private static let temperatureUnitKey = "temperatureUnit"
 
     static func save(_ snapshot: PlanSnapshot) {
         guard let defaults = UserDefaults(suiteName: appGroupID) else { return }
@@ -44,16 +43,14 @@ enum SharedStore {
     }
 
     static func saveTemperatureUnit(_ unit: TemperatureUnit) {
-        guard let defaults = UserDefaults(suiteName: appGroupID) else { return }
-        defaults.set(unit.rawValue, forKey: temperatureUnitKey)
+        storedTemperatureUnit?.save(unit)
     }
 
     static func loadTemperatureUnit() -> TemperatureUnit {
-        guard let defaults = UserDefaults(suiteName: appGroupID),
-              let raw = defaults.string(forKey: temperatureUnitKey),
-              let unit = TemperatureUnit(rawValue: raw) else {
-            return .system
-        }
-        return unit
+        storedTemperatureUnit?.load() ?? .system
+    }
+
+    private static var storedTemperatureUnit: StoredPreference<TemperatureUnit>? {
+        UserDefaults(suiteName: appGroupID).map { .rawValue("temperatureUnit", in: $0) }
     }
 }

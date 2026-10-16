@@ -8,22 +8,16 @@ enum LocationSelection: Codable, Equatable {
 @MainActor
 final class LocationPreferenceStore: ObservableObject {
     @Published var selection: LocationSelection {
-        didSet { persist() }
-    }
-
-    private static let key = "locationSelection"
-
-    init() {
-        if let data = UserDefaults.standard.data(forKey: Self.key),
-           let decoded = try? JSONDecoder().decode(LocationSelection.self, from: data) {
-            selection = decoded
-        } else {
-            selection = .currentLocation
+        didSet {
+            guard selection != oldValue else { return }
+            storedSelection.save(selection)
         }
     }
 
-    private func persist() {
-        guard let data = try? JSONEncoder().encode(selection) else { return }
-        UserDefaults.standard.set(data, forKey: Self.key)
+    private let storedSelection: StoredPreference<LocationSelection>
+
+    init(defaults: UserDefaults = .standard) {
+        storedSelection = .json("locationSelection", in: defaults)
+        selection = storedSelection.load() ?? .currentLocation
     }
 }
