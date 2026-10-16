@@ -67,7 +67,6 @@ targets:
     deploymentTarget: "26.0"
     sources:
       - path: MettitiWidgets
-      - path: Mettiti/Models
       - path: Mettiti/Shared
     settings:
       base:
