@@ -25,7 +25,9 @@ extension PlanSnapshot {
 }
 
 enum SharedStore {
-    static let appGroupID = "group.com.timarioto.Mettiti"
+    /// Read from Info.plist because Debug builds use a separate app group (see project.yml).
+    static let appGroupID = Bundle.main.object(forInfoDictionaryKey: "AppGroupID") as? String
+        ?? "group.com.timarioto.Mettiti"
     private static let snapshotKey = "latestPlanSnapshot"
     private static let temperatureUnitKey = "temperatureUnit"
 
