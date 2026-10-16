@@ -25,7 +25,7 @@ extension PlanSnapshot {
 }
 
 enum SharedStore {
-    static let appGroupID = "group.com.timarioto.WearToday"
+    static let appGroupID = "group.com.timarioto.Mettiti"
     private static let snapshotKey = "latestPlanSnapshot"
     private static let temperatureUnitKey = "temperatureUnit"
 

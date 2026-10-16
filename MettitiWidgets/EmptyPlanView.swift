@@ -7,7 +7,7 @@ struct EmptyPlanView: View {
             Image(systemName: "tshirt")
                 .font(.title2)
                 .foregroundStyle(.secondary)
-            Text("Open WearToday")
+            Text("Open Mettiti")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

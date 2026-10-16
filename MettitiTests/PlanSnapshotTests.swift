@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import WearToday
+@testable import Mettiti
 
 struct PlanSnapshotTests {
     /// A snapshot as saved by earlier app versions, which always had a recommendation.

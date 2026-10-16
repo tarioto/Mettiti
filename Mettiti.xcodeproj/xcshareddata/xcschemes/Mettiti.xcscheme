@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5FFE68FE8D8DD15F975B5B9A"
-               BuildableName = "WearToday.app"
-               BlueprintName = "WearToday"
-               ReferencedContainer = "container:WearToday.xcodeproj">
+               BlueprintIdentifier = "5B487DCE5399ED49C5311B06"
+               BuildableName = "Mettiti.app"
+               BlueprintName = "Mettiti"
+               ReferencedContainer = "container:Mettiti.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -32,10 +32,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5FFE68FE8D8DD15F975B5B9A"
-            BuildableName = "WearToday.app"
-            BlueprintName = "WearToday"
-            ReferencedContainer = "container:WearToday.xcodeproj">
+            BlueprintIdentifier = "5B487DCE5399ED49C5311B06"
+            BuildableName = "Mettiti.app"
+            BlueprintName = "Mettiti"
+            ReferencedContainer = "container:Mettiti.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -44,10 +44,10 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "CA8A6DE79796A831E49D50CC"
-               BuildableName = "WearTodayTests.xctest"
-               BlueprintName = "WearTodayTests"
-               ReferencedContainer = "container:WearToday.xcodeproj">
+               BlueprintIdentifier = "524B237FD3956E6FC0763C7E"
+               BuildableName = "MettitiTests.xctest"
+               BlueprintName = "MettitiTests"
+               ReferencedContainer = "container:Mettiti.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -68,10 +68,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5FFE68FE8D8DD15F975B5B9A"
-            BuildableName = "WearToday.app"
-            BlueprintName = "WearToday"
-            ReferencedContainer = "container:WearToday.xcodeproj">
+            BlueprintIdentifier = "5B487DCE5399ED49C5311B06"
+            BuildableName = "Mettiti.app"
+            BlueprintName = "Mettiti"
+            ReferencedContainer = "container:Mettiti.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -87,10 +87,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5FFE68FE8D8DD15F975B5B9A"
-            BuildableName = "WearToday.app"
-            BlueprintName = "WearToday"
-            ReferencedContainer = "container:WearToday.xcodeproj">
+            BlueprintIdentifier = "5B487DCE5399ED49C5311B06"
+            BuildableName = "Mettiti.app"
+            BlueprintName = "Mettiti"
+            ReferencedContainer = "container:Mettiti.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>

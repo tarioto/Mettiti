@@ -1,5 +1,5 @@
 import Testing
-@testable import WearToday
+@testable import Mettiti
 
 struct RecommendedItemListTests {
     private func recommendation(_ names: [String]) -> OutfitRecommendation {

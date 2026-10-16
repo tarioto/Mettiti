@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import WearToday
+@testable import Mettiti
 
 struct WeatherServiceTests {
     @Test func dailyDateIsMidnightOfTheForecastDayInAFarAheadTimeZone() throws {
