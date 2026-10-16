@@ -1,7 +1,7 @@
 import Combine
 import CoreLocation
 import Testing
-@testable import WearToday
+@testable import Mettiti
 
 @MainActor
 struct DayPlanViewModelTests {

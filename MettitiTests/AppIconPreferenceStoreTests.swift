@@ -1,5 +1,5 @@
 import Testing
-@testable import WearToday
+@testable import Mettiti
 
 @MainActor
 struct AppIconPreferenceStoreTests {

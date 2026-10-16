@@ -24,8 +24,8 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild build \
-            -project WearToday.xcodeproj \
-            -scheme WearToday \
+            -project Mettiti.xcodeproj \
+            -scheme Mettiti \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \

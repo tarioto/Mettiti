@@ -2,7 +2,7 @@ import WidgetKit
 import SwiftUI
 
 @main
-struct WearTodayWidgetsBundle: WidgetBundle {
+struct MettitiWidgetsBundle: WidgetBundle {
     var body: some Widget {
         EmojiWidget()
         DescriptionWidget()

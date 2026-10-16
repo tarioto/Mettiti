@@ -1,7 +1,7 @@
 import CoreLocation
 import Foundation
 import Testing
-@testable import WearToday
+@testable import Mettiti
 
 @MainActor
 struct BackgroundPlanRefreshTests {

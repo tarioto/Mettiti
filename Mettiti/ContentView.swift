@@ -25,7 +25,7 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("WearToday")
+                Text("Mettiti")
                     .font(.largeTitle.bold())
                     .shadow(color: .black.opacity(themePreference.theme == .none ? 0 : 0.25), radius: 4, y: 1)
                     .environment(\.colorScheme, themePreference.theme.overlayColorScheme ?? colorScheme)

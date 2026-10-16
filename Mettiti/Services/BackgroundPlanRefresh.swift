@@ -7,9 +7,9 @@ import OSLog
 @MainActor
 enum BackgroundPlanRefresh {
     /// Must match `BGTaskSchedulerPermittedIdentifiers` in project.yml.
-    static let taskIdentifier = "com.timarioto.WearToday.planRefresh"
+    static let taskIdentifier = "com.timarioto.Mettiti.planRefresh"
 
-    private static let logger = Logger(subsystem: "com.timarioto.WearToday", category: "BackgroundPlanRefresh")
+    private static let logger = Logger(subsystem: "com.timarioto.Mettiti", category: "BackgroundPlanRefresh")
 
     /// Runs one background refresh, then asks for the next one.
     static func run() async {

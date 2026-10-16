@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct WearTodayApp: App {
+struct MettitiApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var appIconPreference = AppIconPreferenceStore()
 

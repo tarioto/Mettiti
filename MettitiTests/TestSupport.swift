@@ -1,5 +1,5 @@
 import Foundation
-@testable import WearToday
+@testable import Mettiti
 
 let pacific = TimeZone(identifier: "America/Los_Angeles")!
 

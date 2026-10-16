@@ -1,4 +1,4 @@
-# WearToday
+# Mettiti
 
 An iOS app that checks today's weather and tells you what to wear and what to bring — sunglasses, an umbrella, a heavier jacket — using Apple's on-device language model.
 
@@ -24,7 +24,7 @@ An iOS app that checks today's weather and tells you what to wear and what to br
 ## Getting started
 
 ```sh
-open WearToday.xcodeproj
+open Mettiti.xcodeproj
 ```
 
 The Xcode project is generated from `project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen). If you change `project.yml` or add files, regenerate it:
@@ -41,7 +41,7 @@ Signing is configured for the original author's team. To run on your own device,
 - `DEVELOPMENT_TEAM` — your team ID
 - `bundleIdPrefix` and each `PRODUCT_BUNDLE_IDENTIFIER`
 - `PROVISIONING_PROFILE_SPECIFIER` for both targets (or switch `CODE_SIGN_STYLE` to `Automatic` and remove them)
-- The App Group `group.com.timarioto.WearToday` in both `.entitlements` files — the app and widget extension share forecast data through it
+- The App Group `group.com.timarioto.Mettiti` in both `.entitlements` files — the app and widget extension share forecast data through it
 
 ### Secret scanning
 
@@ -55,12 +55,12 @@ git config core.hooksPath .githooks
 ## Project structure
 
 ```
-WearToday/
+Mettiti/
   Models/        Weather and recommendation models (shared with widgets)
   Services/      Open-Meteo clients, location, OutfitAdvisor, preference stores
   Shared/        Types shared between the app and widget extension
   Views/         SwiftUI screens and components
-WearTodayWidgets/  WidgetKit extension (emoji, summary, combined widgets)
+MettitiWidgets/  WidgetKit extension (emoji, summary, combined widgets)
 project.yml        XcodeGen spec
 ```
 
