@@ -46,6 +46,7 @@
 		9E08C22ABFCD699A8D0DEC0A /* DayPlanFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */; };
 		A4C2474336FE84EE971C7385 /* DailyWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17648820A03F760374204482 /* DailyWeather.swift */; };
 		AF8C4F88C4648F53F7C3847B /* ThemePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E787563EF8DF959D3C92ED1C /* ThemePreferenceStore.swift */; };
+		B5E7C6527EE9D646B616FEB7 /* HourlyForecast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595A8BCD6AF67733B1CFCCFA /* HourlyForecast.swift */; };
 		B6BD349BDFFFE31F5A8DE84E /* AppIcon-Midnight.icon in Resources */ = {isa = PBXBuildFile; fileRef = FD224A43A8B46F4476BE1E4D /* AppIcon-Midnight.icon */; };
 		BCFA1A4857E5A812AC3CEB9D /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABAA5E38B3ED44EB67EC5BD /* LocationManager.swift */; };
 		BD1A872DAA5D5E882DEE7525 /* MettitiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E29684554562655E6B0531E /* MettitiApp.swift */; };
@@ -67,6 +68,7 @@
 		F1CDAF56F215F17FCCA4B743 /* EmptyPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26083B123692217C0408627C /* EmptyPlanView.swift */; };
 		F24DB7EA6A74E1042EB31FB2 /* OutfitRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC3B818C88DB31994FCBDC2 /* OutfitRecommendation.swift */; };
 		F289267E1C6ED89D4E7A4CD8 /* PlanSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */; };
+		F42D537596E9F08258B9763F /* RecommendationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E2F427185CEFE591E18329 /* RecommendationState.swift */; };
 		F4D8C5FB63D61CD52E44BE77 /* SkeletonLoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A50E6BD45FC9B22C17681F /* SkeletonLoadingView.swift */; };
 		F88E043A4EBCB5898A727211 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = D8999A866173F38C24ADDB7E /* AppIcon.icon */; };
 		FCDCE6B415820D404E7D860B /* CardPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F18E599EE20967D179339D /* CardPreferenceStore.swift */; };
@@ -132,6 +134,7 @@
 		547C0A75E924593B5A7D7C23 /* OutfitAdvisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitAdvisor.swift; sourceTree = "<group>"; };
 		575110F1EA9D7D74E3B5734A /* MettitiWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MettitiWidgetsBundle.swift; sourceTree = "<group>"; };
 		58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitAdvisorPromptTests.swift; sourceTree = "<group>"; };
+		595A8BCD6AF67733B1CFCCFA /* HourlyForecast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyForecast.swift; sourceTree = "<group>"; };
 		5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayedItem.swift; sourceTree = "<group>"; };
 		5E0AC7C044DFAAB5CB2472A7 /* BackgroundPlanRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPlanRefresher.swift; sourceTree = "<group>"; };
 		5F24F553D93776EE20644077 /* RecommendedItemListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendedItemListTests.swift; sourceTree = "<group>"; };
@@ -156,6 +159,7 @@
 		BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanFetcher.swift; sourceTree = "<group>"; };
 		BF56FB0D8716881DD6B86696 /* HourlyForecastService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyForecastService.swift; sourceTree = "<group>"; };
 		C4DE16260E778FDBF15A4462 /* Mettiti.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Mettiti.entitlements; sourceTree = "<group>"; };
+		C8E2F427185CEFE591E18329 /* RecommendationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationState.swift; sourceTree = "<group>"; };
 		CA92278BFD00779BF33A3538 /* AppIcon-Sunset.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Sunset.icon"; sourceTree = "<group>"; };
 		CC80D2E51439534F4F024CB1 /* WeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherService.swift; sourceTree = "<group>"; };
 		D8999A866173F38C24ADDB7E /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
@@ -265,6 +269,8 @@
 			children = (
 				DF02175CFC638146DBFB8B80 /* AppTheme.swift */,
 				2C985AD59754D0385058546B /* CardType.swift */,
+				595A8BCD6AF67733B1CFCCFA /* HourlyForecast.swift */,
+				C8E2F427185CEFE591E18329 /* RecommendationState.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -512,6 +518,7 @@
 				853AA46C5BE5F1C704DBFB25 /* DayPlanViewModel.swift in Sources */,
 				4972FE09034A30AB2EF51BCD /* DisplayedItem.swift in Sources */,
 				1F0ED80B7B844EF7919A72C4 /* ErrorStateView.swift in Sources */,
+				B5E7C6527EE9D646B616FEB7 /* HourlyForecast.swift in Sources */,
 				55700F0574090A169F5528ED /* HourlyForecastService.swift in Sources */,
 				FD12626622983A9D84C676EF /* HourlyTemperatureChart.swift in Sources */,
 				BCFA1A4857E5A812AC3CEB9D /* LocationManager.swift in Sources */,
@@ -520,6 +527,7 @@
 				FEE65AB6C3EDB3B1B4A63A04 /* OutfitAdvisor.swift in Sources */,
 				F24DB7EA6A74E1042EB31FB2 /* OutfitRecommendation.swift in Sources */,
 				F289267E1C6ED89D4E7A4CD8 /* PlanSnapshot.swift in Sources */,
+				F42D537596E9F08258B9763F /* RecommendationState.swift in Sources */,
 				FD5D27442A7FD42FAA1BB493 /* SettingsView.swift in Sources */,
 				F4D8C5FB63D61CD52E44BE77 /* SkeletonLoadingView.swift in Sources */,
 				5B796F5B3DD68C30DE055DA3 /* TemperaturePreferenceStore.swift in Sources */,
