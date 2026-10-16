@@ -590,7 +590,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Mettiti/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Mettiti;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(APP_DISPLAY_NAME)";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Mettiti uses your location to check today's weather and recommend what to wear and bring.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -601,7 +601,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.timarioto.Mettiti;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.timarioto.Mettiti$(BUNDLE_ID_SUFFIX)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -642,7 +642,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.timarioto.Mettiti.MettitiWidgets;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.timarioto.Mettiti$(BUNDLE_ID_SUFFIX).MettitiWidgets";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -663,7 +663,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.timarioto.Mettiti.MettitiWidgets;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.timarioto.Mettiti$(BUNDLE_ID_SUFFIX).MettitiWidgets";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -675,6 +675,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				APP_DISPLAY_NAME = Mettiti;
+				APP_GROUP_ID = "group.com.timarioto.Mettiti$(BUNDLE_ID_SUFFIX)";
+				BUNDLE_ID_SUFFIX = "";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -747,7 +750,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Mettiti/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Mettiti;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(APP_DISPLAY_NAME)";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Mettiti uses your location to check today's weather and recommend what to wear and bring.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -758,7 +761,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.timarioto.Mettiti;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.timarioto.Mettiti$(BUNDLE_ID_SUFFIX)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -769,6 +772,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				APP_DISPLAY_NAME = "Mettiti Dev";
+				APP_GROUP_ID = "group.com.timarioto.Mettiti$(BUNDLE_ID_SUFFIX)";
+				BUNDLE_ID_SUFFIX = .dev;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
