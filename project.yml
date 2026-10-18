@@ -31,6 +31,8 @@ targets:
     platform: iOS
     deploymentTarget: "26.0"
     sources:
+      # Includes Mettiti/PrivacyInfo.xcprivacy (bundled as a resource). Keep it outside
+      # Mettiti/Shared so the widget doesn't pick up a second manifest.
       - path: Mettiti
     dependencies:
       - target: MettitiWidgetsExtension
@@ -76,6 +78,8 @@ targets:
     platform: iOS
     deploymentTarget: "26.0"
     sources:
+      # Includes MettitiWidgets/PrivacyInfo.xcprivacy. It declares only the app group
+      # defaults the widget reads, so it must not move into Mettiti/Shared.
       - path: MettitiWidgets
       - path: Mettiti/Shared
     settings:
