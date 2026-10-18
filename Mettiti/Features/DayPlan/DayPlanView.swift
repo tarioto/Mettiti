@@ -43,7 +43,7 @@ struct DayPlanView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(weather.conditionDescription)
                         .font(.title2.bold())
-                    Text("H:\(temperaturePreference.unit.displayString(fromFahrenheit: weather.highTemperatureF)) L:\(temperaturePreference.unit.displayString(fromFahrenheit: weather.lowTemperatureF))  •  \(weather.precipitationProbability)% rain  •  UV \(Int(weather.uvIndex.rounded()))")
+                    Text("\(temperaturePreference.unit.highLow(highFahrenheit: weather.highTemperatureF, lowFahrenheit: weather.lowTemperatureF))  •  \((Double(weather.precipitationProbability) / 100).formatted(.percent)) rain  •  UV \(Int(weather.uvIndex.rounded()))", comment: "Weather card details: high/low, chance of rain, UV index")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -165,13 +165,13 @@ private struct RecommendationNoticeView: View {
     private var message: String {
         switch recommendation {
         case .unavailable(.deviceNotEligible):
-            return "Outfit suggestions need a device that supports Apple Intelligence."
+            return String(localized: "Outfit suggestions need a device that supports Apple Intelligence.")
         case .unavailable(.appleIntelligenceNotEnabled):
-            return "Turn on Apple Intelligence to get outfit suggestions."
+            return String(localized: "Turn on Apple Intelligence to get outfit suggestions.")
         case .unavailable(.modelNotReady):
-            return "Apple Intelligence is still getting ready. Try again soon."
+            return String(localized: "Apple Intelligence is still getting ready. Try again soon.")
         case .failed:
-            return "Couldn't come up with outfit suggestions this time."
+            return String(localized: "Couldn't come up with outfit suggestions this time.")
         case .loading, .ready:
             return ""
         }

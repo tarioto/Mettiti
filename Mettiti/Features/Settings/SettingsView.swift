@@ -148,7 +148,7 @@ struct SettingsView: View {
                     Section("App Icon") {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 18) {
-                                appIconOption(.default, label: "Default", thumbnailName: appIconPreference.buildIcon.thumbnailName)
+                                appIconOption(.default, label: String(localized: "Default"), thumbnailName: appIconPreference.buildIcon.thumbnailName)
                                 ForEach(ThemeIcon.allCases) { icon in
                                     appIconOption(.theme(icon), label: icon.label, thumbnailName: icon.thumbnailName)
                                 }
@@ -166,7 +166,7 @@ struct SettingsView: View {
                                 .frame(width: 24)
                             Text(config.type.title)
                             Spacer()
-                            Toggle("", isOn: $config.isVisible)
+                            Toggle(config.type.title, isOn: $config.isVisible)
                                 .labelsHidden()
                         }
                     }
@@ -254,7 +254,7 @@ struct SettingsView: View {
                 dismiss()
             } catch {
                 isSearching = false
-                errorMessage = "Couldn't find that location. Try a different search."
+                errorMessage = String(localized: "Couldn't find that location. Try a different search.")
             }
         }
     }

@@ -40,9 +40,8 @@ struct HourlyTemperatureChart: View {
     private func percentageLabel(for rawValue: Double) -> String {
         let range = displayedRange
         let height = range.upperBound - range.lowerBound
-        guard height > 0 else { return "0%" }
-        let fraction = (rawValue - range.lowerBound) / height
-        return "\(Int((fraction * 100).rounded()))%"
+        let fraction = height > 0 ? (rawValue - range.lowerBound) / height : 0
+        return fraction.formatted(.percent.precision(.fractionLength(0)))
     }
 
     /// Exactly 4 evenly-spaced hour labels, rendered manually below the chart.
@@ -100,7 +99,7 @@ struct HourlyTemperatureChart: View {
                         position: .top,
                         overflowResolution: .init(x: .fit(to: .chart), y: .disabled)
                     ) {
-                        Text(temperaturePreference.unit.displayString(fromFahrenheit: currentPoint.meanF))
+                        Text(temperaturePreference.unit.formatted(fahrenheit: currentPoint.meanF))
                             .font(.subheadline.bold())
                             .foregroundStyle(.white)
                             .padding(.horizontal, 10)

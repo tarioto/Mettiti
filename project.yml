@@ -16,6 +16,11 @@ settings:
     "CODE_SIGN_IDENTITY[sdk=iphonesimulator*]": Apple Development
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     STRING_CATALOG_GENERATE_SYMBOLS: YES
+    # Extract strings from Swift so the build keeps the String Catalogs in sync. Each target bundles
+    # its own Localizable.xcstrings; strings in Mettiti/Shared use the Shared table (Shared.xcstrings),
+    # which both the app and the widget extension pick up through their Mettiti/Shared sources.
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
     # Debug builds get their own bundle IDs and app group so an Xcode install sits
     # next to the TestFlight/App Store app instead of replacing it.
     BUNDLE_ID_SUFFIX: ""

@@ -31,6 +31,14 @@ struct OutfitAdvisorPromptTests {
         #expect(!prompt.contains("°C"))
     }
 
+    @Test func systemUnitPromptUsesTheLocalesUnitButStaysInPromptFormat() {
+        let prompt = OutfitAdvisor.prompt(for: weather, unit: .system, locale: Locale(identifier: "de_DE"))
+
+        // Germany uses Celsius, but the prompt is English text for the model, so no German "22 °C" spacing.
+        #expect(prompt.contains("High: 22°C"))
+        #expect(prompt.contains("Low: 14°C"))
+    }
+
     @Test func celsiusPromptRoundsLikeTheOnScreenForecast() {
         let freezing = DailyWeather(
             date: .now,
@@ -45,11 +53,12 @@ struct OutfitAdvisorPromptTests {
 
         let prompt = OutfitAdvisor.prompt(for: freezing, unit: .celsius)
 
-        // 33°F = 0.56°C -> 1, 0°F = -17.8°C -> -18 (matches TemperatureUnit.displayString)
+        // 33°F = 0.56°C -> 1, 0°F = -17.8°C -> -18 (matches TemperatureUnit.formatted)
+        let us = Locale(identifier: "en_US")
         #expect(prompt.contains("High: 1°C"))
         #expect(prompt.contains("Low: -18°C"))
-        #expect(TemperatureUnit.celsius.displayString(fromFahrenheit: 33) == "1°")
-        #expect(TemperatureUnit.celsius.displayString(fromFahrenheit: 0) == "-18°")
+        #expect(TemperatureUnit.celsius.formatted(fahrenheit: 33, locale: us) == "1°C")
+        #expect(TemperatureUnit.celsius.formatted(fahrenheit: 0, locale: us) == "-18°C")
     }
 
     @Test func instructionsTellTheModelNotToQuoteTemperatureNumbers() {

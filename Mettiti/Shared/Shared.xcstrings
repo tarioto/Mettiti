@@ -1,0 +1,77 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Celsius" : {
+
+    },
+    "Clear sky" : {
+
+    },
+    "Drizzle" : {
+
+    },
+    "Fahrenheit" : {
+
+    },
+    "Foggy" : {
+
+    },
+    "Freezing drizzle" : {
+
+    },
+    "Freezing rain" : {
+
+    },
+    "H:%@ L:%@" : {
+      "comment" : "Today's high and low temperatures, each already formatted with its unit",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "H:%1$@ L:%2$@"
+          }
+        }
+      }
+    },
+    "Mainly clear" : {
+
+    },
+    "Overcast" : {
+
+    },
+    "Partly cloudy" : {
+
+    },
+    "Rain" : {
+
+    },
+    "Rain showers" : {
+
+    },
+    "Snow" : {
+
+    },
+    "Snow grains" : {
+
+    },
+    "Snow showers" : {
+
+    },
+    "System" : {
+
+    },
+    "Thunderstorm" : {
+
+    },
+    "Thunderstorm with hail" : {
+
+    },
+    "Unknown conditions" : {
+
+    },
+    "Weather data by Open-Meteo.com" : {
+
+    }
+  },
+  "version" : "1.0"
+}

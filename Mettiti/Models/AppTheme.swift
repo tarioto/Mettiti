@@ -13,11 +13,11 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .none: return "Default"
-        case .sunset: return "Sunset"
-        case .ocean: return "Ocean"
-        case .aurora: return "Aurora"
-        case .midnight: return "Midnight"
+        case .none: return String(localized: "Default")
+        case .sunset: return String(localized: "Sunset")
+        case .ocean: return String(localized: "Ocean")
+        case .aurora: return String(localized: "Aurora")
+        case .midnight: return String(localized: "Midnight")
         }
     }
 
@@ -89,9 +89,9 @@ enum AppAppearance: String, Codable, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .system: return "System"
-        case .light: return "Light"
-        case .dark: return "Dark"
+        case .system: return String(localized: "System")
+        case .light: return String(localized: "Light")
+        case .dark: return String(localized: "Dark")
         }
     }
 

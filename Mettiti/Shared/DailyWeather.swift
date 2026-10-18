@@ -27,22 +27,22 @@ extension DailyWeather {
 enum WMOWeatherCode {
     static func description(for code: Int) -> String {
         switch code {
-        case 0: return "Clear sky"
-        case 1: return "Mainly clear"
-        case 2: return "Partly cloudy"
-        case 3: return "Overcast"
-        case 45, 48: return "Foggy"
-        case 51, 53, 55: return "Drizzle"
-        case 56, 57: return "Freezing drizzle"
-        case 61, 63, 65: return "Rain"
-        case 66, 67: return "Freezing rain"
-        case 71, 73, 75: return "Snow"
-        case 77: return "Snow grains"
-        case 80, 81, 82: return "Rain showers"
-        case 85, 86: return "Snow showers"
-        case 95: return "Thunderstorm"
-        case 96, 99: return "Thunderstorm with hail"
-        default: return "Unknown conditions"
+        case 0: return String(localized: "Clear sky", table: "Shared")
+        case 1: return String(localized: "Mainly clear", table: "Shared")
+        case 2: return String(localized: "Partly cloudy", table: "Shared")
+        case 3: return String(localized: "Overcast", table: "Shared")
+        case 45, 48: return String(localized: "Foggy", table: "Shared")
+        case 51, 53, 55: return String(localized: "Drizzle", table: "Shared")
+        case 56, 57: return String(localized: "Freezing drizzle", table: "Shared")
+        case 61, 63, 65: return String(localized: "Rain", table: "Shared")
+        case 66, 67: return String(localized: "Freezing rain", table: "Shared")
+        case 71, 73, 75: return String(localized: "Snow", table: "Shared")
+        case 77: return String(localized: "Snow grains", table: "Shared")
+        case 80, 81, 82: return String(localized: "Rain showers", table: "Shared")
+        case 85, 86: return String(localized: "Snow showers", table: "Shared")
+        case 95: return String(localized: "Thunderstorm", table: "Shared")
+        case 96, 99: return String(localized: "Thunderstorm with hail", table: "Shared")
+        default: return String(localized: "Unknown conditions", table: "Shared")
         }
     }
 

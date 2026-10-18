@@ -10,9 +10,9 @@ enum AppleWeatherServiceError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unavailable:
-            return "Couldn't reach Apple Weather. Check your connection, or switch to Open-Meteo in Settings."
+            return String(localized: "Couldn't reach Apple Weather. Check your connection, or switch to Open-Meteo in Settings.")
         case .missingForecast:
-            return "Apple Weather didn't return a forecast for today."
+            return String(localized: "Apple Weather didn't return a forecast for today.")
         }
     }
 }
