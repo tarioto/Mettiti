@@ -484,6 +484,78 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.loadedHigh == nil)
     }
 
+    @Test func todaysPlanForCurrentLocationIsReplacedOnceTheGPSFixArrives() async throws {
+        let location = FakeLocationProvider()
+        let fetcher = GatedDayPlanFetcher()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { .cached(high: 99, summary: "Cached outfit", location: .currentLocation) },
+            publishSnapshot: { snapshots.append($0) }
+        )
+
+        viewModel.start()
+        #expect(viewModel.state.loadedHigh == 99)
+
+        location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 47.6) }
+        #expect(viewModel.state.loadedHigh == 99)
+
+        await fetcher.complete(latitude: 47.6, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.state.loadedHigh == 10 }
+        #expect(snapshots.map(\.weather.highTemperatureF) == [10])
+    }
+
+    @Test func choosingAnotherCityAfterAFailedRefreshShowsItsWeatherBeforeTheOutfit() async throws {
+        let fetcher = GatedRecommendationFetcher(failingLatitudes: [10])
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = cityA
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { .cached(high: 99, summary: "Cached outfit", location: cityA) },
+            publishSnapshot: { _ in }
+        )
+
+        viewModel.start()
+        try await waitUntil { viewModel.state.isFailed }
+
+        locationPreference.selection = .custom(name: "City B", latitude: 20, longitude: 20)
+
+        try await waitUntil { viewModel.state.loadedHigh == 20 }
+        #expect(viewModel.state.isRecommendationLoading)
+    }
+
+    @Test func changingProviderDuringTheRefreshReplacesTheSavedPlanWithTheNewProvidersWeather() async throws {
+        let fetcher = GatedRecommendationFetcher()
+        let providerPreference = WeatherProviderPreferenceStore(defaults: isolatedDefaults())
+        providerPreference.provider = .apple
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = cityA
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: providerPreference,
+            fetcher: fetcher,
+            loadSnapshot: { .cached(high: 99, summary: "Cached outfit", location: cityA, provider: .apple) },
+            publishSnapshot: { _ in }
+        )
+
+        viewModel.start()
+        try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
+        #expect(viewModel.state.loadedHigh == 99)
+
+        providerPreference.provider = .openMeteo
+
+        try await waitUntil { viewModel.state.loadedHigh == 10 && viewModel.state.isRecommendationLoading }
+    }
 }
 
 // MARK: - Helpers
@@ -693,6 +765,11 @@ private actor GatedDayPlanFetcher: DayPlanFetching {
 /// completes it, newest first, so tests can observe the plan while suggestions are generating.
 private actor GatedRecommendationFetcher: DayPlanFetching {
     private var pending: [CheckedContinuation<OutfitRecommendation, Error>] = []
+    private let failingLatitudes: Set<Double>
+
+    init(failingLatitudes: Set<Double> = []) {
+        self.failingLatitudes = failingLatitudes
+    }
 
     var pendingRecommendationCount: Int { pending.count }
 
@@ -701,7 +778,8 @@ private actor GatedRecommendationFetcher: DayPlanFetching {
     }
 
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?) {
-        (.forecast(high: coordinate.latitude), nil)
+        if failingLatitudes.contains(coordinate.latitude) { throw FakeFetchError() }
+        return (.forecast(high: coordinate.latitude), nil)
     }
 
     func recommendationAvailability() async -> RecommendationAvailability {

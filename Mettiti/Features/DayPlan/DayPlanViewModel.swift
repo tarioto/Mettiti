@@ -24,8 +24,9 @@ final class DayPlanViewModel: ObservableObject {
     /// Last GPS fix; only Current Location refreshes reuse it, so custom-city loads never set it.
     /// Cleared on every selection change so returning to Current Location waits for a fresh fix.
     private var lastCoordinate: CLLocationCoordinate2D?
-    /// Today's saved plan, on screen while a fresh one loads in the background (#22). Nil otherwise.
-    private var cachedPlan: PlanSnapshot?
+    /// True while today's saved plan is on screen and a fresh one loads in the background (#22).
+    /// Cleared whenever that load finishes, fails or is replaced by another selection or provider.
+    private var isRevalidating = false
     /// The only load allowed to update `state`; starting another cancels it.
     private var loadTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
@@ -66,6 +67,8 @@ final class DayPlanViewModel: ObservableObject {
             .dropFirst()
             .sink { [weak self] _ in
                 guard let self, self.hasStarted else { return }
+                // The saved plan is for the old provider, so the new one loads in the open.
+                self.isRevalidating = false
                 Task { await self.refresh() }
             }
             .store(in: &cancellables)
@@ -81,11 +84,12 @@ final class DayPlanViewModel: ObservableObject {
     /// Shows the saved plan right away when it's from today for the same location and provider,
     /// so launch doesn't wait on the network and the on-device model.
     private func showCachedPlanIfCurrent() {
+        isRevalidating = false
         guard let snapshot = loadSnapshot(),
               snapshot.isFromToday(now: .now, calendar: .current),
               snapshot.location == locationPreference.selection,
               snapshot.provider == providerPreference.provider else { return }
-        cachedPlan = snapshot
+        isRevalidating = true
         let recommendation: RecommendationState = snapshot.recommendation.map { .ready($0) } ?? .loading
         state = .loaded(weather: snapshot.weather, hourly: snapshot.hourly, provider: providerPreference.provider, recommendation: recommendation)
     }
@@ -123,6 +127,7 @@ final class DayPlanViewModel: ObservableObject {
         switch selection {
         case .currentLocation:
             loadTask?.cancel()
+            loadTask = nil
             locationManager.requestLocation()
         case .custom(_, let latitude, let longitude):
             startLoad(for: CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
@@ -140,6 +145,7 @@ final class DayPlanViewModel: ObservableObject {
 
     private func applySelection(_ selection: LocationSelection) {
         hasStarted = true
+        isRevalidating = false
         state = .idle
         lastCoordinate = nil
         beginLoading(for: selection)
@@ -148,17 +154,23 @@ final class DayPlanViewModel: ObservableObject {
     private func handleGPSCoordinate(_ coordinate: CLLocationCoordinate2D) {
         guard case .currentLocation = locationPreference.selection else { return }
         lastCoordinate = coordinate
-        guard case .idle = state else { return }
+        // A saved plan on screen isn't .idle, but the first fix still has to start its refresh.
+        let revalidationAwaitsFix = isRevalidating && loadTask == nil
+        guard case .idle = state else {
+            if revalidationAwaitsFix { startLoad(for: coordinate) }
+            return
+        }
         startLoad(for: coordinate)
     }
 
     private func handleGPSError(_ message: String) {
         guard case .currentLocation = locationPreference.selection else { return }
+        isRevalidating = false
         state = .failed(message)
     }
 
     private func loadPlan(for coordinate: CLLocationCoordinate2D) async {
-        if cachedPlan == nil { state = .loadingWeather }
+        if !isRevalidating { state = .loadingWeather }
         // Read here (not in the provider sink, which fires before @Published updates).
         let provider = providerPreference.provider
         do {
@@ -167,6 +179,7 @@ final class DayPlanViewModel: ObservableObject {
             await loadRecommendation(weather: weather, hourly: hourly, provider: provider)
         } catch {
             guard !Task.isCancelled else { return }
+            isRevalidating = false
             state = .failed(error.localizedDescription)
         }
     }
@@ -176,7 +189,7 @@ final class DayPlanViewModel: ObservableObject {
         // A retry runs this directly as `loadTask`, so it needs its own guard (#10).
         guard !Task.isCancelled else { return }
         // While revalidating, the saved plan stays on screen until the fresh one is complete.
-        if cachedPlan == nil {
+        if !isRevalidating {
             state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .loading)
         }
         let recommendation: RecommendationState
@@ -190,7 +203,7 @@ final class DayPlanViewModel: ObservableObject {
             }
         }
         guard !Task.isCancelled else { return }
-        cachedPlan = nil
+        isRevalidating = false
         state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: recommendation)
         publishSnapshot(PlanSnapshot(weather: weather, recommendation: recommendation.outfit, generatedAt: .now, provider: provider, location: locationPreference.selection, hourly: hourly))
     }

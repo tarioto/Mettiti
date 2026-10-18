@@ -82,7 +82,7 @@ git config core.hooksPath .githooks
 
 ```
 Mettiti/
-  Models/        App-only models and UI config (forecast, recommendation state, themes, cards)
+  Models/        App-only models and UI config (recommendation state, themes, cards)
   Services/      Weather clients, location, OutfitAdvisor, DayPlanFetcher, background refresh
   Persistence/   Preference stores
   Features/
