@@ -18,9 +18,7 @@ enum WeatherServiceError: Error, LocalizedError {
 struct WeatherService {
     func fetchTodayForecast(for coordinate: CLLocationCoordinate2D) async throws -> DailyWeather {
         var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
-        components.queryItems = [
-            URLQueryItem(name: "latitude", value: String(coordinate.latitude)),
-            URLQueryItem(name: "longitude", value: String(coordinate.longitude)),
+        components.queryItems = coordinate.weatherAPIQueryItems + [
             URLQueryItem(name: "daily", value: "temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,windspeed_10m_max,weathercode"),
             URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
             URLQueryItem(name: "windspeed_unit", value: "mph"),

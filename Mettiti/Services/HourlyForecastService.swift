@@ -6,9 +6,7 @@ struct HourlyForecastService {
     /// to skip the extra precipitation request.
     func fetchHourlyForecast(for coordinate: CLLocationCoordinate2D, includePrecipitation: Bool = true) async throws -> HourlyForecast {
         var components = URLComponents(string: "https://ensemble-api.open-meteo.com/v1/ensemble")!
-        components.queryItems = [
-            URLQueryItem(name: "latitude", value: String(coordinate.latitude)),
-            URLQueryItem(name: "longitude", value: String(coordinate.longitude)),
+        components.queryItems = coordinate.weatherAPIQueryItems + [
             URLQueryItem(name: "hourly", value: "temperature_2m"),
             URLQueryItem(name: "models", value: "icon_seamless"),
             URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
@@ -83,9 +81,7 @@ struct HourlyForecastService {
 
     private func fetchPrecipitationProbabilities(for coordinate: CLLocationCoordinate2D) async throws -> [String: Int] {
         var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
-        components.queryItems = [
-            URLQueryItem(name: "latitude", value: String(coordinate.latitude)),
-            URLQueryItem(name: "longitude", value: String(coordinate.longitude)),
+        components.queryItems = coordinate.weatherAPIQueryItems + [
             URLQueryItem(name: "hourly", value: "precipitation_probability"),
             URLQueryItem(name: "timezone", value: "auto"),
             URLQueryItem(name: "forecast_days", value: "2")
