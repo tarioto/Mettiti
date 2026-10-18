@@ -1,5 +1,6 @@
 import Combine
 import CoreLocation
+import Synchronization
 import Testing
 @testable import Mettiti
 
@@ -682,6 +683,71 @@ struct DayPlanViewModelTests {
 
         try await waitUntil { viewModel.state.loadedHigh == 10 && viewModel.state.isRecommendationLoading }
     }
+
+    // MARK: Perceived latency (#23)
+
+    @Test func modelIsPrewarmedWhileWeatherIsStillLoading() async throws {
+        let fetcher = GatedDayPlanFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher)
+
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+
+        #expect(await fetcher.prewarmCount == 1)
+        #expect(viewModel.state.isLoadingWeather)
+    }
+
+    @Test func partialSuggestionShowsAsItStreamsAndOnlyTheFinishedOneIsSaved() async throws {
+        let fetcher = StreamingRecommendationFetcher()
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, publishSnapshot: { snapshots.append($0) })
+
+        viewModel.start()
+        try await waitUntil { viewModel.state.isRecommendationLoading }
+        fetcher.send(partial: OutfitRecommendation(summary: "Bring a", items: []))
+        try await waitUntil { viewModel.state.partialSummary == "Bring a" }
+        fetcher.send(partial: OutfitRecommendation(summary: "Bring a coat.", items: [RecommendedItem(emoji: "🧥", name: "Coat", reason: "")]))
+        try await waitUntil { viewModel.state.partialItemNames == ["Coat"] }
+        #expect(snapshots.isEmpty)
+
+        fetcher.finish(with: .success(OutfitRecommendation(summary: "Bring a coat.", items: [RecommendedItem(emoji: "🧥", name: "Coat", reason: "Cold")])))
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        #expect(viewModel.state.readySummary == "Bring a coat.")
+        #expect(snapshots.map(\.recommendation?.items.first?.reason) == ["Cold"])
+    }
+
+    @Test func savedPlanStaysOnScreenWhileTheFreshSuggestionStreams() async throws {
+        let fetcher = StreamingRecommendationFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
+
+        viewModel.start()
+        try await waitUntil { fetcher.isStreaming }
+        fetcher.send(partial: OutfitRecommendation(summary: "Half a", items: []))
+        // Give the partial time to reach the view model before checking it was ignored.
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(viewModel.state.readySummary == "Saved outfit")
+        #expect(viewModel.state.loadedHigh == 99)
+
+        fetcher.finish(with: .success(OutfitRecommendation(summary: "Fresh outfit", items: [])))
+        try await waitUntil { viewModel.state.readySummary == "Fresh outfit" }
+        #expect(viewModel.state.loadedHigh == 10)
+    }
+
+    @Test func streamThatFailsPartwayShowsTheFailureNotThePartialSuggestion() async throws {
+        let fetcher = StreamingRecommendationFetcher()
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, publishSnapshot: { snapshots.append($0) })
+
+        viewModel.start()
+        try await waitUntil { fetcher.isStreaming }
+        fetcher.send(partial: OutfitRecommendation(summary: "Bring a", items: []))
+        try await waitUntil { viewModel.state.partialSummary == "Bring a" }
+        fetcher.finish(with: .failure(FakeFetchError()))
+        try await waitUntil { viewModel.state.recommendationFailureMessage != nil }
+
+        #expect(snapshots.map { $0.recommendation == nil } == [true])
+    }
 }
 
 // MARK: - Helpers
@@ -754,6 +820,21 @@ private extension LoadState {
 
     var unavailableReason: RecommendationState.UnavailableReason? {
         if case .unavailable(let reason) = recommendationState { return reason }
+        return nil
+    }
+
+    var isLoadingWeather: Bool {
+        if case .loadingWeather = self { return true }
+        return false
+    }
+
+    var partialSummary: String? {
+        if case .generating(let partial) = recommendationState { return partial.summary }
+        return nil
+    }
+
+    var partialItemNames: [String]? {
+        if case .generating(let partial) = recommendationState { return partial.items.map(\.name) }
         return nil
     }
 
@@ -862,6 +943,13 @@ private actor FakeDayPlanFetcher: DayPlanFetching {
 /// Holds each weather request until the test completes it, so tests control completion order.
 private actor GatedDayPlanFetcher: DayPlanFetching {
     private var pending: [Double: CheckedContinuation<DailyWeather, Error>] = [:]
+    private(set) var prewarmCount = 0
+
+    nonisolated func prewarmRecommendation() {
+        Task { await recordPrewarm() }
+    }
+
+    private func recordPrewarm() { prewarmCount += 1 }
 
     func isWaiting(onLatitude latitude: Double) -> Bool {
         pending[latitude] != nil
@@ -916,5 +1004,59 @@ private actor GatedRecommendationFetcher: DayPlanFetching {
         try await withCheckedThrowingContinuation { continuation in
             pending.append(continuation)
         }
+    }
+}
+
+/// Returns weather right away (high = latitude), then streams whatever partial suggestions
+/// the test sends until the test finishes the stream.
+private final class StreamingRecommendationFetcher: DayPlanFetching {
+    private enum Event: Sendable {
+        case partial(OutfitRecommendation)
+        case finished(Result<OutfitRecommendation, Error>)
+    }
+
+    private let events: AsyncStream<Event>
+    private let continuation: AsyncStream<Event>.Continuation
+    private let streaming = Mutex(false)
+
+    init() {
+        (events, continuation) = AsyncStream.makeStream(of: Event.self)
+    }
+
+    /// Whether a recommendation is waiting on the stream, so sent partials will be seen.
+    var isStreaming: Bool { streaming.withLock { $0 } }
+
+    func send(partial: OutfitRecommendation) {
+        continuation.yield(.partial(partial))
+    }
+
+    func finish(with result: Result<OutfitRecommendation, Error>) {
+        continuation.yield(.finished(result))
+    }
+
+    func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?) {
+        (.forecast(high: coordinate.latitude), nil)
+    }
+
+    func recommendationAvailability() async -> RecommendationAvailability {
+        .available
+    }
+
+    func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
+        Issue.record("The app should stream suggestions instead")
+        return .placeholder
+    }
+
+    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+        streaming.withLock { $0 = true }
+        for await event in events {
+            switch event {
+            case .partial(let partial):
+                await onPartial(partial)
+            case .finished(let result):
+                return try result.get()
+            }
+        }
+        throw CancellationError()
     }
 }

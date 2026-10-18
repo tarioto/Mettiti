@@ -6,6 +6,18 @@ protocol DayPlanFetching: Sendable {
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?)
     func recommendationAvailability() async -> RecommendationAvailability
     func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation
+    /// Starts loading the on-device model so a recommendation requested soon after starts faster.
+    func prewarmRecommendation()
+    /// Like `recommendation(for:)`, but reports the suggestion so far as the model writes it.
+    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation
+}
+
+extension DayPlanFetching {
+    func prewarmRecommendation() {}
+
+    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+        try await recommendation(for: weather)
+    }
 }
 
 struct DayPlanFetcher: DayPlanFetching {
@@ -56,5 +68,13 @@ struct DayPlanFetcher: DayPlanFetching {
 
     func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
         try await outfitAdvisor.recommendation(for: weather)
+    }
+
+    func prewarmRecommendation() {
+        outfitAdvisor.prewarm()
+    }
+
+    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+        try await outfitAdvisor.recommendation(for: weather, onPartial: onPartial)
     }
 }

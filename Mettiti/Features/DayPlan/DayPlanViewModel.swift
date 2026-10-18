@@ -200,6 +200,8 @@ final class DayPlanViewModel: ObservableObject {
         if !isShowingSavedPlan { state = .loadingWeather }
         // Read here (not in the provider sink, which fires before @Published updates).
         let provider = providerPreference.provider
+        // Loads the model while the weather is in flight, so the suggestion starts sooner (#23).
+        fetcher.prewarmRecommendation()
         do {
             let (weather, hourly) = try await fetcher.fetchWeather(for: coordinate, from: provider)
             guard !Task.isCancelled else { return }
@@ -214,7 +216,8 @@ final class DayPlanViewModel: ObservableObject {
     private func loadRecommendation(weather: DailyWeather, hourly: HourlyForecast?, provider: WeatherProvider) async {
         // A retry runs this directly as `loadTask`, so it needs its own guard (#10).
         guard !Task.isCancelled else { return }
-        // The Saved Plan stays on screen until the fresh one is complete.
+        // The Saved Plan stays on screen until the fresh one is complete, so partial
+        // suggestions only stream in when there's no Saved Plan showing.
         if !isShowingSavedPlan {
             state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .loading)
         }
@@ -223,7 +226,10 @@ final class DayPlanViewModel: ObservableObject {
             recommendation = .unavailable(reason)
         } else {
             do {
-                recommendation = .ready(try await fetcher.recommendation(for: weather))
+                recommendation = .ready(try await fetcher.recommendation(for: weather) { [weak self] partial in
+                    guard let self, !Task.isCancelled, !self.isShowingSavedPlan else { return }
+                    self.state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .generating(partial))
+                })
             } catch {
                 recommendation = .failed(error.localizedDescription)
             }

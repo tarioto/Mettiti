@@ -3,6 +3,8 @@ import Foundation
 /// The outfit suggestion's progress for weather that has already loaded.
 enum RecommendationState {
     case loading
+    /// The suggestion so far while the model is still writing it; fields fill in as it streams.
+    case generating(OutfitRecommendation)
     case ready(OutfitRecommendation)
     case unavailable(UnavailableReason)
     case failed(String)

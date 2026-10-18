@@ -72,7 +72,12 @@ struct DayPlanView: View {
                 Text(outfit.summary)
                     .font(.body)
                     .foregroundStyle(.secondary)
-            case .loading:
+            case .generating(let partial) where !partial.summary.isEmpty:
+                Text(partial.summary)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            case .loading, .generating:
+                progressCaption(for: .plan)
                 Text(SkeletonLoadingView.recommendation.summary)
                     .font(.body)
                     .foregroundStyle(.secondary)
@@ -96,7 +101,10 @@ struct DayPlanView: View {
             switch recommendation {
             case .ready(let outfit):
                 itemList(outfit.items)
-            case .loading:
+            case .generating(let partial) where !partial.items.isEmpty:
+                itemList(partial.items)
+            case .loading, .generating:
+                progressCaption(for: .wearAndBring)
                 itemList(SkeletonLoadingView.recommendation.items)
                     .redacted(reason: .placeholder)
             case .unavailable, .failed:
@@ -116,11 +124,22 @@ struct DayPlanView: View {
         }
     }
 
+    /// Only the first visible suggestion card says the outfit is on its way, so it isn't repeated.
+    @ViewBuilder
+    private func progressCaption(for card: CardType) -> some View {
+        if card == firstSuggestionCard {
+            ProgressCaption("Putting together today's outfit…")
+        }
+    }
+
+    private var firstSuggestionCard: CardType? {
+        cardPreference.visibleOrderedTypes.first { $0 != .weather }
+    }
+
     /// The full explanation and action go in the first visible suggestion card; any later one
     /// just notes there are no suggestions, so the message and button aren't repeated.
     @ViewBuilder
     private func recommendationNotice(for card: CardType) -> some View {
-        let firstSuggestionCard = cardPreference.visibleOrderedTypes.first { $0 != .weather }
         if card == firstSuggestionCard {
             RecommendationNoticeView(recommendation: recommendation, onRetry: onRetryRecommendation)
         } else {
@@ -172,7 +191,7 @@ private struct RecommendationNoticeView: View {
             return String(localized: "Apple Intelligence is still getting ready. Try again soon.")
         case .failed:
             return String(localized: "Couldn't come up with outfit suggestions this time.")
-        case .loading, .ready:
+        case .loading, .generating, .ready:
             return ""
         }
     }
@@ -194,7 +213,7 @@ private struct RecommendationNoticeView: View {
                 Label("Try Again", systemImage: "arrow.clockwise")
             }
             .buttonStyle(.bordered)
-        case .unavailable(.deviceNotEligible), .loading, .ready:
+        case .unavailable(.deviceNotEligible), .loading, .generating, .ready:
             EmptyView()
         }
     }
@@ -218,6 +237,31 @@ private struct RecommendationNoticeView: View {
 
 #Preview("Suggestions loading") {
     DayPlanPreview(recommendation: .loading)
+}
+
+#Preview("Suggestions streaming") {
+    DayPlanPreview(recommendation: .generating(OutfitRecommendation(summary: "Expect mild temperatures with a chance", items: [OutfitRecommendation.placeholder.items[0]])))
+}
+
+/// What's loading right now, shown above the placeholder content it's filling in.
+struct ProgressCaption: View {
+    private let text: LocalizedStringKey
+
+    init(_ text: LocalizedStringKey) {
+        self.text = text
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .controlSize(.small)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+    }
 }
 
 private struct DayPlanPreview: View {
