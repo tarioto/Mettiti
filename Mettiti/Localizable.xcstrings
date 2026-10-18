@@ -39,6 +39,9 @@
     "Chance of rain at %@" : {
       "comment" : "VoiceOver label for an hour's rain bar in the hourly chart; the argument is the hour, e.g. 3 PM"
     },
+    "Checking today's weather…" : {
+
+    },
     "City name" : {
 
     },
@@ -115,6 +118,9 @@
 
     },
     "Outfit suggestions need a device that supports Apple Intelligence." : {
+
+    },
+    "Putting together today's outfit…" : {
 
     },
     "Rain" : {
