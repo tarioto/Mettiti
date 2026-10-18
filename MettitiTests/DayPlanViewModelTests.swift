@@ -446,21 +446,21 @@ struct DayPlanViewModelTests {
         #expect(requested.count == 1)
     }
 
-    // MARK: Cached plan on launch (#22)
+    // MARK: Saved Plan on launch (#22)
 
     @Test func todaysPlanForTheSameCityShowsInstantlyThenIsReplacedByTheFreshOne() async throws {
         let fetcher = GatedDayPlanFetcher()
         var snapshots: [PlanSnapshot] = []
         let viewModel = makeCustomCityViewModel(
             fetcher: fetcher,
-            cached: .cached(high: 99, summary: "Cached outfit", location: cityA),
+            saved: .saved(high: 99, summary: "Saved outfit", location: cityA),
             publishSnapshot: { snapshots.append($0) }
         )
 
         viewModel.start()
 
         #expect(viewModel.state.loadedHigh == 99)
-        #expect(viewModel.state.readySummary == "Cached outfit")
+        #expect(viewModel.state.readySummary == "Saved outfit")
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
         #expect(viewModel.state.loadedHigh == 99)
 
@@ -471,13 +471,13 @@ struct DayPlanViewModelTests {
     }
 
     @Test(arguments: [
-        PlanSnapshot.cached(high: 99, summary: "Yesterday", location: cityA, generatedAt: .now.addingTimeInterval(-2 * 24 * 60 * 60)),
-        .cached(high: 99, summary: "Other city", location: .custom(name: "City B", latitude: 20, longitude: 20)),
-        .cached(high: 99, summary: "Other provider", location: cityA, provider: .openMeteo),
-        .cached(high: 99, summary: "Saved before locations were stored", location: cityA).withoutLocation,
+        PlanSnapshot.saved(high: 99, summary: "Yesterday", location: cityA, generatedAt: .now.addingTimeInterval(-2 * 24 * 60 * 60)),
+        .saved(high: 99, summary: "Other city", location: .custom(name: "City B", latitude: 20, longitude: 20)),
+        .saved(high: 99, summary: "Other provider", location: cityA, provider: .openMeteo),
+        .saved(high: 99, summary: "Saved before locations were stored", location: cityA).withoutLocation,
     ])
     func savedPlanThatDoesNotMatchIsNotShown(snapshot: PlanSnapshot) async throws {
-        let viewModel = makeCustomCityViewModel(fetcher: GatedDayPlanFetcher(), cached: snapshot)
+        let viewModel = makeCustomCityViewModel(fetcher: GatedDayPlanFetcher(), saved: snapshot)
 
         viewModel.start()
 
@@ -495,7 +495,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
-            loadSnapshot: { .cached(high: 99, summary: "Cached outfit", location: .currentLocation) },
+            loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
             publishSnapshot: { snapshots.append($0) }
         )
 
@@ -520,7 +520,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
-            loadSnapshot: { .cached(high: 99, summary: "Cached outfit", location: cityA) },
+            loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: cityA) },
             publishSnapshot: { _ in }
         )
 
@@ -538,7 +538,7 @@ struct DayPlanViewModelTests {
         var snapshots: [PlanSnapshot] = []
         let viewModel = makeCustomCityViewModel(
             fetcher: fetcher,
-            cached: .cached(high: 99, summary: "Cached outfit", location: cityA),
+            saved: .saved(high: 99, summary: "Saved outfit", location: cityA),
             publishSnapshot: { snapshots.append($0) }
         )
 
@@ -548,35 +548,44 @@ struct DayPlanViewModelTests {
 
         try await waitUntil { viewModel.refreshFailureMessage != nil }
         #expect(viewModel.refreshFailureMessage == FakeFetchError().errorDescription)
-        #expect(viewModel.state.readySummary == "Cached outfit")
+        #expect(viewModel.state.readySummary == "Saved outfit")
         #expect(snapshots.isEmpty)
 
         let refreshed = Task { await viewModel.refresh() }
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
         #expect(viewModel.refreshFailureMessage == nil)
+        #expect(viewModel.state.readySummary == "Saved outfit")
         await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
         await refreshed.value
         #expect(viewModel.state.loadedHigh == 10)
     }
 
-    @Test func locationErrorDuringTheRefreshKeepsTodaysPlanOnScreen() async throws {
+    @Test func locationErrorDuringTheRefreshKeepsTodaysPlanOnScreenUntilALaterFixReplacesIt() async throws {
         let location = FakeLocationProvider()
+        let fetcher = GatedDayPlanFetcher()
         let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            fetcher: GatedDayPlanFetcher(),
-            loadSnapshot: { .cached(high: 99, summary: "Cached outfit", location: .currentLocation) },
+            fetcher: fetcher,
+            loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
             publishSnapshot: { _ in }
         )
 
         viewModel.start()
         location.fail("Couldn't find your location right now.")
 
-        #expect(viewModel.state.readySummary == "Cached outfit")
+        #expect(viewModel.state.readySummary == "Saved outfit")
         #expect(viewModel.refreshFailureMessage == "Couldn't find your location right now.")
+
+        location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 47.6) }
+        #expect(viewModel.state.readySummary == "Saved outfit")
+        await fetcher.complete(latitude: 47.6, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.state.loadedHigh == 10 }
+        #expect(viewModel.refreshFailureMessage == nil)
     }
 
     @Test func refreshBeforeTheFirstGPSFixKeepsTodaysPlanAndStillRevalidates() async throws {
@@ -589,22 +598,22 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
-            loadSnapshot: { .cached(high: 99, summary: "Cached outfit", location: .currentLocation) },
+            loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
             publishSnapshot: { _ in }
         )
 
         viewModel.start()
         await viewModel.refresh()
-        #expect(viewModel.state.readySummary == "Cached outfit")
+        #expect(viewModel.state.readySummary == "Saved outfit")
 
         location.fail("Couldn't find your location right now.")
-        #expect(viewModel.state.readySummary == "Cached outfit")
+        #expect(viewModel.state.readySummary == "Saved outfit")
         #expect(viewModel.refreshFailureMessage != nil)
     }
 
     @Test func failedRefreshOfASavedPlanWithoutAnOutfitStopsTheSpinner() async throws {
         let fetcher = GatedDayPlanFetcher()
-        let viewModel = makeCustomCityViewModel(fetcher: fetcher, cached: .cached(high: 99, summary: nil, location: cityA))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: nil, location: cityA))
 
         viewModel.start()
         #expect(viewModel.state.isRecommendationLoading)
@@ -627,7 +636,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: providerPreference,
             fetcher: fetcher,
-            loadSnapshot: { .cached(high: 99, summary: "Cached outfit", location: cityA, provider: .apple) },
+            loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: cityA, provider: .apple) },
             publishSnapshot: { _ in }
         )
 
@@ -646,7 +655,7 @@ struct DayPlanViewModelTests {
 private let cityA = LocationSelection.custom(name: "City A", latitude: 10, longitude: 10)
 
 @MainActor
-private func makeCustomCityViewModel(fetcher: DayPlanFetching, cached: PlanSnapshot? = nil, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
+private func makeCustomCityViewModel(fetcher: DayPlanFetching, saved: PlanSnapshot? = nil, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
     let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
     locationPreference.selection = cityA
     return DayPlanViewModel(
@@ -654,14 +663,14 @@ private func makeCustomCityViewModel(fetcher: DayPlanFetching, cached: PlanSnaps
         locationPreference: locationPreference,
         providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
         fetcher: fetcher,
-        loadSnapshot: { cached },
+        loadSnapshot: { saved },
         publishSnapshot: publishSnapshot
     )
 }
 
 private extension PlanSnapshot {
     /// A plan saved earlier today, distinguishable from fresh plans by its high and summary.
-    static func cached(high: Double, summary: String?, location: LocationSelection, provider: WeatherProvider = .apple, generatedAt: Date = .now) -> PlanSnapshot {
+    static func saved(high: Double, summary: String?, location: LocationSelection, provider: WeatherProvider = .apple, generatedAt: Date = .now) -> PlanSnapshot {
         PlanSnapshot(
             weather: .forecast(high: high),
             recommendation: summary.map { OutfitRecommendation(summary: $0, items: []) },
