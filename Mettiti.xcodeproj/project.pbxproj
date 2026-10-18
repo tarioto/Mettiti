@@ -31,6 +31,7 @@
 		5B796F5B3DD68C30DE055DA3 /* TemperaturePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40DE379AB97AB9FDA3A80A43 /* TemperaturePreferenceStore.swift */; };
 		5DA8990F438756DEBDBF53E7 /* WeatherProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */; };
 		677C0D2B5F5B8BBB6D583649 /* MettitiWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575110F1EA9D7D74E3B5734A /* MettitiWidgetsBundle.swift */; };
+		67C2327FD9155B0E2A455FFC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2C6B6873D8C963511DAA0426 /* PrivacyInfo.xcprivacy */; };
 		694C9D37714DDF5BEDD8BE26 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 463C9BDC2137A1A038617881 /* TestSupport.swift */; };
 		6BAF11000C47AB0D17869F25 /* MettitiWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E0F20748B7D794EDFDD25CF3 /* MettitiWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6EAF5C81DE5F1C0BCA6A83EF /* RecommendedItemListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F24F553D93776EE20644077 /* RecommendedItemListTests.swift */; };
@@ -68,6 +69,7 @@
 		E4FFDF136E81D30372949280 /* AppIcon-Beta.icon in Resources */ = {isa = PBXBuildFile; fileRef = 1F02E3E2E4EAB90C8C5FC2EC /* AppIcon-Beta.icon */; };
 		E6884B41028DD96F6001FE20 /* DisplayedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */; };
 		E84BF9813F6DE7B61F8F02F4 /* WidgetPlanTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88158BB15FF22E7B4D23559A /* WidgetPlanTimelineTests.swift */; };
+		E9922BA1EEE0B6016DE4E02B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C4D723016F4DC3AC3BFDA537 /* PrivacyInfo.xcprivacy */; };
 		F1CDAF56F215F17FCCA4B743 /* EmptyPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26083B123692217C0408627C /* EmptyPlanView.swift */; };
 		F24DB7EA6A74E1042EB31FB2 /* OutfitRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC3B818C88DB31994FCBDC2 /* OutfitRecommendation.swift */; };
 		F289267E1C6ED89D4E7A4CD8 /* PlanSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */; };
@@ -122,6 +124,7 @@
 		26083B123692217C0408627C /* EmptyPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyPlanView.swift; sourceTree = "<group>"; };
 		272445904B4924EB0C8C7495 /* BackgroundPlanRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPlanRefresh.swift; sourceTree = "<group>"; };
 		27F7F9AB25CA3B39F9F5BD6C /* DescriptionWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescriptionWidget.swift; sourceTree = "<group>"; };
+		2C6B6873D8C963511DAA0426 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2C985AD59754D0385058546B /* CardType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardType.swift; sourceTree = "<group>"; };
 		2FC3B818C88DB31994FCBDC2 /* OutfitRecommendation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitRecommendation.swift; sourceTree = "<group>"; };
 		3041656CE1FBE7554AE57FEA /* Mettiti.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Mettiti.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -163,6 +166,7 @@
 		B550D55202482A729D01EB75 /* WeatherAttributionLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAttributionLabel.swift; sourceTree = "<group>"; };
 		BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanFetcher.swift; sourceTree = "<group>"; };
 		BF56FB0D8716881DD6B86696 /* HourlyForecastService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyForecastService.swift; sourceTree = "<group>"; };
+		C4D723016F4DC3AC3BFDA537 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C4DE16260E778FDBF15A4462 /* Mettiti.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Mettiti.entitlements; sourceTree = "<group>"; };
 		C8E2F427185CEFE591E18329 /* RecommendationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationState.swift; sourceTree = "<group>"; };
 		CA92278BFD00779BF33A3538 /* AppIcon-Sunset.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Sunset.icon"; sourceTree = "<group>"; };
@@ -264,6 +268,7 @@
 				E7EFC7F301A8CE94B52D797E /* MettitiWidgets.entitlements */,
 				575110F1EA9D7D74E3B5734A /* MettitiWidgetsBundle.swift */,
 				DFF25927888A9142B7C9EB0B /* PlanTimelineProvider.swift */,
+				2C6B6873D8C963511DAA0426 /* PrivacyInfo.xcprivacy */,
 				B550D55202482A729D01EB75 /* WeatherAttributionLabel.swift */,
 				0216BF673086136CBCB4197C /* WeatherOnlyPlanView.swift */,
 			);
@@ -304,6 +309,7 @@
 				FEECD4FFD7DFA7C252C5E5B6 /* Info.plist */,
 				C4DE16260E778FDBF15A4462 /* Mettiti.entitlements */,
 				9E29684554562655E6B0531E /* MettitiApp.swift */,
+				C4D723016F4DC3AC3BFDA537 /* PrivacyInfo.xcprivacy */,
 				BBA736A443811691849FCC40 /* Features */,
 				5F71B3E0D3326751D669C7D9 /* Models */,
 				283C0B35A04258C97EAB9CD8 /* Persistence */,
@@ -355,6 +361,7 @@
 			buildConfigurationList = 44B9930EEFB8B582F96B34E6 /* Build configuration list for PBXNativeTarget "MettitiWidgetsExtension" */;
 			buildPhases = (
 				6C6E8293C626B8952FE7E665 /* Sources */,
+				330192A8929D46C24065D686 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -450,6 +457,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		330192A8929D46C24065D686 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				67C2327FD9155B0E2A455FFC /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F50ECBC18416CE1A03E18296 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -462,6 +477,7 @@
 				78F692245C9F0A44CA2CF188 /* AppIcon-Sunset.icon in Resources */,
 				F88E043A4EBCB5898A727211 /* AppIcon.icon in Resources */,
 				0F822D916C91828ED8587D1D /* Assets.xcassets in Resources */,
+				E9922BA1EEE0B6016DE4E02B /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
