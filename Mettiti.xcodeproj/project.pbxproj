@@ -75,6 +75,7 @@
 		D091C4CD571283FA174BF765 /* DescriptionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F7F9AB25CA3B39F9F5BD6C /* DescriptionWidget.swift */; };
 		D64B351AD06FDEE568DC1295 /* TemperaturePreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74AF60E97BAE1AD91452EF22 /* TemperaturePreferenceStoreTests.swift */; };
 		D73324A0AA0E6FF613BC582B /* HourlyTemperatureChartTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 239B073054ECD22EBF022A34 /* HourlyTemperatureChartTests.swift */; };
+		D73A787957D550E888792819 /* ProgressCaption.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC749F41ECA1A6037422F38 /* ProgressCaption.swift */; };
 		DADBC2B24DB39095813FD5D6 /* WeatherOnlyPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0216BF673086136CBCB4197C /* WeatherOnlyPlanView.swift */; };
 		DDB9D4ABA8C92302BBAEE3BF /* AppIcon-Ocean.icon in Resources */ = {isa = PBXBuildFile; fileRef = B3BC0BA00374A97BCBB85183 /* AppIcon-Ocean.icon */; };
 		DE4A591ECA889E59EB4CA184 /* LocationPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0FE0EBDCD6A71467260FE02 /* LocationPreferenceStore.swift */; };
@@ -138,6 +139,7 @@
 		1169A0DDECF191A9E6DAD135 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		17648820A03F760374204482 /* DailyWeather.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyWeather.swift; sourceTree = "<group>"; };
 		1911B207E85E261EB49A38A2 /* RefreshFailureNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshFailureNotice.swift; sourceTree = "<group>"; };
+		1BC749F41ECA1A6037422F38 /* ProgressCaption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressCaption.swift; sourceTree = "<group>"; };
 		1F02E3E2E4EAB90C8C5FC2EC /* AppIcon-Beta.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Beta.icon"; sourceTree = "<group>"; };
 		20A50E6BD45FC9B22C17681F /* SkeletonLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonLoadingView.swift; sourceTree = "<group>"; };
 		239B073054ECD22EBF022A34 /* HourlyTemperatureChartTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyTemperatureChartTests.swift; sourceTree = "<group>"; };
@@ -285,6 +287,7 @@
 				75914F126959B2AAE4ABEDF2 /* DayPlanViewModel.swift */,
 				6EC46EB73556E2FA604A1514 /* ErrorStateView.swift */,
 				D966737D68177FDD437F8E59 /* HourlyTemperatureChart.swift */,
+				1BC749F41ECA1A6037422F38 /* ProgressCaption.swift */,
 				1911B207E85E261EB49A38A2 /* RefreshFailureNotice.swift */,
 				20A50E6BD45FC9B22C17681F /* SkeletonLoadingView.swift */,
 				A1D53059B3E838014506476E /* WeatherAttributionView.swift */,
@@ -604,6 +607,7 @@
 				FEE65AB6C3EDB3B1B4A63A04 /* OutfitAdvisor.swift in Sources */,
 				F24DB7EA6A74E1042EB31FB2 /* OutfitRecommendation.swift in Sources */,
 				F289267E1C6ED89D4E7A4CD8 /* PlanSnapshot.swift in Sources */,
+				D73A787957D550E888792819 /* ProgressCaption.swift in Sources */,
 				F42D537596E9F08258B9763F /* RecommendationState.swift in Sources */,
 				823024F22A9F25A1EFB42EA6 /* RefreshFailureNotice.swift in Sources */,
 				FD5D27442A7FD42FAA1BB493 /* SettingsView.swift in Sources */,

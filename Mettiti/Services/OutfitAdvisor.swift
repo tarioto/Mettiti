@@ -26,7 +26,7 @@ struct OutfitAdvisor: Sendable {
     /// Creates the next recommendation's session and loads the model into memory, so it can run
     /// while the weather is still loading (#23). Does nothing when the model is unavailable.
     func prewarm() {
-        guard case .available = SystemLanguageModel.default.availability else { return }
+        guard Self.isAvailable else { return }
         let session = Self.makeSession()
         session.prewarm()
         preparedSession.store(session)
@@ -60,10 +60,14 @@ struct OutfitAdvisor: Sendable {
         LanguageModelSession(instructions: Instructions { instructions })
     }
 
+    private static var isAvailable: Bool {
+        if case .available = SystemLanguageModel.default.availability { return true }
+        return false
+    }
+
     private static func checkAvailability() throws {
-        let model = SystemLanguageModel.default
-        guard case .available = model.availability else {
-            throw OutfitAdvisorError.modelUnavailable(message(for: model.availability))
+        guard isAvailable else {
+            throw OutfitAdvisorError.modelUnavailable(message(for: SystemLanguageModel.default.availability))
         }
     }
 

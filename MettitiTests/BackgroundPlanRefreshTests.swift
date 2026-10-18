@@ -341,6 +341,15 @@ private actor RecordingPlanFetcher: DayPlanFetching {
         availability
     }
 
+    nonisolated func prewarmRecommendation() {
+        Issue.record("Background refresh has no one waiting on screen, so it shouldn't prewarm")
+    }
+
+    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+        Issue.record("Background refresh has no one to show partial suggestions to, so it shouldn't stream")
+        return try await recommendation(for: weather)
+    }
+
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?) {
         weatherRequests.append(WeatherRequest(latitude: coordinate.latitude, longitude: coordinate.longitude, provider: provider))
         if let weatherFetchHook { await weatherFetchHook() }

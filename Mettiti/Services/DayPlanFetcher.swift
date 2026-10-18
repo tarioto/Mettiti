@@ -12,14 +12,6 @@ protocol DayPlanFetching: Sendable {
     func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation
 }
 
-extension DayPlanFetching {
-    func prewarmRecommendation() {}
-
-    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
-        try await recommendation(for: weather)
-    }
-}
-
 struct DayPlanFetcher: DayPlanFetching {
     private let weatherService = WeatherService()
     private let hourlyForecastService = HourlyForecastService()

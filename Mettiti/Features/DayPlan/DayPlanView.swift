@@ -73,6 +73,7 @@ struct DayPlanView: View {
                     .font(.body)
                     .foregroundStyle(.secondary)
             case .generating(let partial) where !partial.summary.isEmpty:
+                progressCaption(for: .plan)
                 Text(partial.summary)
                     .font(.body)
                     .foregroundStyle(.secondary)
@@ -101,12 +102,12 @@ struct DayPlanView: View {
             switch recommendation {
             case .ready(let outfit):
                 itemList(outfit.items)
-            case .generating(let partial) where !partial.items.isEmpty:
-                itemList(partial.items)
-            case .loading, .generating:
+            case .generating(let partial):
                 progressCaption(for: .wearAndBring)
-                itemList(SkeletonLoadingView.recommendation.items)
-                    .redacted(reason: .placeholder)
+                itemList(partial.items, paddedWithPlaceholders: true)
+            case .loading:
+                progressCaption(for: .wearAndBring)
+                itemList([], paddedWithPlaceholders: true)
             case .unavailable, .failed:
                 recommendationNotice(for: .wearAndBring)
             }
@@ -116,10 +117,17 @@ struct DayPlanView: View {
         .cardGlass()
     }
 
-    private func itemList(_ items: [RecommendedItem]) -> some View {
-        VStack(spacing: 12) {
+    /// With `paddedWithPlaceholders`, placeholder rows fill in up to the skeleton's count, so the
+    /// card doesn't change height as streamed items arrive.
+    private func itemList(_ items: [RecommendedItem], paddedWithPlaceholders: Bool = false) -> some View {
+        let placeholders = paddedWithPlaceholders ? Array(SkeletonLoadingView.recommendation.items.dropFirst(items.count)) : []
+        return VStack(spacing: 12) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 ItemRow(item: item)
+            }
+            ForEach(Array(placeholders.enumerated()), id: \.offset) { _, item in
+                ItemRow(item: item)
+                    .redacted(reason: .placeholder)
             }
         }
     }
@@ -241,27 +249,6 @@ private struct RecommendationNoticeView: View {
 
 #Preview("Suggestions streaming") {
     DayPlanPreview(recommendation: .generating(OutfitRecommendation(summary: "Expect mild temperatures with a chance", items: [OutfitRecommendation.placeholder.items[0]])))
-}
-
-/// What's loading right now, shown above the placeholder content it's filling in.
-struct ProgressCaption: View {
-    private let text: LocalizedStringKey
-
-    init(_ text: LocalizedStringKey) {
-        self.text = text
-    }
-
-    var body: some View {
-        HStack(spacing: 8) {
-            ProgressView()
-                .controlSize(.small)
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
-    }
 }
 
 private struct DayPlanPreview: View {
