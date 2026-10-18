@@ -18,7 +18,7 @@ final class LocationManager: NSObject, ObservableObject {
     private let manager = CLLocationManager()
     private var unknownLocationRetries = 0
     private static let maxUnknownLocationRetries = 2
-    private static let deniedMessage = String(localized: "Location access is off. Enable it in Settings to get weather for your area.")
+    private static var deniedMessage: String { String(localized: "Location access is off. Enable it in Settings to get weather for your area.") }
 
     override init() {
         authorizationStatus = manager.authorizationStatus

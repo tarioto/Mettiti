@@ -41,7 +41,7 @@ enum TemperatureUnit: String, Codable, CaseIterable, Identifiable {
 
     /// The day's high and low, e.g. "H:72° L:58°". Shared by the app and the widgets, so it lives in the
     /// `Shared` string table that both targets bundle.
-    func highLow(highFahrenheit: Double, lowFahrenheit: Double, locale: Locale = .autoupdatingCurrent) -> String {
+    func formattedHighLow(highFahrenheit: Double, lowFahrenheit: Double, locale: Locale = .autoupdatingCurrent) -> String {
         let high = formatted(fahrenheit: highFahrenheit, locale: locale)
         let low = formatted(fahrenheit: lowFahrenheit, locale: locale)
         return String(

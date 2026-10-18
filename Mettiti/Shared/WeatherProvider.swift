@@ -9,7 +9,7 @@ enum WeatherProvider: String, Codable, CaseIterable, Identifiable, Sendable {
     var label: String {
         switch self {
         case .openMeteo: return "Open-Meteo"
-        case .apple: return "Apple Weather"
+        case .apple: return String(localized: "Apple Weather", table: "Shared")
         }
     }
 

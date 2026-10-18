@@ -44,8 +44,8 @@ struct TemperatureUnitFormattingTests {
 
     @Test func highAndLowUseTheLocalesTemperatureFormat() {
         // 72°F = 22.2°C, 58°F = 14.4°C
-        #expect(TemperatureUnit.fahrenheit.highLow(highFahrenheit: 72, lowFahrenheit: 58, locale: us) == "H:72° L:58°")
-        #expect(TemperatureUnit.celsius.highLow(highFahrenheit: 72, lowFahrenheit: 58, locale: germany) == "H:22 °C L:14 °C")
+        #expect(TemperatureUnit.fahrenheit.formattedHighLow(highFahrenheit: 72, lowFahrenheit: 58, locale: us) == "H:72° L:58°")
+        #expect(TemperatureUnit.celsius.formattedHighLow(highFahrenheit: 72, lowFahrenheit: 58, locale: germany) == "H:22 °C L:14 °C")
     }
 
     @Test func halfDegreesRoundAwayFromZero() {

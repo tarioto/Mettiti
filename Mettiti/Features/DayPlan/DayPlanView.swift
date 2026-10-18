@@ -43,7 +43,7 @@ struct DayPlanView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(weather.conditionDescription)
                         .font(.title2.bold())
-                    Text("\(temperaturePreference.unit.highLow(highFahrenheit: weather.highTemperatureF, lowFahrenheit: weather.lowTemperatureF))  •  \((Double(weather.precipitationProbability) / 100).formatted(.percent)) rain  •  UV \(Int(weather.uvIndex.rounded()))", comment: "Weather card details: high/low, chance of rain, UV index")
+                    Text("\(temperaturePreference.unit.formattedHighLow(highFahrenheit: weather.highTemperatureF, lowFahrenheit: weather.lowTemperatureF))  •  \((Double(weather.precipitationProbability) / 100).formatted(.percent)) rain  •  UV \(Int(weather.uvIndex.rounded()))", comment: "Weather card details: high/low, chance of rain, UV index")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

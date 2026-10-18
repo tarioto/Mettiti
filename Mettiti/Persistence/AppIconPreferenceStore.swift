@@ -58,14 +58,7 @@ enum ThemeIcon: String, CaseIterable, Identifiable {
     var thumbnailName: String { "IconThumbnail-\(assetSuffix)" }
 
     /// Not `label`: that's translated, but asset names are fixed.
-    private var assetSuffix: String {
-        switch self {
-        case .sunset: "Sunset"
-        case .ocean: "Ocean"
-        case .aurora: "Aurora"
-        case .midnight: "Midnight"
-        }
-    }
+    private var assetSuffix: String { rawValue.capitalized }
 }
 
 /// The picker's selection: Default (no Icon Choice, so the Build Icon) or a Theme Icon.

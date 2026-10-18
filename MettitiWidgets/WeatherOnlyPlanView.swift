@@ -16,7 +16,7 @@ struct WeatherOnlyPlanView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
             let unit = SharedStore.loadTemperatureUnit()
-            Text(unit.highLow(highFahrenheit: weather.highTemperatureF, lowFahrenheit: weather.lowTemperatureF))
+            Text(unit.formattedHighLow(highFahrenheit: weather.highTemperatureF, lowFahrenheit: weather.lowTemperatureF))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer(minLength: 0)

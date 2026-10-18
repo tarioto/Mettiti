@@ -17,7 +17,7 @@ struct DescriptionWidgetEntryView: View {
                         .minimumScaleFactor(0.8)
                 } else {
                     let unit = SharedStore.loadTemperatureUnit()
-                    Text(unit.highLow(highFahrenheit: snapshot.weather.highTemperatureF, lowFahrenheit: snapshot.weather.lowTemperatureF))
+                    Text(unit.formattedHighLow(highFahrenheit: snapshot.weather.highTemperatureF, lowFahrenheit: snapshot.weather.lowTemperatureF))
                         .font(.subheadline)
                     NoSuggestionsNote()
                 }
