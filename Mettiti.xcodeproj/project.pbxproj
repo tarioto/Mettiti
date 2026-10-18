@@ -73,6 +73,7 @@
 		CDBAE51DE89D9B58AFDE2763 /* PlanSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */; };
 		D091C4CD571283FA174BF765 /* DescriptionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F7F9AB25CA3B39F9F5BD6C /* DescriptionWidget.swift */; };
 		D64B351AD06FDEE568DC1295 /* TemperaturePreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74AF60E97BAE1AD91452EF22 /* TemperaturePreferenceStoreTests.swift */; };
+		D73324A0AA0E6FF613BC582B /* HourlyTemperatureChartTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 239B073054ECD22EBF022A34 /* HourlyTemperatureChartTests.swift */; };
 		DADBC2B24DB39095813FD5D6 /* WeatherOnlyPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0216BF673086136CBCB4197C /* WeatherOnlyPlanView.swift */; };
 		DDB9D4ABA8C92302BBAEE3BF /* AppIcon-Ocean.icon in Resources */ = {isa = PBXBuildFile; fileRef = B3BC0BA00374A97BCBB85183 /* AppIcon-Ocean.icon */; };
 		DE4A591ECA889E59EB4CA184 /* LocationPreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0FE0EBDCD6A71467260FE02 /* LocationPreferenceStore.swift */; };
@@ -137,6 +138,7 @@
 		1911B207E85E261EB49A38A2 /* RefreshFailureNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshFailureNotice.swift; sourceTree = "<group>"; };
 		1F02E3E2E4EAB90C8C5FC2EC /* AppIcon-Beta.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Beta.icon"; sourceTree = "<group>"; };
 		20A50E6BD45FC9B22C17681F /* SkeletonLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonLoadingView.swift; sourceTree = "<group>"; };
+		239B073054ECD22EBF022A34 /* HourlyTemperatureChartTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyTemperatureChartTests.swift; sourceTree = "<group>"; };
 		26083B123692217C0408627C /* EmptyPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyPlanView.swift; sourceTree = "<group>"; };
 		272445904B4924EB0C8C7495 /* BackgroundPlanRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPlanRefresh.swift; sourceTree = "<group>"; };
 		27F7F9AB25CA3B39F9F5BD6C /* DescriptionWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescriptionWidget.swift; sourceTree = "<group>"; };
@@ -248,6 +250,7 @@
 				6025660EBF339BC99DD24263 /* BackgroundPlanRefreshTests.swift */,
 				41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */,
 				6E72CE62D40BB1122CBF98F3 /* HourlyForecastTests.swift */,
+				239B073054ECD22EBF022A34 /* HourlyTemperatureChartTests.swift */,
 				58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */,
 				08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */,
 				3B36B9A8F2969786148CEC84 /* PreferenceStoreTests.swift */,
@@ -529,6 +532,7 @@
 				8F5373DA4B93DA2AA5893707 /* BackgroundPlanRefreshTests.swift in Sources */,
 				1C1274F0E23B931CB16553AA /* DayPlanViewModelTests.swift in Sources */,
 				961B270CF8434ABE5CAB501C /* HourlyForecastTests.swift in Sources */,
+				D73324A0AA0E6FF613BC582B /* HourlyTemperatureChartTests.swift in Sources */,
 				26F4E4AFBD0C174C2C5B9B06 /* OutfitAdvisorPromptTests.swift in Sources */,
 				CDBAE51DE89D9B58AFDE2763 /* PlanSnapshotTests.swift in Sources */,
 				7E8C0765B97E916B567E5F72 /* PreferenceStoreTests.swift in Sources */,
