@@ -13,7 +13,7 @@ enum LoadState {
 @MainActor
 final class DayPlanViewModel: ObservableObject {
     @Published private(set) var state: LoadState = .idle
-    /// Why refreshing today's saved plan failed. The saved plan stays on screen with this as a
+    /// Why refreshing today's Saved Plan failed. The Saved Plan stays on screen with this as a
     /// notice instead of the error screen; cleared when the next load starts.
     @Published private(set) var refreshFailureMessage: String?
 
@@ -72,7 +72,7 @@ final class DayPlanViewModel: ObservableObject {
             .dropFirst()
             .sink { [weak self] _ in
                 guard let self, self.hasStarted else { return }
-                // The saved plan is for the old provider, so the new one loads in the open.
+                // The Saved Plan is for the old provider, so the new one loads in the open.
                 self.isShowingSavedPlan = false
                 Task { await self.refresh() }
             }
@@ -86,7 +86,7 @@ final class DayPlanViewModel: ObservableObject {
         beginLoading(for: locationPreference.selection)
     }
 
-    /// Shows the saved plan right away when it's from today for the same location and provider,
+    /// Shows the Saved Plan right away when it's from today for the same location and provider,
     /// so launch doesn't wait on the network and the on-device model.
     private func showSavedPlanIfCurrent() {
         isShowingSavedPlan = false
@@ -107,6 +107,11 @@ final class DayPlanViewModel: ObservableObject {
 
     /// Asks the model again for the weather already on screen, without refetching it.
     func retryRecommendation() {
+        // The Saved Plan's weather is stale too, so try the whole plan again, keeping it on screen.
+        if isShowingSavedPlan {
+            Task { await refresh() }
+            return
+        }
         guard case .loaded(let weather, let hourly, let provider, _) = state else { return }
         loadTask?.cancel()
         loadTask = Task { await loadRecommendation(weather: weather, hourly: hourly, provider: provider) }
@@ -122,7 +127,7 @@ final class DayPlanViewModel: ObservableObject {
                 loadTask = nil
                 refreshFailureMessage = nil
                 // Keep today's Saved Plan on screen; its refresh starts with the next fix.
-                // Otherwise leave .failed so handleGPSCoordinate loads the next fix.
+                // Otherwise go .idle so handleGPSCoordinate loads the next fix.
                 if !isShowingSavedPlan { state = .idle }
                 locationManager.requestLocation()
             }
@@ -182,7 +187,7 @@ final class DayPlanViewModel: ObservableObject {
     private func fail(_ message: String) {
         if isShowingSavedPlan {
             refreshFailureMessage = message
-            // A saved plan without an outfit shows .loading; nothing is loading it any more.
+            // A Saved Plan without an outfit shows .loading; nothing is loading it any more.
             if case .loaded(let weather, let hourly, let provider, .loading) = state {
                 state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .failed(message))
             }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shown above today's saved plan when refreshing it failed, so the plan stays usable offline (#22).
+/// Shown above today's Saved Plan when refreshing it failed, so the plan stays usable offline (#22).
 struct RefreshFailureNotice: View {
     let message: String
 

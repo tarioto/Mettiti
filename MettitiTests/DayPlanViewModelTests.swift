@@ -588,7 +588,7 @@ struct DayPlanViewModelTests {
         #expect(viewModel.refreshFailureMessage == nil)
     }
 
-    @Test func refreshBeforeTheFirstGPSFixKeepsTodaysPlanAndStillRevalidates() async throws {
+    @Test func refreshBeforeTheFirstGPSFixKeepsTodaysPlanAndTheNextFixRefreshesIt() async throws {
         let location = FakeLocationProvider()
         let fetcher = GatedDayPlanFetcher()
         let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
@@ -604,6 +604,10 @@ struct DayPlanViewModelTests {
 
         viewModel.start()
         await viewModel.refresh()
+        #expect(viewModel.state.readySummary == "Saved outfit")
+
+        location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 47.6) }
         #expect(viewModel.state.readySummary == "Saved outfit")
 
         location.fail("Couldn't find your location right now.")
@@ -623,6 +627,36 @@ struct DayPlanViewModelTests {
         try await waitUntil { viewModel.refreshFailureMessage != nil }
         #expect(viewModel.state.loadedHigh == 99)
         #expect(viewModel.state.recommendationFailureMessage != nil)
+    }
+
+    @Test func tryAgainOnTheSavedPlanRefreshesTheWholePlanInPlace() async throws {
+        let fetcher = GatedDayPlanFetcher()
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = makeCustomCityViewModel(
+            fetcher: fetcher,
+            saved: .saved(high: 99, summary: nil, location: cityA),
+            publishSnapshot: { snapshots.append($0) }
+        )
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .failure(FakeFetchError()))
+        try await waitUntil { viewModel.state.recommendationFailureMessage != nil }
+
+        viewModel.retryRecommendation()
+
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        #expect(viewModel.state.loadedHigh == 99)
+        await fetcher.complete(latitude: 10, with: .failure(FakeFetchError()))
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+        #expect(viewModel.state.loadedHigh == 99)
+        #expect(snapshots.isEmpty)
+
+        viewModel.retryRecommendation()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.state.loadedHigh == 10 }
+        #expect(viewModel.refreshFailureMessage == nil)
+        #expect(snapshots.map(\.weather.highTemperatureF) == [10])
     }
 
     @Test func changingProviderDuringTheRefreshReplacesTheSavedPlanWithTheNewProvidersWeather() async throws {
