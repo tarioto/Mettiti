@@ -17,6 +17,20 @@ struct HourlyForecastTests {
         #expect(forecast.points.map(\.meanF) == [64, 66])
         #expect(forecast.points.map(\.minF) == [60, 62])
         #expect(forecast.points.map(\.maxF) == [68, 70])
+        #expect(forecast.points.map(\.precipitationProbability) == [nil, nil])
+    }
+
+    @Test func ensembleWithoutAUTCOffsetThrowsDecodingFailed() throws {
+        let data = try ensembleResponse(
+            timezone: "America/Los_Angeles",
+            utcOffsetSeconds: nil,
+            time: ["2026-10-09T13:00"],
+            members: [[60]]
+        )
+
+        #expect(throws: WeatherServiceError.decodingFailed) {
+            try HourlyForecastService.hourlyForecast(from: data, now: date("2026-10-09T20:00:00Z"))
+        }
     }
 
     @Test func ensembleHoursAfterAClockChangeUseTheResponsesFixedOffset() throws {
@@ -50,23 +64,39 @@ struct HourlyForecastTests {
             date("2026-10-09T23:00:00Z"): 90,
         ])
 
-        #expect(merged.points.map(\.precipitationProbability) == [30, 0, 70])
+        #expect(merged.points.map(\.precipitationProbability) == [30, nil, 70])
         #expect(merged.points.map(\.meanF) == [64, 64, 64])
     }
 
-    private func point(at date: Date) -> HourlyTemperaturePoint {
-        HourlyTemperaturePoint(date: date, hourLabel: "", meanF: 64, minF: 60, maxF: 68, precipitationProbability: 0)
+    @Test func spreadFromTheEnsembleKeepsEachHoursOwnMeanAndChanceOfRain() {
+        let hour = date("2026-10-09T20:00:00Z")
+        let apple = HourlyForecast(timeZone: pacific, points: [
+            HourlyTemperaturePoint(date: hour, hourLabel: "", meanF: 70, minF: 70, maxF: 70, precipitationProbability: 40),
+        ])
+        let ensemble = HourlyForecast(timeZone: pacific, points: [point(at: hour)])
+
+        let merged = apple.applyingSpread(from: ensemble)
+
+        #expect(merged.points.map(\.meanF) == [70])
+        #expect(merged.points.map(\.minF) == [66])
+        #expect(merged.points.map(\.maxF) == [74])
+        #expect(merged.points.map(\.precipitationProbability) == [40])
     }
 
-    private func ensembleResponse(timezone: String, utcOffsetSeconds: Int, time: [String], members: [[Double]]) throws -> Data {
+    private func point(at date: Date) -> HourlyTemperaturePoint {
+        HourlyTemperaturePoint(date: date, hourLabel: "", meanF: 64, minF: 60, maxF: 68, precipitationProbability: nil)
+    }
+
+    private func ensembleResponse(timezone: String, utcOffsetSeconds: Int?, time: [String], members: [[Double]]) throws -> Data {
         let memberJSON = members.enumerated().map { index, values in
             let key = index == 0 ? "temperature_2m" : "temperature_2m_member\(String(format: "%02d", index))"
             return "\"\(key)\": [\(values.map { String($0) }.joined(separator: ", "))]"
         }
+        let offsetJSON = utcOffsetSeconds.map { "\"utc_offset_seconds\": \($0)," } ?? ""
         return try #require("""
         {
           "timezone": "\(timezone)",
-          "utc_offset_seconds": \(utcOffsetSeconds),
+          \(offsetJSON)
           "hourly": {
             "time": [\(time.map { "\"\($0)\"" }.joined(separator: ", "))],
             \(memberJSON.joined(separator: ",\n    "))

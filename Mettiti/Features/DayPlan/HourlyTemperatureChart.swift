@@ -61,7 +61,7 @@ struct HourlyTemperatureChart: View {
                     BarMark(
                         x: .value("Time", point.hourLabel),
                         yStart: .value("RainBase", displayedRange.lowerBound),
-                        yEnd: .value("Rain", precipitationBarValue(point.precipitationProbability)),
+                        yEnd: .value("Rain", precipitationBarValue(point.precipitationProbability ?? 0)),
                         width: .ratio(0.6)
                     )
                     .foregroundStyle(.blue.opacity(0.18))

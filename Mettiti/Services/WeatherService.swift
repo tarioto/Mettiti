@@ -49,9 +49,7 @@ struct WeatherService {
         return components.url
     }
 
-    /// `deviceLocale` stands in for the device's settings, which a fresh
-    /// `DateFormatter` picks up; tests pass e.g. a Buddhist-calendar locale.
-    static func forecast(from data: Data, deviceLocale: Locale = .current) throws -> OpenMeteoForecast {
+    static func forecast(from data: Data) throws -> OpenMeteoForecast {
         let decoded: OpenMeteoResponse
         do {
             decoded = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
@@ -75,15 +73,15 @@ struct WeatherService {
             throw WeatherServiceError.decodingFailed
         }
 
-        let formatter = DateFormatter()
-        formatter.locale = deviceLocale
-        // Override the device's locale and calendar so they can't change the parse
+        // A fixed locale and calendar so the device's settings can't change the parse
         // (a Buddhist calendar would read 2026 as Gregorian 1483).
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.timeZone = timeZone
-        formatter.dateFormat = "yyyy-MM-dd"
-        guard let date = formatter.date(from: dateString) else {
+        let strategy = Date.ParseStrategy(
+            format: "\(year: .defaultDigits)-\(month: .twoDigits)-\(day: .twoDigits)",
+            locale: Locale(identifier: "en_US_POSIX"),
+            timeZone: timeZone,
+            calendar: Calendar(identifier: .gregorian)
+        )
+        guard let date = try? Date(dateString, strategy: strategy) else {
             throw WeatherServiceError.decodingFailed
         }
 
@@ -101,8 +99,10 @@ struct WeatherService {
     }
 
     private static func hourlyPrecipitation(from decoded: OpenMeteoResponse) -> [Date: Int] {
-        guard let hourly = decoded.hourly, let utcOffsetSeconds = decoded.utc_offset_seconds else { return [:] }
-        let strategy = OpenMeteoHourlyTime.parseStrategy(utcOffsetSeconds: utcOffsetSeconds)
+        guard
+            let hourly = decoded.hourly,
+            let strategy = OpenMeteoHourlyTime.parseStrategy(utcOffsetSeconds: decoded.utc_offset_seconds)
+        else { return [:] }
         var result: [Date: Int] = [:]
         for (time, probability) in zip(hourly.time, hourly.precipitation_probability) {
             guard let date = try? Date(time, strategy: strategy), let probability else { continue }

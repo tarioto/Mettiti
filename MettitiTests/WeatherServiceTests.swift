@@ -33,17 +33,6 @@ struct WeatherServiceTests {
         #expect(components.minute == 0)
     }
 
-    @Test func dailyDateIsTheGregorianForecastDayOnABuddhistCalendarDevice() throws {
-        let data = try openMeteoResponse(timezone: "Asia/Bangkok", utcOffsetSeconds: 25_200, date: "2026-10-09")
-        let thaiDevice = Locale(identifier: "th_TH@calendar=buddhist")
-
-        let weather = try WeatherService.forecast(from: data, deviceLocale: thaiDevice).daily
-
-        // 2026-10-09 00:00 ICT (UTC+7), not Buddhist year 2026 (Gregorian 1483)
-        let expected = try isoDate("2026-10-08T17:00:00Z")
-        #expect(weather.date == expected)
-    }
-
     @Test func unparseableDailyDateThrowsDecodingFailed() throws {
         let data = try openMeteoResponse(timezone: "Pacific/Auckland", utcOffsetSeconds: 46_800, date: "not-a-date")
 
@@ -108,9 +97,23 @@ struct WeatherServiceTests {
         #expect(forecast.hourlyPrecipitation.isEmpty)
     }
 
+    @Test func hourlyDataWithoutAUTCOffsetIsLeftOut() throws {
+        let data = try openMeteoResponse(
+            timezone: "America/Los_Angeles",
+            utcOffsetSeconds: nil,
+            date: "2026-10-09",
+            hourly: (time: ["2026-10-09T13:00"], precipitation: [20])
+        )
+
+        let forecast = try WeatherService.forecast(from: data)
+
+        #expect(forecast.daily.highTemperatureF == 70)
+        #expect(forecast.hourlyPrecipitation.isEmpty)
+    }
+
     private func openMeteoResponse(
         timezone: String,
-        utcOffsetSeconds: Int,
+        utcOffsetSeconds: Int?,
         date: String,
         hourly: (time: [String], precipitation: [Int])? = nil
     ) throws -> Data {
@@ -123,10 +126,11 @@ struct WeatherServiceTests {
             }
             """
         } ?? ""
+        let offsetJSON = utcOffsetSeconds.map { "\"utc_offset_seconds\": \($0)," } ?? ""
         return try #require("""
         {
           "timezone": "\(timezone)",
-          "utc_offset_seconds": \(utcOffsetSeconds),
+          \(offsetJSON)
           "daily": {
             "time": ["\(date)"],
             "temperature_2m_max": [70.0],

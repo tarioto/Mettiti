@@ -1,9 +1,8 @@
 import Foundation
 import CoreLocation
 
-/// The ensemble's hourly temperature spread. The chance of rain comes from the main
-/// forecast request instead (see `HourlyForecast.applyingPrecipitation`), so every point
-/// here has a precipitation probability of 0.
+/// The ensemble's hourly temperature spread. It has no chance of rain: that comes from the
+/// main forecast request instead (see `HourlyForecast.applyingPrecipitation`).
 struct HourlyForecastService {
     func fetchHourlyForecast(for coordinate: CLLocationCoordinate2D) async throws -> HourlyForecast {
         var components = URLComponents(string: "https://ensemble-api.open-meteo.com/v1/ensemble")!
@@ -34,11 +33,13 @@ struct HourlyForecastService {
             throw WeatherServiceError.decodingFailed
         }
 
-        guard let timeZone = TimeZone(identifier: decoded.timezone), !decoded.memberSeries.isEmpty else {
+        guard
+            let timeZone = TimeZone(identifier: decoded.timezone),
+            let strategy = OpenMeteoHourlyTime.parseStrategy(utcOffsetSeconds: decoded.utcOffsetSeconds),
+            !decoded.memberSeries.isEmpty
+        else {
             throw WeatherServiceError.decodingFailed
         }
-
-        let strategy = OpenMeteoHourlyTime.parseStrategy(utcOffsetSeconds: decoded.utcOffsetSeconds)
 
         let labelFormatter = DateFormatter()
         // "j" is the locale's preferred hour: "3 PM" in the US, "15 Uhr" in Germany.
@@ -61,7 +62,7 @@ struct HourlyForecastService {
                     meanF: mean,
                     minF: valuesAtHour.min() ?? mean,
                     maxF: valuesAtHour.max() ?? mean,
-                    precipitationProbability: 0
+                    precipitationProbability: nil
                 )
             )
         }
@@ -86,7 +87,7 @@ private struct DynamicCodingKey: CodingKey {
 
 private struct EnsembleResponse: Decodable {
     let timezone: String
-    let utcOffsetSeconds: Int
+    let utcOffsetSeconds: Int?
     let time: [String]
     let memberSeries: [[Double]]
 
@@ -99,7 +100,7 @@ private struct EnsembleResponse: Decodable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: TopLevelKeys.self)
         timezone = try container.decode(String.self, forKey: .timezone)
-        utcOffsetSeconds = try container.decode(Int.self, forKey: .utcOffsetSeconds)
+        utcOffsetSeconds = try container.decodeIfPresent(Int.self, forKey: .utcOffsetSeconds)
 
         let hourlyContainer = try container.nestedContainer(keyedBy: DynamicCodingKey.self, forKey: .hourly)
 
