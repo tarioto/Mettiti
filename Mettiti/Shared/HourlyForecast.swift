@@ -1,10 +1,7 @@
 import Foundation
 
 struct HourlyTemperaturePoint: Identifiable, Codable, Sendable {
-    /// Only identifies points within one chart, so it's regenerated rather than saved.
-    let id = UUID()
     let date: Date
-    let hourLabel: String
     let meanF: Double
     let minF: Double
     let maxF: Double
@@ -12,24 +9,43 @@ struct HourlyTemperaturePoint: Identifiable, Codable, Sendable {
     /// Optional decoding still reads the plain numbers older saved plans stored.
     let precipitationProbability: Int?
 
-    private enum CodingKeys: String, CodingKey {
-        case date, hourLabel, meanF, minF, maxF, precipitationProbability
-    }
+    /// Identified by its hour, so a refetch keeps each point's identity for diffing and animation.
+    /// Computed, so it isn't saved; the "hourLabel" older saved plans stored is ignored on decode.
+    var id: Date { date }
 
     /// A copy with a different spread around the same mean.
     func with(minF: Double, maxF: Double) -> HourlyTemperaturePoint {
-        HourlyTemperaturePoint(date: date, hourLabel: hourLabel, meanF: meanF, minF: minF, maxF: maxF, precipitationProbability: precipitationProbability)
+        HourlyTemperaturePoint(date: date, meanF: meanF, minF: minF, maxF: maxF, precipitationProbability: precipitationProbability)
     }
 
     /// A copy with a different chance of rain.
     func with(precipitationProbability: Int?) -> HourlyTemperaturePoint {
-        HourlyTemperaturePoint(date: date, hourLabel: hourLabel, meanF: meanF, minF: minF, maxF: maxF, precipitationProbability: precipitationProbability)
+        HourlyTemperaturePoint(date: date, meanF: meanF, minF: minF, maxF: maxF, precipitationProbability: precipitationProbability)
     }
 }
 
 struct HourlyForecast: Codable, Sendable {
     let timeZone: TimeZone
     let points: [HourlyTemperaturePoint]
+
+    /// The hour in the forecast location's time zone, in the locale's preferred style:
+    /// "3 PM" in the US, "15 Uhr" in Germany.
+    var hourFormat: Date.FormatStyle {
+        var style = Date.FormatStyle.dateTime.hour()
+        style.timeZone = timeZone
+        return style
+    }
+
+    /// Up to 4 evenly spaced hours for the chart's x-axis labels.
+    var axisDates: [Date] {
+        guard !points.isEmpty else { return [] }
+        let count = points.count
+        var dates: [Date] = []
+        for index in [0, count / 4, count / 2, (count * 3) / 4] where dates.last != points[index].date {
+            dates.append(points[index].date)
+        }
+        return dates
+    }
 
     /// Wraps an ensemble's spread around these points: each hour keeps its own mean but
     /// takes the ensemble's distance below and above its mean. Each hour uses the nearest

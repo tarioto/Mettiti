@@ -93,8 +93,8 @@ struct PlanSnapshotTests {
 
     @Test func locationAndHourlyForecastRoundTrip() throws {
         let hourly = HourlyForecast(timeZone: pacific, points: [
-            HourlyTemperaturePoint(date: date("2026-10-08T09:00:00-07:00"), hourLabel: "9AM", meanF: 55, minF: 52, maxF: 58, precipitationProbability: 10),
-            HourlyTemperaturePoint(date: date("2026-10-08T10:00:00-07:00"), hourLabel: "10AM", meanF: 60, minF: 57, maxF: 63, precipitationProbability: 30),
+            HourlyTemperaturePoint(date: date("2026-10-08T09:00:00-07:00"), meanF: 55, minF: 52, maxF: 58, precipitationProbability: 10),
+            HourlyTemperaturePoint(date: date("2026-10-08T10:00:00-07:00"), meanF: 60, minF: 57, maxF: 63, precipitationProbability: 30),
         ])
         var snapshot = PlanSnapshot.generated(at: date("2026-10-08T09:00:00-07:00"))
         snapshot.location = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
@@ -104,7 +104,6 @@ struct PlanSnapshotTests {
 
         #expect(decoded.location == .custom(name: "Seattle", latitude: 47.6, longitude: -122.3))
         #expect(decoded.hourly?.timeZone == pacific)
-        #expect(decoded.hourly?.points.map(\.hourLabel) == ["9AM", "10AM"])
         #expect(decoded.hourly?.points.map(\.meanF) == [55, 60])
         #expect(decoded.hourly?.points.map(\.minF) == [52, 57])
         #expect(decoded.hourly?.points.map(\.maxF) == [58, 63])

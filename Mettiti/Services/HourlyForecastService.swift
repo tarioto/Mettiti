@@ -41,11 +41,6 @@ struct HourlyForecastService {
             throw WeatherServiceError.decodingFailed
         }
 
-        let labelFormatter = DateFormatter()
-        // "j" is the locale's preferred hour: "3 PM" in the US, "15 Uhr" in Germany.
-        labelFormatter.setLocalizedDateFormatFromTemplate("j")
-        labelFormatter.timeZone = timeZone
-
         var points: [HourlyTemperaturePoint] = []
         for index in decoded.time.indices {
             guard let date = try? Date(decoded.time[index], strategy: strategy) else { continue }
@@ -58,7 +53,6 @@ struct HourlyForecastService {
             points.append(
                 HourlyTemperaturePoint(
                     date: date,
-                    hourLabel: labelFormatter.string(from: date),
                     meanF: mean,
                     minF: valuesAtHour.min() ?? mean,
                     maxF: valuesAtHour.max() ?? mean,
