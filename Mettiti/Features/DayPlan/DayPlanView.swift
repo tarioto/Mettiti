@@ -67,18 +67,17 @@ struct DayPlanView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
             Divider()
+            progressCaption(for: .plan)
             switch recommendation {
             case .ready(let outfit):
                 Text(outfit.summary)
                     .font(.body)
                     .foregroundStyle(.secondary)
             case .generating(let partial) where !partial.summary.isEmpty:
-                progressCaption(for: .plan)
                 Text(partial.summary)
                     .font(.body)
                     .foregroundStyle(.secondary)
             case .loading, .generating:
-                progressCaption(for: .plan)
                 Text(SkeletonLoadingView.recommendation.summary)
                     .font(.body)
                     .foregroundStyle(.secondary)
@@ -98,15 +97,14 @@ struct DayPlanView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
             Divider()
+            progressCaption(for: .wearAndBring)
 
             switch recommendation {
             case .ready(let outfit):
                 itemList(outfit.items)
             case .generating(let partial):
-                progressCaption(for: .wearAndBring)
                 itemList(partial.items, paddedWithPlaceholders: true)
             case .loading:
-                progressCaption(for: .wearAndBring)
                 itemList([], paddedWithPlaceholders: true)
             case .unavailable, .failed:
                 recommendationNotice(for: .wearAndBring)
@@ -132,10 +130,10 @@ struct DayPlanView: View {
         }
     }
 
-    /// Only the first visible suggestion card says the outfit is on its way, so it isn't repeated.
+    /// While the outfit is on its way, only the first visible suggestion card says so, so it isn't repeated.
     @ViewBuilder
     private func progressCaption(for card: CardType) -> some View {
-        if card == firstSuggestionCard {
+        if recommendation.isInProgress, card == firstSuggestionCard {
             ProgressCaption("Putting together today's outfit…")
         }
     }

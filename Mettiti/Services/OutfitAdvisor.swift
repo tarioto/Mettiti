@@ -38,8 +38,8 @@ struct OutfitAdvisor: Sendable {
         try Self.checkAvailability()
         let session = preparedSession.take() ?? Self.makeSession()
         let stream = session.streamResponse(to: Self.prompt(for: weather, unit: unitProvider()), generating: OutfitRecommendation.self)
-        for try await snapshot in stream {
-            await onPartial(Self.draft(from: snapshot.content))
+        for try await partial in stream {
+            await onPartial(Self.draft(from: partial.content))
         }
         return try await stream.collect().content
     }

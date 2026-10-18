@@ -16,6 +16,14 @@ enum RecommendationState {
         case modelNotReady
     }
 
+    /// Whether the model is still working on the suggestion, before or while it streams in.
+    var isInProgress: Bool {
+        switch self {
+        case .loading, .generating: return true
+        case .ready, .unavailable, .failed: return false
+        }
+    }
+
     var outfit: OutfitRecommendation? {
         if case .ready(let recommendation) = self { return recommendation }
         return nil

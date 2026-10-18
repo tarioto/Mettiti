@@ -16,6 +16,9 @@ final class DayPlanViewModel: ObservableObject {
     /// Why refreshing today's Saved Plan failed. The Saved Plan stays on screen with this as a
     /// notice instead of the error screen; cleared when the next load starts.
     @Published private(set) var refreshFailureMessage: String?
+    /// True while a refresh runs behind the Saved Plan's outfit, which stays on screen until the
+    /// fresh plan is complete, so the screen can say it's updating (#23).
+    @Published private(set) var isUpdatingSavedPlan = false
 
     private let locationManager: LocationProviding
     private let locationPreference: LocationPreferenceStore
@@ -161,6 +164,7 @@ final class DayPlanViewModel: ObservableObject {
     private func applySelection(_ selection: LocationSelection) {
         hasStarted = true
         isShowingSavedPlan = false
+        isUpdatingSavedPlan = false
         state = .idle
         lastCoordinate = nil
         beginLoading(for: selection)
@@ -185,6 +189,7 @@ final class DayPlanViewModel: ObservableObject {
 
     /// Fails the plan, unless today's Saved Plan is on screen: that stays, with a notice.
     private func fail(_ message: String) {
+        isUpdatingSavedPlan = false
         if isShowingSavedPlan {
             refreshFailureMessage = message
             // A Saved Plan without an outfit shows .loading; nothing is loading it any more.
@@ -202,7 +207,10 @@ final class DayPlanViewModel: ObservableObject {
         let provider = providerPreference.provider
         // Loads the model while the weather is in flight, so the suggestion starts sooner (#23).
         fetcher.prewarmRecommendation()
-        await showUnavailableOnSavedPlanWithoutOutfit()
+        isUpdatingSavedPlan = isShowingSavedPlanOutfit
+        // A superseding load sets this itself; one that ends here clears it.
+        defer { if !Task.isCancelled { isUpdatingSavedPlan = false } }
+        await prepareSavedPlanWithoutOutfitForRefresh()
         do {
             let (weather, hourly) = try await fetcher.fetchWeather(for: coordinate, from: provider)
             guard !Task.isCancelled else { return }
@@ -218,19 +226,22 @@ final class DayPlanViewModel: ObservableObject {
         // A retry runs this directly as `loadTask`, so it needs its own guard (#10).
         guard !Task.isCancelled else { return }
         let recommendation: RecommendationState
-        if case .unavailable(let reason) = await fetcher.recommendationAvailability() {
+        let availability = await fetcher.recommendationAvailability()
+        // A load superseded during that await (e.g. by a selection change) mustn't write `state`.
+        guard !Task.isCancelled else { return }
+        if case .unavailable(let reason) = availability {
             recommendation = .unavailable(reason)
         } else {
-            // A Saved outfit stays on screen until the fresh one is complete. Anything else
-            // (including a Saved Plan without an outfit) gives way to the fresh weather and
+            // The Saved Plan's outfit stays on screen until the fresh one is complete. Anything
+            // else (including a Saved Plan without an outfit) gives way to the fresh weather and
             // the suggestion as it streams in, so the Saved Plan is no longer what's on screen.
-            if !isShowingSavedOutfit {
+            if !isShowingSavedPlanOutfit {
                 isShowingSavedPlan = false
                 state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .loading)
             }
             do {
                 recommendation = .ready(try await fetcher.recommendation(for: weather) { [weak self] partial in
-                    guard let self, !Task.isCancelled, !self.isShowingSavedOutfit else { return }
+                    guard let self, !Task.isCancelled, !self.isShowingSavedPlanOutfit else { return }
                     self.state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .generating(partial))
                 })
             } catch {
@@ -246,16 +257,20 @@ final class DayPlanViewModel: ObservableObject {
 
     /// Whether today's Saved Plan is on screen with its outfit, which partial suggestions
     /// mustn't replace. Stays true after a failed refresh, so the next one holds partials back too.
-    private var isShowingSavedOutfit: Bool {
+    private var isShowingSavedPlanOutfit: Bool {
         guard isShowingSavedPlan, case .loaded(_, _, _, .ready) = state else { return false }
         return true
     }
 
-    /// A Saved Plan without an outfit would show the outfit loading (or an earlier refresh's
-    /// failure) until the refresh finishes, so say right away when the model can't make one.
-    private func showUnavailableOnSavedPlanWithoutOutfit() async {
-        guard isShowingSavedPlan, !isShowingSavedOutfit, case .loaded(let weather, let hourly, let provider, _) = state,
-              case .unavailable(let reason) = await fetcher.recommendationAvailability(),
+    /// Readies a Saved Plan without an outfit for its refresh: an earlier refresh's failure (and
+    /// its Try Again button) gives way to the outfit loading, and if the model can't make one,
+    /// that shows right away instead of only once the refresh finishes.
+    private func prepareSavedPlanWithoutOutfitForRefresh() async {
+        guard isShowingSavedPlan, !isShowingSavedPlanOutfit, case .loaded(let weather, let hourly, let provider, let recommendation) = state else { return }
+        if case .failed = recommendation {
+            state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .loading)
+        }
+        guard case .unavailable(let reason) = await fetcher.recommendationAvailability(),
               !Task.isCancelled else { return }
         state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .unavailable(reason))
     }
