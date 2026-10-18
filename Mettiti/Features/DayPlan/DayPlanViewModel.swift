@@ -116,10 +116,12 @@ final class DayPlanViewModel: ObservableObject {
             if let lastCoordinate {
                 await startLoad(for: lastCoordinate).value
             } else {
-                // Leave .failed so handleGPSCoordinate loads the next fix.
                 loadTask?.cancel()
+                loadTask = nil
                 refreshFailureMessage = nil
-                state = .idle
+                // Keep today's saved plan on screen; its revalidation starts with the next fix.
+                // Otherwise leave .failed so handleGPSCoordinate loads the next fix.
+                if !isRevalidating { state = .idle }
                 locationManager.requestLocation()
             }
         case .custom(_, let latitude, let longitude):
@@ -179,6 +181,10 @@ final class DayPlanViewModel: ObservableObject {
         if isRevalidating {
             isRevalidating = false
             refreshFailureMessage = message
+            // A saved plan without an outfit shows .loading; nothing is loading it any more.
+            if case .loaded(let weather, let hourly, let provider, .loading) = state {
+                state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .failed(message))
+            }
         } else {
             state = .failed(message)
         }
@@ -218,6 +224,7 @@ final class DayPlanViewModel: ObservableObject {
         }
         guard !Task.isCancelled else { return }
         isRevalidating = false
+        refreshFailureMessage = nil
         state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: recommendation)
         publishSnapshot(PlanSnapshot(weather: weather, recommendation: recommendation.outfit, generatedAt: .now, provider: provider, location: locationPreference.selection, hourly: hourly))
     }

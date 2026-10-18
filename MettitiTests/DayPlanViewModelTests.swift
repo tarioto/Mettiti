@@ -579,6 +579,43 @@ struct DayPlanViewModelTests {
         #expect(viewModel.refreshFailureMessage == "Couldn't find your location right now.")
     }
 
+    @Test func refreshBeforeTheFirstGPSFixKeepsTodaysPlanAndStillRevalidates() async throws {
+        let location = FakeLocationProvider()
+        let fetcher = GatedDayPlanFetcher()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { .cached(high: 99, summary: "Cached outfit", location: .currentLocation) },
+            publishSnapshot: { _ in }
+        )
+
+        viewModel.start()
+        await viewModel.refresh()
+        #expect(viewModel.state.readySummary == "Cached outfit")
+
+        location.fail("Couldn't find your location right now.")
+        #expect(viewModel.state.readySummary == "Cached outfit")
+        #expect(viewModel.refreshFailureMessage != nil)
+    }
+
+    @Test func failedRefreshOfASavedPlanWithoutAnOutfitStopsTheSpinner() async throws {
+        let fetcher = GatedDayPlanFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, cached: .cached(high: 99, summary: nil, location: cityA))
+
+        viewModel.start()
+        #expect(viewModel.state.isRecommendationLoading)
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .failure(FakeFetchError()))
+
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+        #expect(viewModel.state.loadedHigh == 99)
+        #expect(viewModel.state.recommendationFailureMessage != nil)
+    }
+
     @Test func changingProviderDuringTheRefreshReplacesTheSavedPlanWithTheNewProvidersWeather() async throws {
         let fetcher = GatedRecommendationFetcher()
         let providerPreference = WeatherProviderPreferenceStore(defaults: isolatedDefaults())
