@@ -7,6 +7,11 @@ struct PlanSnapshot: Codable, Sendable {
     let generatedAt: Date
     /// Optional so snapshots saved before providers existed still decode.
     var provider: WeatherProvider?
+    /// The location the plan is for, so the app only shows it on launch for that same
+    /// location (#22). Nil for snapshots saved before it was stored.
+    var location: LocationSelection?
+    /// Nil when saved before it was stored, or when the hourly fetch failed.
+    var hourly: HourlyForecast?
 }
 
 extension PlanSnapshot {

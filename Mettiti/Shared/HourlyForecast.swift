@@ -1,6 +1,7 @@
 import Foundation
 
-struct HourlyTemperaturePoint: Identifiable {
+struct HourlyTemperaturePoint: Identifiable, Codable, Sendable {
+    /// Only identifies points within one chart, so it's regenerated rather than saved.
     let id = UUID()
     let date: Date
     let hourLabel: String
@@ -8,9 +9,13 @@ struct HourlyTemperaturePoint: Identifiable {
     let minF: Double
     let maxF: Double
     let precipitationProbability: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case date, hourLabel, meanF, minF, maxF, precipitationProbability
+    }
 }
 
-struct HourlyForecast {
+struct HourlyForecast: Codable, Sendable {
     let timeZone: TimeZone
     let points: [HourlyTemperaturePoint]
 

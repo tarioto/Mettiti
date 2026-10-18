@@ -15,6 +15,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { _ in }
         )
 
@@ -43,6 +44,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { snapshots.append($0) }
         )
 
@@ -72,6 +74,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { _ in }
         )
 
@@ -98,6 +101,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { snapshots.append($0) }
         )
 
@@ -128,6 +132,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { _ in }
         )
 
@@ -150,6 +155,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { snapshots.append($0) }
         )
 
@@ -178,6 +184,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { _ in }
         )
 
@@ -205,6 +212,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { _ in }
         )
 
@@ -329,6 +337,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { snapshots.append($0) }
         )
 
@@ -359,6 +368,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { _ in }
         )
         viewModel.start()
@@ -386,6 +396,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { snapshots.append($0) }
         )
         viewModel.start()
@@ -421,6 +432,7 @@ struct DayPlanViewModelTests {
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
+            loadSnapshot: { nil },
             publishSnapshot: { _ in }
         )
 
@@ -433,21 +445,82 @@ struct DayPlanViewModelTests {
         let requested = await fetcher.requestedCoordinates
         #expect(requested.count == 1)
     }
+
+    // MARK: Cached plan on launch (#22)
+
+    @Test func todaysPlanForTheSameCityShowsInstantlyThenIsReplacedByTheFreshOne() async throws {
+        let fetcher = GatedDayPlanFetcher()
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = makeCustomCityViewModel(
+            fetcher: fetcher,
+            cached: .cached(high: 99, summary: "Cached outfit", location: cityA),
+            publishSnapshot: { snapshots.append($0) }
+        )
+
+        viewModel.start()
+
+        #expect(viewModel.state.loadedHigh == 99)
+        #expect(viewModel.state.readySummary == "Cached outfit")
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        #expect(viewModel.state.loadedHigh == 99)
+
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.state.loadedHigh == 10 }
+        #expect(viewModel.state.readySummary == OutfitRecommendation.placeholder.summary)
+        #expect(snapshots.map(\.weather.highTemperatureF) == [10])
+    }
+
+    @Test(arguments: [
+        PlanSnapshot.cached(high: 99, summary: "Yesterday", location: cityA, generatedAt: .now.addingTimeInterval(-2 * 24 * 60 * 60)),
+        .cached(high: 99, summary: "Other city", location: .custom(name: "City B", latitude: 20, longitude: 20)),
+        .cached(high: 99, summary: "Other provider", location: cityA, provider: .openMeteo),
+        .cached(high: 99, summary: "Saved before locations were stored", location: cityA).withoutLocation,
+    ])
+    func savedPlanThatDoesNotMatchIsNotShown(snapshot: PlanSnapshot) async throws {
+        let viewModel = makeCustomCityViewModel(fetcher: GatedDayPlanFetcher(), cached: snapshot)
+
+        viewModel.start()
+
+        #expect(viewModel.state.loadedHigh == nil)
+    }
+
 }
 
 // MARK: - Helpers
 
+private let cityA = LocationSelection.custom(name: "City A", latitude: 10, longitude: 10)
+
 @MainActor
-private func makeCustomCityViewModel(fetcher: DayPlanFetching, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
+private func makeCustomCityViewModel(fetcher: DayPlanFetching, cached: PlanSnapshot? = nil, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
     let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
-    locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
+    locationPreference.selection = cityA
     return DayPlanViewModel(
         locationManager: FakeLocationProvider(),
         locationPreference: locationPreference,
         providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
         fetcher: fetcher,
+        loadSnapshot: { cached },
         publishSnapshot: publishSnapshot
     )
+}
+
+private extension PlanSnapshot {
+    /// A plan saved earlier today, distinguishable from fresh plans by its high and summary.
+    static func cached(high: Double, summary: String?, location: LocationSelection, provider: WeatherProvider = .apple, generatedAt: Date = .now) -> PlanSnapshot {
+        PlanSnapshot(
+            weather: .forecast(high: high),
+            recommendation: summary.map { OutfitRecommendation(summary: $0, items: []) },
+            generatedAt: generatedAt,
+            provider: provider,
+            location: location
+        )
+    }
+
+    var withoutLocation: PlanSnapshot {
+        var snapshot = self
+        snapshot.location = nil
+        return snapshot
+    }
 }
 
 private extension LoadState {
