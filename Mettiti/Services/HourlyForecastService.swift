@@ -44,9 +44,9 @@ struct HourlyForecastService {
         formatter.locale = Locale(identifier: "en_US_POSIX")
 
         let labelFormatter = DateFormatter()
-        labelFormatter.dateFormat = "h a"
+        // "j" is the locale's preferred hour: "3 PM" in the US, "15 Uhr" in Germany.
+        labelFormatter.setLocalizedDateFormatFromTemplate("j")
         labelFormatter.timeZone = timeZone
-        labelFormatter.locale = Locale(identifier: "en_US_POSIX")
 
         var points: [HourlyTemperaturePoint] = []
         for index in decoded.time.indices {

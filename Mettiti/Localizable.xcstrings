@@ -118,7 +118,8 @@
 
     },
     "RainBase" : {
-
+      "comment" : "Internal chart series name for the baseline of the rain bars; not shown on screen.",
+      "shouldTranslate" : false
     },
     "Received an unexpected response from the weather service." : {
 

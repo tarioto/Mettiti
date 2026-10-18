@@ -42,8 +42,9 @@ struct OutfitAdvisor: Sendable {
     "chilly morning", "mild afternoon", or "hot and sunny".
     """
 
-    /// `locale` only decides what `.system` means. The prompt itself is always English with an explicit
-    /// unit ("72°F"), because the model reads it, not the user.
+    /// `locale` only decides what `.system` means. Temperatures are always written in a fixed form with an
+    /// explicit unit ("72°F"), because the model reads them, not the user. The condition is whatever the
+    /// weather provider returned, so it's in the user's language.
     static func prompt(for weather: DailyWeather, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent) -> String {
         let unit = unit.resolved(for: locale)
         func temperature(_ fahrenheit: Double) -> String {
