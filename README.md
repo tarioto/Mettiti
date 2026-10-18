@@ -78,6 +78,10 @@ brew install gitleaks
 git config core.hooksPath .githooks
 ```
 
+### CI
+
+Workflow actions in `.github/workflows/` are pinned to full commit SHAs with a `# vX.Y.Z` version comment, and Dependabot opens weekly PRs to update them.
+
 ## Project structure
 
 ```
