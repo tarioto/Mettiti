@@ -36,6 +36,9 @@
     "Bars show chance of rain" : {
 
     },
+    "Chance of rain at %@" : {
+      "comment" : "VoiceOver label for an hour's rain bar in the hourly chart; the argument is the hour, e.g. 3 PM"
+    },
     "City name" : {
 
     },

@@ -71,7 +71,7 @@ struct HourlyForecastTests {
     @Test func spreadFromTheEnsembleKeepsEachHoursOwnMeanAndChanceOfRain() {
         let hour = date("2026-10-09T20:00:00Z")
         let apple = HourlyForecast(timeZone: pacific, points: [
-            HourlyTemperaturePoint(date: hour, hourLabel: "", meanF: 70, minF: 70, maxF: 70, precipitationProbability: 40),
+            HourlyTemperaturePoint(date: hour, meanF: 70, minF: 70, maxF: 70, precipitationProbability: 40),
         ])
         let ensemble = HourlyForecast(timeZone: pacific, points: [point(at: hour)])
 
@@ -83,8 +83,45 @@ struct HourlyForecastTests {
         #expect(merged.points.map(\.precipitationProbability) == [40])
     }
 
+    @Test func aRefetchedHourKeepsItsIdentity() {
+        let first = HourlyTemperaturePoint(date: date("2026-10-09T20:00:00Z"), meanF: 64, minF: 60, maxF: 68, precipitationProbability: 10)
+        let refetched = HourlyTemperaturePoint(date: date("2026-10-09T20:00:00Z"), meanF: 65, minF: 61, maxF: 69, precipitationProbability: 20)
+
+        #expect(first.id == refetched.id)
+    }
+
+    @Test func hoursAreLabelledInTheForecastLocationsTimeZone() throws {
+        let berlin = try #require(TimeZone(identifier: "Europe/Berlin"))
+        let forecast = HourlyForecast(timeZone: berlin, points: [point(at: date("2026-10-25T12:00:00Z"))])
+
+        let label = date("2026-10-25T12:00:00Z").formatted(forecast.hourFormat.locale(Locale(identifier: "en_US")))
+
+        // 12:00 UTC is 13:00 CET.
+        #expect(label.replacingOccurrences(of: "\u{202F}", with: " ") == "1 PM")
+    }
+
+    @Test func bothHoursThatShareALabelAtTheFallBackStayApart() throws {
+        // Berlin's clocks go from 03:00 CEST back to 02:00 CET, so two hours read "2 AM".
+        let berlin = try #require(TimeZone(identifier: "Europe/Berlin"))
+        let summerTwoAM = date("2026-10-25T00:00:00Z")
+        let winterTwoAM = date("2026-10-25T01:00:00Z")
+        let forecast = HourlyForecast(timeZone: berlin, points: [point(at: summerTwoAM), point(at: winterTwoAM)])
+        let style = forecast.hourFormat.locale(Locale(identifier: "en_US"))
+
+        #expect(summerTwoAM.formatted(style) == winterTwoAM.formatted(style))
+        #expect(Set(forecast.points.map(\.id)).count == 2)
+        #expect(forecast.axisDates == [summerTwoAM, winterTwoAM])
+    }
+
+    @Test func axisLabelsFourEvenlySpacedHours() {
+        let start = date("2026-10-09T20:00:00Z")
+        let forecast = HourlyForecast(timeZone: pacific, points: (0..<24).map { point(at: start.addingTimeInterval(Double($0) * 3600)) })
+
+        #expect(forecast.axisDates == [0, 6, 12, 18].map { start.addingTimeInterval(Double($0) * 3600) })
+    }
+
     private func point(at date: Date) -> HourlyTemperaturePoint {
-        HourlyTemperaturePoint(date: date, hourLabel: "", meanF: 64, minF: 60, maxF: 68, precipitationProbability: nil)
+        HourlyTemperaturePoint(date: date, meanF: 64, minF: 60, maxF: 68, precipitationProbability: nil)
     }
 
     private func ensembleResponse(timezone: String, utcOffsetSeconds: Int?, time: [String], members: [[Double]]) throws -> Data {

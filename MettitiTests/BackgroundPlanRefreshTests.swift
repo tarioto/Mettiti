@@ -36,13 +36,13 @@ struct BackgroundPlanRefreshTests {
         let harness = Harness(now: date("2026-10-08T06:00:00-07:00"))
         harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
         await harness.fetcher.returnHourly(HourlyForecast(timeZone: pacific, points: [
-            HourlyTemperaturePoint(date: date("2026-10-08T06:00:00-07:00"), hourLabel: "6AM", meanF: 50, minF: 48, maxF: 52, precipitationProbability: 0),
+            HourlyTemperaturePoint(date: date("2026-10-08T06:00:00-07:00"), meanF: 50, minF: 48, maxF: 52, precipitationProbability: 0),
         ]))
 
         _ = await harness.refresher.refreshIfStale()
 
         #expect(harness.published.map(\.location) == [.custom(name: "Seattle", latitude: 47.6, longitude: -122.3)])
-        #expect(harness.published.first?.hourly?.points.map(\.hourLabel) == ["6AM"])
+        #expect(harness.published.first?.hourly?.points.map(\.date) == [date("2026-10-08T06:00:00-07:00")])
     }
 
     @Test func missingSnapshotIsFilledUsingLastKnownGPSFixForCurrentLocation() async {

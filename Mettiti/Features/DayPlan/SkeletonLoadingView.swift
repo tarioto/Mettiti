@@ -23,15 +23,11 @@ extension SkeletonLoadingView {
 
     static let hourly: HourlyForecast = {
         let start = Calendar.current.dateInterval(of: .hour, for: .now)?.start ?? .now
-        let labelFormatter = DateFormatter()
-        // "j" is the locale's preferred hour: "3 PM" in the US, "15 Uhr" in Germany.
-        labelFormatter.setLocalizedDateFormatFromTemplate("j")
         let points = (0..<24).map { hour in
             let date = start.addingTimeInterval(Double(hour) * 3600)
             let mean = 65 + 7 * sin(Double(hour) / 24 * 2 * .pi)
             return HourlyTemperaturePoint(
                 date: date,
-                hourLabel: labelFormatter.string(from: date),
                 meanF: mean,
                 minF: mean - 2,
                 maxF: mean + 2,
