@@ -17,13 +17,15 @@ struct DayPlanFetcher: DayPlanFetching {
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?) {
         switch provider {
         case .openMeteo:
-            async let hourlyTask: HourlyForecast? = try? hourlyForecastService.fetchHourlyForecast(for: coordinate)
-            let weather = try await weatherService.fetchTodayForecast(for: coordinate)
-            return (weather, await hourlyTask)
+            // The forecast request also carries the hourly chance of rain for the chart.
+            async let ensembleTask: HourlyForecast? = try? hourlyForecastService.fetchHourlyForecast(for: coordinate)
+            let forecast = try await weatherService.fetchForecast(for: coordinate)
+            let hourly = (await ensembleTask)?.applyingPrecipitation(forecast.hourlyPrecipitation)
+            return (forecast.daily, hourly)
         case .apple:
             // WeatherKit has no hourly uncertainty, so borrow Open-Meteo's ensemble spread
             // for the chart's band. If that request fails, the chart just shows the line.
-            async let ensembleTask: HourlyForecast? = try? hourlyForecastService.fetchHourlyForecast(for: coordinate, includePrecipitation: false)
+            async let ensembleTask: HourlyForecast? = try? hourlyForecastService.fetchHourlyForecast(for: coordinate)
             let forecast = try await appleWeatherService.fetchForecast(for: coordinate)
             guard let ensemble = await ensembleTask else { return (forecast.daily, forecast.hourly) }
             return (forecast.daily, forecast.hourly.applyingSpread(from: ensemble))

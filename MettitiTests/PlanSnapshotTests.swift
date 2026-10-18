@@ -55,6 +55,42 @@ struct PlanSnapshotTests {
         #expect(snapshot.hourly == nil)
     }
 
+    /// An hourly forecast as saved by the version that first stored it (#81): each point has an
+    /// hour label and a plain-number chance of rain.
+    private let savedWithFirstHourlyFormat = """
+    {
+      "weather": {
+        "date": 781574400,
+        "highTemperatureF": 68,
+        "lowTemperatureF": 52,
+        "precipitationProbability": 40,
+        "uvIndex": 3,
+        "windSpeedMph": 9,
+        "conditionCode": 61,
+        "conditionDescription": "Rain"
+      },
+      "generatedAt": 781578000,
+      "provider": "openMeteo",
+      "hourly": {
+        "timeZone": { "identifier": "America/Los_Angeles" },
+        "points": [
+          { "date": 781578000, "hourLabel": "9 AM", "meanF": 55, "minF": 52, "maxF": 58, "precipitationProbability": 10 },
+          { "date": 781581600, "hourLabel": "10 AM", "meanF": 60, "minF": 57, "maxF": 63, "precipitationProbability": 0 }
+        ]
+      }
+    }
+    """
+
+    @Test func hourlyForecastSavedInTheFirstFormatStillDecodes() throws {
+        let snapshot = try JSONDecoder().decode(PlanSnapshot.self, from: Data(savedWithFirstHourlyFormat.utf8))
+
+        let hourly = try #require(snapshot.hourly)
+        #expect(hourly.timeZone == pacific)
+        #expect(hourly.points.map(\.date) == [Date(timeIntervalSinceReferenceDate: 781_578_000), Date(timeIntervalSinceReferenceDate: 781_581_600)])
+        #expect(hourly.points.map(\.meanF) == [55, 60])
+        #expect(hourly.points.map(\.precipitationProbability) == [10, 0])
+    }
+
     @Test func locationAndHourlyForecastRoundTrip() throws {
         let hourly = HourlyForecast(timeZone: pacific, points: [
             HourlyTemperaturePoint(date: date("2026-10-08T09:00:00-07:00"), hourLabel: "9AM", meanF: 55, minF: 52, maxF: 58, precipitationProbability: 10),
