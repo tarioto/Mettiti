@@ -786,6 +786,25 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.readySummary == "Bring a coat.")
     }
 
+    @Test func tryAgainOnASavedPlanWithoutAnOutfitStreamsTheFreshOne() async throws {
+        let fetcher = StreamingRecommendationFetcher(failingWeatherRequests: 1)
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: nil, location: cityA), publishSnapshot: { snapshots.append($0) })
+        viewModel.start()
+        try await waitUntil { viewModel.state.recommendationFailureMessage != nil }
+
+        viewModel.retryRecommendation()
+        try await waitUntil { fetcher.isStreaming }
+        fetcher.send(partial: OutfitRecommendation(summary: "Bring a", items: []))
+        try await waitUntil { viewModel.state.partialSummary == "Bring a" }
+        #expect(viewModel.state.loadedHigh == 10)
+
+        fetcher.finish(with: .success(OutfitRecommendation(summary: "Bring a coat.", items: [])))
+        try await waitUntil { viewModel.state.readySummary == "Bring a coat." }
+        #expect(viewModel.refreshFailureMessage == nil)
+        #expect(snapshots.map(\.recommendation?.summary) == ["Bring a coat."])
+    }
+
     @Test func savedPlanWithoutAnOutfitSaysTheModelIsUnavailableBeforeTheFreshWeatherArrives() async throws {
         let fetcher = GatedDayPlanFetcher(availability: .unavailable(.appleIntelligenceNotEnabled))
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: nil, location: cityA))
