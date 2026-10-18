@@ -32,6 +32,19 @@ struct BackgroundPlanRefreshTests {
         #expect(harness.published.map(\.provider) == [.openMeteo])
     }
 
+    @Test func publishedPlanRecordsItsLocationAndHourlyForecastSoTheAppCanShowItOnLaunch() async {
+        let harness = Harness(now: date("2026-10-08T06:00:00-07:00"))
+        harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
+        await harness.fetcher.returnHourly(HourlyForecast(timeZone: pacific, points: [
+            HourlyTemperaturePoint(date: date("2026-10-08T06:00:00-07:00"), hourLabel: "6AM", meanF: 50, minF: 48, maxF: 52, precipitationProbability: 0),
+        ]))
+
+        _ = await harness.refresher.refreshIfStale()
+
+        #expect(harness.published.map(\.location) == [.custom(name: "Seattle", latitude: 47.6, longitude: -122.3)])
+        #expect(harness.published.first?.hourly?.points.map(\.hourLabel) == ["6AM"])
+    }
+
     @Test func missingSnapshotIsFilledUsingLastKnownGPSFixForCurrentLocation() async {
         let harness = Harness(now: date("2026-10-08T06:00:00-07:00"))
         harness.snapshot = nil
@@ -313,10 +326,12 @@ private actor RecordingPlanFetcher: DayPlanFetching {
     var availability: RecommendationAvailability = .available
     var weatherResult: Result<DailyWeather, StubFailure> = .success(.placeholder)
     var recommendationResult: Result<OutfitRecommendation, StubFailure> = .success(.placeholder)
+    var hourly: HourlyForecast?
 
     func failWeather() { weatherResult = .failure(StubFailure()) }
     func failRecommendation() { recommendationResult = .failure(StubFailure()) }
     func makeUnavailable(_ reason: RecommendationState.UnavailableReason) { availability = .unavailable(reason) }
+    func returnHourly(_ forecast: HourlyForecast) { hourly = forecast }
 
     /// Runs `hook` inside `fetchWeather`, e.g. to simulate the user changing something in the app mid-fetch.
     private var weatherFetchHook: (@MainActor @Sendable () -> Void)?
@@ -329,7 +344,7 @@ private actor RecordingPlanFetcher: DayPlanFetching {
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?) {
         weatherRequests.append(WeatherRequest(latitude: coordinate.latitude, longitude: coordinate.longitude, provider: provider))
         if let weatherFetchHook { await weatherFetchHook() }
-        return (try weatherResult.get(), nil)
+        return (try weatherResult.get(), hourly)
     }
 
     /// Makes generation hang until the calling task is cancelled (then it throws `CancellationError`,

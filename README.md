@@ -86,7 +86,7 @@ Workflow actions in `.github/workflows/` are pinned to full commit SHAs with a `
 
 ```
 Mettiti/
-  Models/        App-only models and UI config (forecast, recommendation state, themes, cards)
+  Models/        App-only models and UI config (recommendation state, themes, cards)
   Services/      Weather clients, location, OutfitAdvisor, DayPlanFetcher, background refresh
   Persistence/   Preference stores
   Features/

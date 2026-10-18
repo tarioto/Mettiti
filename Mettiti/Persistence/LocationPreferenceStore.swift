@@ -1,10 +1,5 @@
 import Foundation
 
-enum LocationSelection: Codable, Equatable {
-    case currentLocation
-    case custom(name: String, latitude: Double, longitude: Double)
-}
-
 @MainActor
 final class LocationPreferenceStore: ObservableObject {
     @Published var selection: LocationSelection {

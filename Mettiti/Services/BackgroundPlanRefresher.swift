@@ -54,7 +54,7 @@ struct BackgroundPlanRefresher {
         }
 
         let provider = provider()
-        guard let (weather, _) = try? await fetcher.fetchWeather(for: coordinate, from: provider) else { return .failed }
+        guard let (weather, hourly) = try? await fetcher.fetchWeather(for: coordinate, from: provider) else { return .failed }
         let recommendation: OutfitRecommendation? = if availability == .available {
             try? await fetcher.recommendation(for: weather)
         } else {
@@ -73,7 +73,7 @@ struct BackgroundPlanRefresher {
            latest.recommendation != nil || recommendation == nil {
             return .supersededByApp
         }
-        publish(PlanSnapshot(weather: weather, recommendation: recommendation, generatedAt: now(), provider: provider))
+        publish(PlanSnapshot(weather: weather, recommendation: recommendation, generatedAt: now(), provider: provider, location: selection, hourly: hourly))
         return recommendation == nil ? .refreshedWeatherOnly : .refreshed
     }
 
