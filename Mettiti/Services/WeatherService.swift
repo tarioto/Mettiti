@@ -8,9 +8,9 @@ enum WeatherServiceError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            return "Couldn't reach the weather service. Check your connection and try again."
+            return String(localized: "Couldn't reach the weather service. Check your connection and try again.")
         case .decodingFailed:
-            return "Received an unexpected response from the weather service."
+            return String(localized: "Received an unexpected response from the weather service.")
         }
     }
 }

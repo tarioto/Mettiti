@@ -10,9 +10,9 @@ enum AppleWeatherServiceError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unavailable:
-            return "Couldn't reach Apple Weather. Check your connection, or switch to Open-Meteo in Settings."
+            return String(localized: "Couldn't reach Apple Weather. Check your connection, or switch to Open-Meteo in Settings.")
         case .missingForecast:
-            return "Apple Weather didn't return a forecast for today."
+            return String(localized: "Apple Weather didn't return a forecast for today.")
         }
     }
 }
@@ -49,9 +49,9 @@ struct AppleWeatherService {
 
         let timeZone = await timeZoneTask
         let labelFormatter = DateFormatter()
-        labelFormatter.dateFormat = "h a"
+        // "j" is the locale's preferred hour: "3 PM" in the US, "15 Uhr" in Germany.
+        labelFormatter.setLocalizedDateFormatFromTemplate("j")
         labelFormatter.timeZone = timeZone
-        labelFormatter.locale = Locale(identifier: "en_US_POSIX")
 
         // Apple Weather gives a single deterministic value per hour, so min and max equal
         // the mean here. DayPlanViewModel layers Open-Meteo's ensemble spread on top.

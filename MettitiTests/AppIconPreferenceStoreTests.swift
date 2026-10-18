@@ -163,6 +163,12 @@ struct AppIconPreferenceStoreTests {
         #expect(store.buildIcon == .beta)
     }
 
+    /// Asset names must stay fixed even when the Theme's display label is translated.
+    @Test func themeIconAssetNamesMatchTheAssetCatalogue() {
+        #expect(ThemeIcon.allCases.map(\.alternateIconName) == ["AppIcon-Sunset", "AppIcon-Ocean", "AppIcon-Aurora", "AppIcon-Midnight"])
+        #expect(ThemeIcon.allCases.map(\.thumbnailName) == ["IconThumbnail-Sunset", "IconThumbnail-Ocean", "IconThumbnail-Aurora", "IconThumbnail-Midnight"])
+    }
+
     @Test func eachThemeExceptDefaultHasOneThemeIconInThemeOrder() {
         #expect(ThemeIcon.allCases.map(\.theme) == AppTheme.allCases.filter { $0 != .none })
     }

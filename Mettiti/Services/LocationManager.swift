@@ -18,7 +18,7 @@ final class LocationManager: NSObject, ObservableObject {
     private let manager = CLLocationManager()
     private var unknownLocationRetries = 0
     private static let maxUnknownLocationRetries = 2
-    private static let deniedMessage = "Location access is off. Enable it in Settings to get weather for your area."
+    private static var deniedMessage: String { String(localized: "Location access is off. Enable it in Settings to get weather for your area.") }
 
     override init() {
         authorizationStatus = manager.authorizationStatus
@@ -93,9 +93,9 @@ private extension LocationManager {
         case .denied:
             errorMessage = Self.deniedMessage
         case .network:
-            errorMessage = "Couldn't determine your location. Check your connection and try again."
+            errorMessage = String(localized: "Couldn't determine your location. Check your connection and try again.")
         default:
-            errorMessage = "Couldn't find your location right now. Try again, or set a location in Settings."
+            errorMessage = String(localized: "Couldn't find your location right now. Try again, or set a location in Settings.")
         }
     }
 }

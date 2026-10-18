@@ -29,6 +29,8 @@ struct OutfitAdvisor: Sendable {
         return response.content
     }
 
+    private static let promptLocale = Locale(identifier: "en_US_POSIX")
+
     static let instructions = """
     You are a friendly daily outfit and packing assistant. Given today's weather, \
     recommend what someone should wear and bring. Always consider sun protection \
@@ -40,9 +42,13 @@ struct OutfitAdvisor: Sendable {
     "chilly morning", "mild afternoon", or "hot and sunny".
     """
 
-    static func prompt(for weather: DailyWeather, unit: TemperatureUnit) -> String {
+    /// `locale` only decides what `.system` means. Temperatures are always written in a fixed form with an
+    /// explicit unit ("72°F"), because the model reads them, not the user. The condition is whatever the
+    /// weather provider returned, so it's in the user's language.
+    static func prompt(for weather: DailyWeather, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent) -> String {
+        let unit = unit.resolved(for: locale)
         func temperature(_ fahrenheit: Double) -> String {
-            "\(Int(unit.convert(fromFahrenheit: fahrenheit).rounded()))\(unit.symbol)"
+            unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)
         }
         return """
         Today's forecast:
@@ -58,17 +64,17 @@ struct OutfitAdvisor: Sendable {
 
     private static func message(for availability: SystemLanguageModel.Availability) -> String {
         guard case .unavailable(let reason) = availability else {
-            return "AI recommendations aren't available right now."
+            return String(localized: "AI recommendations aren't available right now.")
         }
         switch reason {
         case .deviceNotEligible:
-            return "This device doesn't support Apple Intelligence."
+            return String(localized: "This device doesn't support Apple Intelligence.")
         case .appleIntelligenceNotEnabled:
-            return "Turn on Apple Intelligence in Settings to get AI recommendations."
+            return String(localized: "Turn on Apple Intelligence in Settings to get AI recommendations.")
         case .modelNotReady:
-            return "The on-device model is still downloading. Try again shortly."
+            return String(localized: "The on-device model is still downloading. Try again shortly.")
         @unknown default:
-            return "AI recommendations aren't available right now."
+            return String(localized: "AI recommendations aren't available right now.")
         }
     }
 }

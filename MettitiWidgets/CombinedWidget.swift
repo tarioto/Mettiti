@@ -60,7 +60,7 @@ struct CombinedWidgetEntryView: View {
                 Text(snapshot.weather.conditionDescription)
                     .font(.headline)
                 let unit = SharedStore.loadTemperatureUnit()
-                Text("H:\(unit.displayString(fromFahrenheit: snapshot.weather.highTemperatureF)) L:\(unit.displayString(fromFahrenheit: snapshot.weather.lowTemperatureF))")
+                Text(unit.formattedHighLow(highFahrenheit: snapshot.weather.highTemperatureF, lowFahrenheit: snapshot.weather.lowTemperatureF))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

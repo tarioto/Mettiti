@@ -9,7 +9,7 @@ enum WeatherProvider: String, Codable, CaseIterable, Identifiable, Sendable {
     var label: String {
         switch self {
         case .openMeteo: return "Open-Meteo"
-        case .apple: return "Apple Weather"
+        case .apple: return String(localized: "Apple Weather", table: "Shared")
         }
     }
 
@@ -17,7 +17,7 @@ enum WeatherProvider: String, Codable, CaseIterable, Identifiable, Sendable {
     /// U+F8FF renders as the Apple logo on Apple platforms.
     var attributionText: String {
         switch self {
-        case .openMeteo: return "Weather data by Open-Meteo.com"
+        case .openMeteo: return String(localized: "Weather data by Open-Meteo.com", table: "Shared")
         case .apple: return "\u{F8FF}Weather"
         }
     }

@@ -1,0 +1,195 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@  •  %@ rain  •  UV %lld" : {
+      "comment" : "Weather card details: high/low, chance of rain, UV index",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@  •  %2$@ rain  •  UV %3$lld"
+          }
+        }
+      }
+    },
+    "AI recommendations aren't available right now." : {
+
+    },
+    "App Icon" : {
+
+    },
+    "Appearance" : {
+
+    },
+    "Apple Intelligence is still getting ready. Try again soon." : {
+
+    },
+    "Apple Weather didn't return a forecast for today." : {
+
+    },
+    "Apple Weather uses the same data as the Weather app. With either source, the hourly chart's shaded band shows the forecast spread from Open-Meteo's ensemble." : {
+
+    },
+    "Aurora" : {
+
+    },
+    "Bars show chance of rain" : {
+
+    },
+    "City name" : {
+
+    },
+    "Couldn't come up with outfit suggestions this time." : {
+
+    },
+    "Couldn't determine your location. Check your connection and try again." : {
+
+    },
+    "Couldn't find that location. Try a different search." : {
+
+    },
+    "Couldn't find your location right now. Try again, or set a location in Settings." : {
+
+    },
+    "Couldn't reach Apple Weather. Check your connection, or switch to Open-Meteo in Settings." : {
+
+    },
+    "Couldn't reach the weather service. Check your connection and try again." : {
+
+    },
+    "Current Location" : {
+
+    },
+    "Current Temperature" : {
+
+    },
+    "Custom City" : {
+
+    },
+    "Dark" : {
+
+    },
+    "Default" : {
+
+    },
+    "Done" : {
+
+    },
+    "Drag to reorder. Turn off a card to hide it from the home screen." : {
+
+    },
+    "High" : {
+
+    },
+    "Home Screen Cards" : {
+
+    },
+    "Light" : {
+
+    },
+    "Location access is off. Enable it in Settings to get weather for your area." : {
+
+    },
+    "Low" : {
+
+    },
+    "Mettiti" : {
+
+    },
+    "Midnight" : {
+
+    },
+    "No outfit suggestions right now." : {
+
+    },
+    "Ocean" : {
+
+    },
+    "Open Settings" : {
+
+    },
+    "Other data sources" : {
+
+    },
+    "Outfit suggestions need a device that supports Apple Intelligence." : {
+
+    },
+    "Rain" : {
+
+    },
+    "RainBase" : {
+      "comment" : "Internal chart series name for the baseline of the rain bars; not shown on screen.",
+      "shouldTranslate" : false
+    },
+    "Received an unexpected response from the weather service." : {
+
+    },
+    "Refresh" : {
+
+    },
+    "Search for a city to see its weather instead of your current location." : {
+
+    },
+    "Settings" : {
+
+    },
+    "Shaded band shows model spread · bars show chance of rain" : {
+
+    },
+    "Sunset" : {
+
+    },
+    "System" : {
+
+    },
+    "Temperature" : {
+
+    },
+    "Temperature Unit" : {
+
+    },
+    "The color is used for the home screen background. Appearance controls Light/Dark mode independently." : {
+
+    },
+    "The on-device model is still downloading. Try again shortly." : {
+
+    },
+    "Theme" : {
+
+    },
+    "This device doesn't support Apple Intelligence." : {
+
+    },
+    "Time" : {
+
+    },
+    "Today's plan" : {
+
+    },
+    "Try Again" : {
+
+    },
+    "Turn on Apple Intelligence in Settings to get AI recommendations." : {
+
+    },
+    "Turn on Apple Intelligence to get outfit suggestions." : {
+
+    },
+    "Use This City" : {
+
+    },
+    "Wear & bring" : {
+
+    },
+    "Weather" : {
+
+    },
+    "Weather Location" : {
+
+    },
+    "Weather Source" : {
+
+    }
+  },
+  "version" : "1.0"
+}

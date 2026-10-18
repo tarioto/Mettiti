@@ -9,27 +9,50 @@ enum TemperatureUnit: String, Codable, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .system: return "System"
-        case .fahrenheit: return "Fahrenheit"
-        case .celsius: return "Celsius"
+        case .system: return String(localized: "System", table: "Shared")
+        case .fahrenheit: return String(localized: "Fahrenheit", table: "Shared")
+        case .celsius: return String(localized: "Celsius", table: "Shared")
         }
     }
 
-    var symbol: String {
-        resolved == .fahrenheit ? "°F" : "°C"
-    }
-
-    /// Follows the device's Settings > General > Language & Region > Temperature Unit when set to `.system`.
-    var resolved: TemperatureUnit {
+    /// `.system` follows `locale`'s temperature unit, which on device is
+    /// Settings > General > Language & Region > Temperature Unit (falling back to the region's default).
+    func resolved(for locale: Locale = .autoupdatingCurrent) -> TemperatureUnit {
         guard self == .system else { return self }
-        return UnitTemperature(forLocale: .autoupdatingCurrent) == .fahrenheit ? .fahrenheit : .celsius
+        return UnitTemperature(forLocale: locale) == .fahrenheit ? .fahrenheit : .celsius
     }
 
-    func displayString(fromFahrenheit value: Double) -> String {
-        "\(Int(convert(fromFahrenheit: value).rounded()))°"
+    /// A whole-degree temperature in this unit, written the way `locale` writes temperatures.
+    /// The default `.narrow` width is what the UI shows (in the US that's "72°", with no unit letter).
+    func formatted(
+        fahrenheit value: Double,
+        width: Measurement<UnitTemperature>.FormatStyle.UnitWidth = .narrow,
+        locale: Locale = .autoupdatingCurrent
+    ) -> String {
+        let unit: UnitTemperature = resolved(for: locale) == .fahrenheit ? .fahrenheit : .celsius
+        // Round here rather than in the number style so halves round away from zero, and add 0
+        // so a value that rounds to -0 prints as "0" instead of "-0".
+        let measurement = Measurement(value: convert(fromFahrenheit: value, locale: locale).rounded() + 0, unit: unit)
+        return measurement.formatted(
+            .measurement(width: width, usage: .asProvided, numberFormatStyle: .number.precision(.fractionLength(0)))
+                .locale(locale)
+        )
     }
 
-    func convert(fromFahrenheit value: Double) -> Double {
-        resolved == .fahrenheit ? value : (value - 32) * 5 / 9
+    /// The day's high and low, e.g. "H:72° L:58°". Shared by the app and the widgets, so it lives in the
+    /// `Shared` string table that both targets bundle.
+    func formattedHighLow(highFahrenheit: Double, lowFahrenheit: Double, locale: Locale = .autoupdatingCurrent) -> String {
+        let high = formatted(fahrenheit: highFahrenheit, locale: locale)
+        let low = formatted(fahrenheit: lowFahrenheit, locale: locale)
+        return String(
+            localized: "H:\(high) L:\(low)",
+            table: "Shared",
+            locale: locale,
+            comment: "Today's high and low temperatures, each already formatted with its unit"
+        )
+    }
+
+    func convert(fromFahrenheit value: Double, locale: Locale = .autoupdatingCurrent) -> Double {
+        resolved(for: locale) == .fahrenheit ? value : (value - 32) * 5 / 9
     }
 }
