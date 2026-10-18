@@ -122,8 +122,13 @@ struct ContentView: View {
         case .idle, .loadingWeather:
             SkeletonLoadingView()
         case .loaded(let weather, let hourly, let provider, let recommendation):
-            DayPlanView(weather: weather, recommendation: recommendation, hourly: hourly, provider: provider) {
-                viewModel.retryRecommendation()
+            VStack(spacing: 12) {
+                if let message = viewModel.refreshFailureMessage {
+                    RefreshFailureNotice(message: message)
+                }
+                DayPlanView(weather: weather, recommendation: recommendation, hourly: hourly, provider: provider) {
+                    viewModel.retryRecommendation()
+                }
             }
         case .failed(let message):
             ErrorStateView(message: message) {

@@ -525,12 +525,58 @@ struct DayPlanViewModelTests {
         )
 
         viewModel.start()
-        try await waitUntil { viewModel.state.isFailed }
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
 
         locationPreference.selection = .custom(name: "City B", latitude: 20, longitude: 20)
 
         try await waitUntil { viewModel.state.loadedHigh == 20 }
         #expect(viewModel.state.isRecommendationLoading)
+    }
+
+    @Test func failedRefreshKeepsTodaysPlanOnScreenWithANoticeUntilTheNextLoad() async throws {
+        let fetcher = GatedDayPlanFetcher()
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = makeCustomCityViewModel(
+            fetcher: fetcher,
+            cached: .cached(high: 99, summary: "Cached outfit", location: cityA),
+            publishSnapshot: { snapshots.append($0) }
+        )
+
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .failure(FakeFetchError()))
+
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+        #expect(viewModel.refreshFailureMessage == FakeFetchError().errorDescription)
+        #expect(viewModel.state.readySummary == "Cached outfit")
+        #expect(snapshots.isEmpty)
+
+        let refreshed = Task { await viewModel.refresh() }
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        #expect(viewModel.refreshFailureMessage == nil)
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
+        await refreshed.value
+        #expect(viewModel.state.loadedHigh == 10)
+    }
+
+    @Test func locationErrorDuringTheRefreshKeepsTodaysPlanOnScreen() async throws {
+        let location = FakeLocationProvider()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: GatedDayPlanFetcher(),
+            loadSnapshot: { .cached(high: 99, summary: "Cached outfit", location: .currentLocation) },
+            publishSnapshot: { _ in }
+        )
+
+        viewModel.start()
+        location.fail("Couldn't find your location right now.")
+
+        #expect(viewModel.state.readySummary == "Cached outfit")
+        #expect(viewModel.refreshFailureMessage == "Couldn't find your location right now.")
     }
 
     @Test func changingProviderDuringTheRefreshReplacesTheSavedPlanWithTheNewProvidersWeather() async throws {

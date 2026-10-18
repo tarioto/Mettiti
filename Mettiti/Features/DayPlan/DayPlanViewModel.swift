@@ -13,6 +13,9 @@ enum LoadState {
 @MainActor
 final class DayPlanViewModel: ObservableObject {
     @Published private(set) var state: LoadState = .idle
+    /// Why refreshing today's saved plan failed. The saved plan stays on screen with this as a
+    /// notice instead of the error screen; cleared when the next load starts.
+    @Published private(set) var refreshFailureMessage: String?
 
     private let locationManager: LocationProviding
     private let locationPreference: LocationPreferenceStore
@@ -115,6 +118,7 @@ final class DayPlanViewModel: ObservableObject {
             } else {
                 // Leave .failed so handleGPSCoordinate loads the next fix.
                 loadTask?.cancel()
+                refreshFailureMessage = nil
                 state = .idle
                 locationManager.requestLocation()
             }
@@ -128,6 +132,7 @@ final class DayPlanViewModel: ObservableObject {
         case .currentLocation:
             loadTask?.cancel()
             loadTask = nil
+            refreshFailureMessage = nil
             locationManager.requestLocation()
         case .custom(_, let latitude, let longitude):
             startLoad(for: CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
@@ -138,6 +143,7 @@ final class DayPlanViewModel: ObservableObject {
     @discardableResult
     private func startLoad(for coordinate: CLLocationCoordinate2D) -> Task<Void, Never> {
         loadTask?.cancel()
+        refreshFailureMessage = nil
         let task = Task { await loadPlan(for: coordinate) }
         loadTask = task
         return task
@@ -165,8 +171,17 @@ final class DayPlanViewModel: ObservableObject {
 
     private func handleGPSError(_ message: String) {
         guard case .currentLocation = locationPreference.selection else { return }
-        isRevalidating = false
-        state = .failed(message)
+        fail(message)
+    }
+
+    /// Fails the plan, unless today's saved plan is on screen: that stays, with a notice.
+    private func fail(_ message: String) {
+        if isRevalidating {
+            isRevalidating = false
+            refreshFailureMessage = message
+        } else {
+            state = .failed(message)
+        }
     }
 
     private func loadPlan(for coordinate: CLLocationCoordinate2D) async {
@@ -179,8 +194,7 @@ final class DayPlanViewModel: ObservableObject {
             await loadRecommendation(weather: weather, hourly: hourly, provider: provider)
         } catch {
             guard !Task.isCancelled else { return }
-            isRevalidating = false
-            state = .failed(error.localizedDescription)
+            fail(error.localizedDescription)
         }
     }
 

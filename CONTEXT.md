@@ -30,6 +30,12 @@ An alternate home screen icon matching one **Theme**: the standard artwork on th
 The icon the user explicitly picked in Settings. While there's no Icon Choice, the app shows the **Build Icon** for its Install Source. An Icon Choice always takes precedence over the Build Icon.
 _Avoid_: Icon theme, icon setting
 
+### Day plan
+
+**Saved Plan**:
+The last day plan the app or the background refresh produced, shared with the widgets (`PlanSnapshot` in code). On launch, a Saved Plan from today for the same location and weather source is shown right away while a fresh one loads.
+_Avoid_: Cached plan, snapshot (outside code)
+
 ## Relationships
 
 - Each **Theme** except Default has exactly one **Theme Icon**
