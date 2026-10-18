@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# The upload authenticates with the App Store Connect API key, not GITHUB_TOKEN.
+permissions:
+  contents: read
+
 # Uploads run one at a time and are never cancelled, so a merge can't interrupt an upload
 # that's already talking to App Store Connect.
 concurrency:
@@ -17,7 +21,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Show Xcode version
         run: xcodebuild -version
