@@ -43,4 +43,21 @@ struct HourlyForecast: Codable, Sendable {
         }
         return HourlyForecast(timeZone: timeZone, points: merged)
     }
+
+    /// Sets each hour's chance of rain from `probabilities`, keyed by the start of the hour.
+    /// Hours with no entry keep their current value.
+    func applyingPrecipitation(_ probabilities: [Date: Int]) -> HourlyForecast {
+        let merged = points.map { point -> HourlyTemperaturePoint in
+            guard let probability = probabilities[point.date] else { return point }
+            return HourlyTemperaturePoint(
+                date: point.date,
+                hourLabel: point.hourLabel,
+                meanF: point.meanF,
+                minF: point.minF,
+                maxF: point.maxF,
+                precipitationProbability: probability
+            )
+        }
+        return HourlyForecast(timeZone: timeZone, points: merged)
+    }
 }

@@ -1,10 +1,11 @@
 import Foundation
 import CoreLocation
 
+/// The ensemble's hourly temperature spread. The chance of rain comes from the main
+/// forecast request instead (see `HourlyForecast.applyingPrecipitation`), so every point
+/// here has a precipitation probability of 0.
 struct HourlyForecastService {
-    /// Pass `includePrecipitation: false` when only the temperature spread is needed,
-    /// to skip the extra precipitation request.
-    func fetchHourlyForecast(for coordinate: CLLocationCoordinate2D, includePrecipitation: Bool = true) async throws -> HourlyForecast {
+    func fetchHourlyForecast(for coordinate: CLLocationCoordinate2D) async throws -> HourlyForecast {
         var components = URLComponents(string: "https://ensemble-api.open-meteo.com/v1/ensemble")!
         components.queryItems = coordinate.weatherAPIQueryItems + [
             URLQueryItem(name: "hourly", value: "temperature_2m"),
@@ -16,15 +17,16 @@ struct HourlyForecastService {
 
         guard let url = components.url else { throw WeatherServiceError.invalidResponse }
 
-        async let precipitationTask: [String: Int] = includePrecipitation
-            ? (try? fetchPrecipitationProbabilities(for: coordinate)) ?? [:]
-            : [:]
-
         let (data, response) = try await URLSession.shared.data(from: url)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw WeatherServiceError.invalidResponse
         }
 
+        return try Self.hourlyForecast(from: data, now: Date())
+    }
+
+    /// The 24 hours from `now` (including the hour in progress) in an ensemble response.
+    static func hourlyForecast(from data: Data, now: Date) throws -> HourlyForecast {
         let decoded: EnsembleResponse
         do {
             decoded = try JSONDecoder().decode(EnsembleResponse.self, from: data)
@@ -32,16 +34,11 @@ struct HourlyForecastService {
             throw WeatherServiceError.decodingFailed
         }
 
-        let precipitationByTime = await precipitationTask
-
         guard let timeZone = TimeZone(identifier: decoded.timezone), !decoded.memberSeries.isEmpty else {
             throw WeatherServiceError.decodingFailed
         }
 
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
-        formatter.timeZone = timeZone
-        formatter.locale = Locale(identifier: "en_US_POSIX")
+        let strategy = OpenMeteoHourlyTime.parseStrategy(utcOffsetSeconds: decoded.utcOffsetSeconds)
 
         let labelFormatter = DateFormatter()
         // "j" is the locale's preferred hour: "3 PM" in the US, "15 Uhr" in Germany.
@@ -50,7 +47,7 @@ struct HourlyForecastService {
 
         var points: [HourlyTemperaturePoint] = []
         for index in decoded.time.indices {
-            guard let date = formatter.date(from: decoded.time[index]) else { continue }
+            guard let date = try? Date(decoded.time[index], strategy: strategy) else { continue }
             let valuesAtHour = decoded.memberSeries.compactMap { series -> Double? in
                 guard index < series.count else { return nil }
                 return series[index]
@@ -64,12 +61,12 @@ struct HourlyForecastService {
                     meanF: mean,
                     minF: valuesAtHour.min() ?? mean,
                     maxF: valuesAtHour.max() ?? mean,
-                    precipitationProbability: precipitationByTime[decoded.time[index]] ?? 0
+                    precipitationProbability: 0
                 )
             )
         }
 
-        let cutoff = Date().addingTimeInterval(-1800)
+        let cutoff = now.addingTimeInterval(-1800)
         let upcoming = Array(points.filter { $0.date >= cutoff }.prefix(24))
 
         guard !upcoming.isEmpty else {
@@ -78,36 +75,6 @@ struct HourlyForecastService {
 
         return HourlyForecast(timeZone: timeZone, points: upcoming)
     }
-
-    private func fetchPrecipitationProbabilities(for coordinate: CLLocationCoordinate2D) async throws -> [String: Int] {
-        var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
-        components.queryItems = coordinate.weatherAPIQueryItems + [
-            URLQueryItem(name: "hourly", value: "precipitation_probability"),
-            URLQueryItem(name: "timezone", value: "auto"),
-            URLQueryItem(name: "forecast_days", value: "2")
-        ]
-        guard let url = components.url else { throw WeatherServiceError.invalidResponse }
-
-        let (data, response) = try await URLSession.shared.data(from: url)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw WeatherServiceError.invalidResponse
-        }
-
-        let decoded = try JSONDecoder().decode(HourlyPrecipitationResponse.self, from: data)
-        var result: [String: Int] = [:]
-        for index in decoded.hourly.time.indices where index < decoded.hourly.precipitation_probability.count {
-            result[decoded.hourly.time[index]] = decoded.hourly.precipitation_probability[index]
-        }
-        return result
-    }
-}
-
-private struct HourlyPrecipitationResponse: Decodable {
-    struct Hourly: Decodable {
-        let time: [String]
-        let precipitation_probability: [Int]
-    }
-    let hourly: Hourly
 }
 
 private struct DynamicCodingKey: CodingKey {
@@ -119,17 +86,20 @@ private struct DynamicCodingKey: CodingKey {
 
 private struct EnsembleResponse: Decodable {
     let timezone: String
+    let utcOffsetSeconds: Int
     let time: [String]
     let memberSeries: [[Double]]
 
     private enum TopLevelKeys: String, CodingKey {
         case timezone
+        case utcOffsetSeconds = "utc_offset_seconds"
         case hourly
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: TopLevelKeys.self)
         timezone = try container.decode(String.self, forKey: .timezone)
+        utcOffsetSeconds = try container.decode(Int.self, forKey: .utcOffsetSeconds)
 
         let hourlyContainer = try container.nestedContainer(keyedBy: DynamicCodingKey.self, forKey: .hourly)
 
