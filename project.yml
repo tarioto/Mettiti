@@ -49,6 +49,9 @@ targets:
         BGTaskSchedulerPermittedIdentifiers:
           - com.timarioto.Mettiti.planRefresh
         AppGroupID: $(APP_GROUP_ID)
+        # Default the location prompt to approximate location; the forecast only needs ~1 km.
+        # (Xcode has no INFOPLIST_KEY_ build setting for this key, so it lives here.)
+        NSLocationDefaultAccuracyReduced: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.timarioto.Mettiti$(BUNDLE_ID_SUFFIX)
