@@ -1065,7 +1065,7 @@ struct DayPlanViewModelTests {
         try await waitUntil { viewModel.state.loadedHigh == 99 }
 
         clock.now = date("2026-10-19T07:00:00-07:00")
-        viewModel.appDidBecomeActive()
+        viewModel.refreshIfStale()
 
         #expect(viewModel.state.loadedHigh == nil)
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
@@ -1083,7 +1083,7 @@ struct DayPlanViewModelTests {
         try await waitUntil { viewModel.state.isLoaded }
 
         clock.now = date("2026-10-19T10:59:00-07:00")
-        viewModel.appDidBecomeActive()
+        viewModel.refreshIfStale()
 
         #expect(viewModel.state.isLoaded)
         try await Task.sleep(for: .milliseconds(50))
@@ -1102,7 +1102,7 @@ struct DayPlanViewModelTests {
         try await waitUntil { viewModel.state.loadedHigh == 99 }
 
         clock.now = date("2026-10-19T11:00:00-07:00")
-        viewModel.appDidBecomeActive()
+        viewModel.refreshIfStale()
 
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
         #expect(viewModel.state.loadedHigh == 99)
@@ -1125,7 +1125,7 @@ struct DayPlanViewModelTests {
 
         store.saved = .saved(high: 50, summary: "Background outfit", location: cityA, generatedAt: date("2026-10-19T00:05:00-07:00"))
         clock.now = date("2026-10-19T07:00:00-07:00")
-        viewModel.appDidBecomeActive()
+        viewModel.refreshIfStale()
 
         #expect(viewModel.state.readySummary == "Background outfit")
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
@@ -1157,7 +1157,7 @@ struct DayPlanViewModelTests {
         try await waitUntil { viewModel.state.loadedHigh == 99 }
 
         clock.now = date("2026-10-19T07:00:00-07:00")
-        viewModel.appDidBecomeActive()
+        viewModel.refreshIfStale()
 
         #expect(viewModel.state.isIdle)
         #expect(location.locationRequestCount == 2)
@@ -1167,11 +1167,40 @@ struct DayPlanViewModelTests {
         try await waitUntil { viewModel.state.loadedHigh == 10 }
     }
 
-    @Test func becomingActiveBeforeAnyLoadDoesNothing() async throws {
+    @Test func returningOnANewDayAfterTheLocationNeverArrivedStillClearsYesterdaysPlan() async throws {
+        let clock = FakeClock(date("2026-10-18T20:00:00-07:00"))
+        let location = FakeLocationProvider()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: GatedDayPlanFetcher(),
+            loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation, generatedAt: date("2026-10-18T08:00:00-07:00")) },
+            publishSnapshot: { _ in },
+            now: { clock.now },
+            calendar: gregorianCalendar(in: pacific)
+        )
+        viewModel.start()
+        location.fail("Couldn't find your location right now.")
+        #expect(viewModel.state.readySummary == "Saved outfit")
+
+        clock.now = date("2026-10-19T07:00:00-07:00")
+        viewModel.refreshIfStale()
+        #expect(viewModel.state.isIdle)
+        #expect(location.locationRequestCount == 2)
+
+        // Still waiting on that fix: switching back in shouldn't ask again.
+        viewModel.refreshIfStale()
+        #expect(location.locationRequestCount == 2)
+    }
+
+    @Test func refreshIfStaleBeforeAnyLoadDoesNothing() async throws {
         let fetcher = FakeDayPlanFetcher()
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: FakeClock(.now))
 
-        viewModel.appDidBecomeActive()
+        viewModel.refreshIfStale()
 
         #expect(viewModel.state.isIdle)
         let requested = await fetcher.requestedCoordinates

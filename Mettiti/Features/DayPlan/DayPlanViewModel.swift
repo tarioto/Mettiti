@@ -38,8 +38,9 @@ final class DayPlanViewModel: ObservableObject {
     /// refresh or GPS fix still replaces it in place. Cleared once a fresh plan is on screen or
     /// another selection or provider replaces it.
     private var isShowingSavedPlan = false
-    /// When the newest load began fetching weather; `appDidBecomeActive` refreshes once it's stale.
-    private var lastLoadStartedAt: Date?
+    /// When the newest load was asked for: its weather fetch, or for Current Location the
+    /// location request it's waiting on (which may never deliver a fix).
+    private var lastLoadRequestedAt: Date?
     /// The only load allowed to update `state`; starting another cancels it.
     private var loadTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
@@ -112,16 +113,16 @@ final class DayPlanViewModel: ObservableObject {
     /// How old the plan can get before returning to the app refreshes it on the same day. The
     /// day's high, low and rain chance rarely move within a few hours, and each refresh reruns
     /// the on-device model, so quick app switches never refresh but morning to evening does.
-    static let foregroundRefreshInterval: TimeInterval = 3 * 60 * 60
+    private static let foregroundRefreshInterval: TimeInterval = 3 * 60 * 60
 
     /// Refreshes a plan left in memory once it's from an earlier day or older than
     /// `foregroundRefreshInterval` (#24). Same rules as launch: today's Saved Plan stays on screen
     /// while the fresh one loads; a plan from an earlier day is never shown as current.
-    func appDidBecomeActive() {
-        guard hasStarted, let lastLoadStartedAt else { return }
+    func refreshIfStale() {
+        guard hasStarted, let lastLoadRequestedAt else { return }
         let now = now()
-        guard !calendar.isDate(lastLoadStartedAt, inSameDayAs: now)
-                || now.timeIntervalSince(lastLoadStartedAt) >= Self.foregroundRefreshInterval else { return }
+        guard !calendar.isDate(lastLoadRequestedAt, inSameDayAs: now)
+                || now.timeIntervalSince(lastLoadRequestedAt) >= Self.foregroundRefreshInterval else { return }
         showSavedPlanIfCurrent()
         if !isShowingSavedPlan { state = .idle }
         beginLoading(for: locationPreference.selection)
@@ -159,6 +160,7 @@ final class DayPlanViewModel: ObservableObject {
                 // Otherwise go .idle so handleGPSCoordinate loads the next fix.
                 if !isShowingSavedPlan { state = .idle }
                 isUpdatingSavedPlan = isShowingSavedPlanOutfit
+                lastLoadRequestedAt = now()
                 locationManager.requestLocation()
             }
         case .custom(_, let latitude, let longitude):
@@ -174,6 +176,7 @@ final class DayPlanViewModel: ObservableObject {
             refreshFailureMessage = nil
             // The Saved Plan's refresh starts with the fix, so it's already updating.
             isUpdatingSavedPlan = isShowingSavedPlanOutfit
+            lastLoadRequestedAt = now()
             locationManager.requestLocation()
         case .custom(_, let latitude, let longitude):
             startLoad(for: CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
@@ -187,7 +190,7 @@ final class DayPlanViewModel: ObservableObject {
         refreshFailureMessage = nil
         // Set here, not in the task, so the caption and disabled refresh button show at once.
         isUpdatingSavedPlan = isShowingSavedPlanOutfit
-        lastLoadStartedAt = now()
+        lastLoadRequestedAt = now()
         let task = Task { await loadPlan(for: coordinate) }
         loadTask = task
         return task

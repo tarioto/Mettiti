@@ -77,7 +77,7 @@ struct ContentView: View {
         }
         .onAppear { viewModel.start() }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { viewModel.appDidBecomeActive() }
+            if phase == .active { viewModel.refreshIfStale() }
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView(
