@@ -33,3 +33,22 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             | xcbeautify --renderer github-actions
+
+      # Tests need a concrete simulator, and which iPhones exist depends on the runner's Xcode,
+      # so pick an available one rather than naming a model.
+      - name: Test
+        run: |
+          set -o pipefail
+          simulator=$(xcrun simctl list devices available --json \
+            | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid // empty')
+          if [[ -z "$simulator" ]]; then
+            echo "::error::No iPhone simulator is available on this runner."
+            exit 1
+          fi
+          xcodebuild test \
+            -project Mettiti.xcodeproj \
+            -scheme Mettiti \
+            -configuration Debug \
+            -destination "id=$simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify --renderer github-actions
