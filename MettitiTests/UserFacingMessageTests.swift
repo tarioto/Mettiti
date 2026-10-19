@@ -24,7 +24,8 @@ struct UserFacingMessageTests {
         LanguageModelSession.GenerationError.guardrailViolation(context),
         .exceededContextWindowSize(context),
         .decodingFailure(context),
-        .unsupportedGuide(context)
+        .unsupportedGuide(context),
+        .refusal(.init(transcriptEntries: []), context)
     ])
     func generationFailuresSayNoSuggestionsThisTime(error: LanguageModelSession.GenerationError) {
         #expect(UserFacingMessage.describing(error) == "Couldn't come up with outfit suggestions this time.")
@@ -41,6 +42,49 @@ struct UserFacingMessageTests {
 
     @Test func unsupportedLanguageSaysSo() {
         #expect(UserFacingMessage.describing(LanguageModelSession.GenerationError.unsupportedLanguageOrLocale(context)) == "Outfit suggestions aren't available in your language yet.")
+    }
+
+    // MARK: iOS 27 model errors, which replace GenerationError
+
+    @Test @available(iOS 27, *)
+    func iOS27ModelFailuresSayNoSuggestionsThisTime() {
+        let errors: [any Error] = [
+            LanguageModelError.guardrailViolation(.init(debugDescription: "Raw system text")),
+            LanguageModelError.contextSizeExceeded(.init(contextSize: 4096, tokenCount: 5000, debugDescription: "Raw system text")),
+            LanguageModelError.refusal(.init(explanation: "Raw explanation", debugDescription: "Raw system text")),
+            LanguageModelError.unsupportedGenerationGuide(.init(schemaName: nil, debugDescription: "Raw system text")),
+            LanguageModelError.unsupportedCapability(.init(capability: .toolCalling, debugDescription: "Raw system text")),
+            LanguageModelError.unsupportedTranscriptContent(.init(unsupportedContent: [], debugDescription: "Raw system text")),
+            LanguageModelError.timeout(.init(debugDescription: "Raw system text")),
+            LanguageModelSession.Error.transcriptMutationWhileResponding,
+            GeneratedContent.ParsingError(rawContent: "{", debugDescription: "Raw system text")
+        ]
+        for error in errors {
+            #expect(UserFacingMessage.describing(error) == "Couldn't come up with outfit suggestions this time.")
+        }
+    }
+
+    @Test @available(iOS 27, *)
+    func iOS27BusyModelSaysTryAgainInAMoment() {
+        let errors: [any Error] = [
+            LanguageModelError.rateLimited(.init(resetDate: nil, debugDescription: "Raw system text")),
+            LanguageModelSession.Error.concurrentRequests
+        ]
+        for error in errors {
+            #expect(UserFacingMessage.describing(error) == "Apple Intelligence is busy right now. Try again in a moment.")
+        }
+    }
+
+    @Test @available(iOS 27, *)
+    func iOS27MissingModelAssetsSayAppleIntelligenceIsGettingReady() {
+        let error = SystemLanguageModel.Error.assetsUnavailable(.init(debugDescription: "Raw system text"))
+        #expect(UserFacingMessage.describing(error) == "Apple Intelligence is still getting ready. Try again soon.")
+    }
+
+    @Test @available(iOS 27, *)
+    func iOS27UnsupportedLanguageSaysSo() {
+        let error = LanguageModelError.unsupportedLanguageOrLocale(.init(languageCode: .french, debugDescription: "Raw system text"))
+        #expect(UserFacingMessage.describing(error) == "Outfit suggestions aren't available in your language yet.")
     }
 
     @Test func appErrorsKeepTheirOwnMessage() {

@@ -14,6 +14,9 @@ enum UserFacingMessage {
         if let error = error as? URLError {
             return describing(error)
         }
+        if #available(iOS 27, *), let message = modelMessage(for: error) {
+            return message
+        }
         if let error = error as? LanguageModelSession.GenerationError {
             return describing(error)
         }
@@ -32,18 +35,75 @@ enum UserFacingMessage {
         }
     }
 
+    /// The on-device model's errors before iOS 27, which replaces `GenerationError` with the
+    /// types in `modelMessage(for:)`.
     private static func describing(_ error: LanguageModelSession.GenerationError) -> String {
         switch error {
         case .rateLimited, .concurrentRequests:
-            return String(localized: "Apple Intelligence is busy right now. Try again in a moment.")
+            return modelBusy
         case .assetsUnavailable:
-            return String(localized: "Apple Intelligence is still getting ready. Try again soon.")
+            return modelNotReady
         case .unsupportedLanguageOrLocale:
-            return String(localized: "Outfit suggestions aren't available in your language yet.")
+            return unsupportedLanguage
         case .guardrailViolation, .exceededContextWindowSize, .decodingFailure, .unsupportedGuide, .refusal:
-            return String(localized: "Couldn't come up with outfit suggestions this time.")
+            return noSuggestion
         @unknown default:
-            return String(localized: "Couldn't come up with outfit suggestions this time.")
+            return noSuggestion
         }
+    }
+
+    /// The on-device model's errors from iOS 27; nil for any other error.
+    @available(iOS 27, *)
+    private static func modelMessage(for error: any Error) -> String? {
+        switch error {
+        case let error as LanguageModelError:
+            switch error {
+            case .rateLimited:
+                return modelBusy
+            case .unsupportedLanguageOrLocale:
+                return unsupportedLanguage
+            case .guardrailViolation, .contextSizeExceeded, .refusal, .unsupportedGenerationGuide,
+                 .unsupportedCapability, .unsupportedTranscriptContent, .timeout:
+                return noSuggestion
+            @unknown default:
+                return noSuggestion
+            }
+        case let error as SystemLanguageModel.Error:
+            switch error {
+            case .assetsUnavailable:
+                return modelNotReady
+            @unknown default:
+                return noSuggestion
+            }
+        case let error as LanguageModelSession.Error:
+            switch error {
+            case .concurrentRequests:
+                return modelBusy
+            case .transcriptMutationWhileResponding:
+                return noSuggestion
+            @unknown default:
+                return noSuggestion
+            }
+        case is GeneratedContent.ParsingError:
+            return noSuggestion
+        default:
+            return nil
+        }
+    }
+
+    private static var modelBusy: String {
+        String(localized: "Apple Intelligence is busy right now. Try again in a moment.")
+    }
+
+    private static var modelNotReady: String {
+        String(localized: "Apple Intelligence is still getting ready. Try again soon.")
+    }
+
+    private static var unsupportedLanguage: String {
+        String(localized: "Outfit suggestions aren't available in your language yet.")
+    }
+
+    private static var noSuggestion: String {
+        String(localized: "Couldn't come up with outfit suggestions this time.")
     }
 }
