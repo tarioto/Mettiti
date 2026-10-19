@@ -88,6 +88,8 @@ final class DayPlanViewModel {
         guard hasStarted else { return }
         // The Saved Plan is for the old provider, so the new one loads in the open.
         isShowingSavedPlan = false
+        // Cancelled now, not when the refresh starts, so the old provider's load can't write in between.
+        loadTask?.cancel()
         Task { await refresh() }
     }
 
