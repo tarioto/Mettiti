@@ -188,18 +188,7 @@ private struct RecommendationNoticeView: View {
     }
 
     private var message: String {
-        switch recommendation {
-        case .unavailable(.deviceNotEligible):
-            return String(localized: "Outfit suggestions need a device that supports Apple Intelligence.")
-        case .unavailable(.appleIntelligenceNotEnabled):
-            return String(localized: "Turn on Apple Intelligence to get outfit suggestions.")
-        case .unavailable(.modelNotReady):
-            return String(localized: "Apple Intelligence is still getting ready. Try again soon.")
-        case .failed:
-            return String(localized: "Couldn't come up with outfit suggestions this time.")
-        case .loading, .generating, .ready:
-            return ""
-        }
+        recommendation.problemMessage ?? ""
     }
 
     @ViewBuilder

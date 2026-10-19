@@ -28,6 +28,22 @@ enum RecommendationState {
         if case .ready(let recommendation) = self { return recommendation }
         return nil
     }
+
+    /// Why there's no suggestion, for the user; nil while there is or will be one.
+    var problemMessage: String? {
+        switch self {
+        case .unavailable(.deviceNotEligible):
+            return String(localized: "Outfit suggestions need a device that supports Apple Intelligence.")
+        case .unavailable(.appleIntelligenceNotEnabled):
+            return String(localized: "Turn on Apple Intelligence to get outfit suggestions.")
+        case .unavailable(.modelNotReady):
+            return String(localized: "Apple Intelligence is still getting ready. Try again soon.")
+        case .failed:
+            return String(localized: "Couldn't come up with outfit suggestions this time.")
+        case .loading, .generating, .ready:
+            return nil
+        }
+    }
 }
 
 /// Whether the on-device model can make outfit suggestions right now.

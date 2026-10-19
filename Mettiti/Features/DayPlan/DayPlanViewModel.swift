@@ -256,6 +256,11 @@ final class DayPlanViewModel: ObservableObject {
             }
         }
         guard !Task.isCancelled else { return }
+        // A fresh plan without an outfit is worse than the Saved Plan's, which stays with a notice.
+        if isShowingSavedPlanOutfit, let problem = recommendation.problemMessage {
+            fail(problem)
+            return
+        }
         isShowingSavedPlan = false
         refreshFailureMessage = nil
         state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: recommendation)

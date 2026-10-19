@@ -986,6 +986,71 @@ struct DayPlanViewModelTests {
 
         #expect(snapshots.map { $0.recommendation == nil } == [true])
     }
+
+    // MARK: Failed suggestion behind the Saved Plan's outfit
+
+    @Test func failedSuggestionKeepsTheSavedPlansOutfitWithANotice() async throws {
+        let fetcher = GatedDayPlanFetcher(availability: .available, recommendation: .failure(FakeFetchError()))
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA), publishSnapshot: { snapshots.append($0) })
+
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+
+        #expect(viewModel.state.readySummary == "Saved outfit")
+        #expect(viewModel.state.loadedHigh == 99)
+        #expect(viewModel.refreshFailureMessage == RecommendationState.failed("").problemMessage)
+        #expect(!viewModel.isUpdatingSavedPlan)
+        #expect(snapshots.isEmpty)
+    }
+
+    @Test func unavailableModelKeepsTheSavedPlansOutfitWithANotice() async throws {
+        let fetcher = GatedDayPlanFetcher(availability: .unavailable(.modelNotReady))
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA), publishSnapshot: { snapshots.append($0) })
+
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+
+        #expect(viewModel.state.readySummary == "Saved outfit")
+        #expect(viewModel.refreshFailureMessage == RecommendationState.unavailable(.modelNotReady).problemMessage)
+        #expect(snapshots.isEmpty)
+    }
+
+    @Test func streamThatFailsPartwayKeepsTheSavedPlansOutfit() async throws {
+        let fetcher = StreamingRecommendationFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
+
+        viewModel.start()
+        try await waitUntil { fetcher.isStreaming }
+        fetcher.send(partial: OutfitRecommendation(summary: "Half a", items: []))
+        fetcher.finish(with: .failure(FakeFetchError()))
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+
+        #expect(viewModel.state.readySummary == "Saved outfit")
+    }
+
+    @Test func refreshAfterAFailedSuggestionReplacesTheSavedPlan() async throws {
+        let fetcher = StreamingRecommendationFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
+        viewModel.start()
+        try await waitUntil { fetcher.isStreaming }
+        fetcher.finish(with: .failure(FakeFetchError()))
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+
+        let refresh = Task { await viewModel.refresh() }
+        try await waitUntil { fetcher.isStreaming }
+        fetcher.finish(with: .success(OutfitRecommendation(summary: "Fresh outfit", items: [])))
+        await refresh.value
+
+        #expect(viewModel.state.readySummary == "Fresh outfit")
+        #expect(viewModel.state.loadedHigh == 10)
+        #expect(viewModel.refreshFailureMessage == nil)
+    }
 }
 
 // MARK: - Helpers
