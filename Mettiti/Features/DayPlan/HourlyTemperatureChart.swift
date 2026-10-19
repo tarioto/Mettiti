@@ -16,9 +16,8 @@ struct HourlyTemperatureChart: View {
         hourly.points.min { abs($0.date.timeIntervalSinceNow) < abs($1.date.timeIntervalSinceNow) }
     }
 
-    /// True when the points carry an ensemble min/max spread (from Open-Meteo, including when layered onto Apple Weather).
     private var hasSpread: Bool {
-        hourly.points.contains { $0.maxF > $0.minF }
+        hourly.hasSpread
     }
 
     private var heatGradient: LinearGradient {

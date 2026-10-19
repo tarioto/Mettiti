@@ -6,18 +6,31 @@ import WeatherKit
 /// CC BY 4.0 license requires a credit linking back to open-meteo.com.
 struct WeatherAttributionView: View {
     let provider: WeatherProvider
+    /// Whether Open-Meteo data is on screen with Apple Weather's, e.g. the hourly chart's spread.
+    var includesOpenMeteoData = false
 
     var body: some View {
         Group {
             switch provider {
             case .apple:
-                AppleWeatherAttribution()
+                VStack(spacing: 4) {
+                    AppleWeatherAttribution()
+                    if includesOpenMeteoData {
+                        OpenMeteoAttribution()
+                    }
+                }
             case .openMeteo:
-                Link(provider.attributionText, destination: provider.attributionURL)
-                    .font(.caption2)
+                OpenMeteoAttribution()
             }
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+private struct OpenMeteoAttribution: View {
+    var body: some View {
+        Link(WeatherProvider.openMeteo.attributionText, destination: WeatherProvider.openMeteo.attributionURL)
+            .font(.caption2)
     }
 }
 

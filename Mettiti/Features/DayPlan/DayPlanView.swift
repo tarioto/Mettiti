@@ -15,7 +15,7 @@ struct DayPlanView: View {
                 card(for: type)
             }
 
-            WeatherAttributionView(provider: provider)
+            WeatherAttributionView(provider: provider, includesOpenMeteoData: hourly?.hasSpread == true)
                 .modifier(PlaceholderShimmer())
         }
     }
