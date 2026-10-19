@@ -68,6 +68,7 @@ struct CombinedWidgetEntryView: View {
             Image(systemName: WMOWeatherCode.symbolName(for: snapshot.weather.conditionCode))
                 .font(.title2)
                 .symbolRenderingMode(.multicolor)
+                .accessibilityHidden(true)
         }
     }
 }

@@ -99,6 +99,7 @@ struct SettingsView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 18) {
                             ForEach(AppTheme.allCases) { theme in
+                                let isSelected = themePreference.theme == theme
                                 Button {
                                     themePreference.theme = theme
                                 } label: {
@@ -110,11 +111,11 @@ struct SettingsView: View {
                                                 Circle()
                                                     .strokeBorder(
                                                         Color.primary,
-                                                        lineWidth: themePreference.theme == theme ? 3 : 0
+                                                        lineWidth: isSelected ? 3 : 0
                                                     )
                                             )
                                             .overlay {
-                                                if themePreference.theme == theme {
+                                                if isSelected {
                                                     Image(systemName: "checkmark")
                                                         .font(.caption.bold())
                                                         .foregroundStyle(.white)
@@ -126,6 +127,8 @@ struct SettingsView: View {
                                     }
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel(theme.label)
+                                .accessibilityAddTraits(isSelected ? .isSelected : [])
                             }
                         }
                         .padding(.vertical, 6)
