@@ -11,6 +11,7 @@ struct ContentView: View {
     @StateObject private var viewModel: DayPlanViewModel
     @State private var showingSettings = false
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         let manager = LocationManager()
@@ -75,6 +76,9 @@ struct ContentView: View {
             applyAppearance(appearance)
         }
         .onAppear { viewModel.start() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { viewModel.refreshIfStale() }
+        }
         .sheet(isPresented: $showingSettings) {
             SettingsView(
                 preference: locationPreference,
