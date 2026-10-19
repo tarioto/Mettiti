@@ -1400,30 +1400,46 @@ private func select(_ provider: WeatherProvider, in store: WeatherProviderPrefer
     viewModel.providerDidChange()
 }
 
-/// Records each `state` the view model shows. Like SwiftUI, it reads the value once the change's
-/// main-actor job finishes, so a state overwritten within the same job isn't recorded.
+/// Records every `state` the view model takes, as `$state.sink` did: the one current at init, each
+/// later write (even one overwritten in the same main-actor job), ending with the current one.
+/// `onChange` runs in `state`'s willSet, so it records the value being replaced; the newest value
+/// is read when `states` is.
 @MainActor
 private final class StateRecorder {
-    private(set) var states: [LoadState] = []
     private let viewModel: DayPlanViewModel
-    private var isRecording = true
+    private let skipsCurrent: Bool
+    /// Each value replaced since init, oldest first.
+    private var replaced: [LoadState] = []
+    /// The last value, once `stop()` freezes the recording.
+    private var final: LoadState?
 
     init(_ viewModel: DayPlanViewModel, skippingCurrent: Bool = false) {
         self.viewModel = viewModel
-        record()
-        if skippingCurrent { states.removeAll() }
+        skipsCurrent = skippingCurrent
+        track()
+    }
+
+    var states: [LoadState] {
+        let all = replaced + [final ?? viewModel.state]
+        return skipsCurrent ? Array(all.dropFirst()) : all
     }
 
     func stop() {
-        isRecording = false
+        guard final == nil else { return }
+        final = viewModel.state
     }
 
-    private func record() {
-        guard isRecording else { return }
-        let state = withObservationTracking { viewModel.state } onChange: { [weak self] in
-            Task { @MainActor in self?.record() }
+    private func track() {
+        withObservationTracking { _ = viewModel.state } onChange: { [weak self] in
+            // State is only written on the main actor, so its willSet calls this there.
+            MainActor.assumeIsolated { self?.stateWillChange() }
         }
-        states.append(state)
+    }
+
+    private func stateWillChange() {
+        guard final == nil else { return }
+        replaced.append(viewModel.state)
+        track()
     }
 }
 
