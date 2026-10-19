@@ -44,14 +44,14 @@ struct OutfitAdvisorPromptTests {
     @Test func promptListsEachHourWithItsWeatherAndWhetherItsDayOrNight() {
         let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, now: afternoon, unit: .fahrenheit)
 
-        #expect(prompt.contains("- 4 PM: 72°F, Clear sky, 0% chance of precipitation, UV index 5, wind 6 mph, daylight"))
-        #expect(prompt.contains("- 7 PM: 62°F, Overcast, 20% chance of precipitation, UV index 0, wind 11 mph, dark"))
+        #expect(prompt.contains("- 4 PM: 72°F (warm), Clear sky, 0% chance of precipitation, UV index 5, wind 6 mph, daylight"))
+        #expect(prompt.contains("- 7 PM: 62°F (mild), Overcast, 20% chance of precipitation, UV index 0, wind 11 mph, dark"))
     }
 
     @Test func promptSummarizesTheSpanInsteadOfTheWholeDay() {
         let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, now: afternoon, unit: .fahrenheit)
 
-        #expect(prompt.contains("High: 72°F at 4 PM, Low: 58°F at 10 PM"))
+        #expect(prompt.contains("High: 72°F (warm) at 4 PM, Low: 58°F (cool) at 10 PM"))
         #expect(prompt.contains("Highest chance of precipitation: 20% at 7 PM"))
         #expect(prompt.contains("Sunset at 6:30 PM"))
         #expect(prompt.contains("Daylight UV index peaks at 5 at 4 PM"))
@@ -81,20 +81,59 @@ struct OutfitAdvisorPromptTests {
     }
 
     @Test func promptWithoutAnHourlyForecastFallsBackToTheWholeDayWithoutItsPeakUV() {
-        let prompt = OutfitAdvisor.prompt(for: weather, hourly: nil, now: afternoon, unit: .fahrenheit)
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: nil, now: afternoon, unit: .fahrenheit, deviceTimeZone: pacific)
 
-        // Without a forecast there's no location time zone, so the time is the device's.
-        #expect(prompt.contains("Current local time: "))
-        #expect(prompt.contains("High: 80°F, Low: 50°F"))
+        #expect(prompt.contains("Current local time: 4:20 PM"))
+        #expect(prompt.contains("High: 80°F (warm), Low: 50°F (cool)"))
         #expect(!prompt.contains("UV"))
+    }
+
+    @Test func aWarmNightIsStillDescribedAsHot() {
+        let tropical = HourlyForecast(timeZone: pacific, points: [
+            hour("2026-10-10T03:00:00Z", temperature: 86, rain: 0, uv: 0, wind: 4, code: 0, daylight: false),
+            hour("2026-10-10T04:00:00Z", temperature: 84, rain: 0, uv: 0, wind: 3, code: 0, daylight: false),
+        ])
+
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: tropical, now: evening, unit: .celsius)
+
+        // 86°F = 30°C, 84°F = 29°C
+        #expect(prompt.contains("High: 30°C (hot) at 8 PM, Low: 29°C (hot) at 9 PM"))
+        #expect(prompt.contains("- 8 PM: 30°C (hot), Clear sky"))
+    }
+
+    @Test func temperaturesThatReadTheSameFeelTheSame() {
+        let nearTheEdge = HourlyForecast(timeZone: pacific, points: [
+            hour("2026-10-10T03:00:00Z", temperature: 46.4, rain: 0, uv: 0, wind: 4, code: 0, daylight: false),
+            hour("2026-10-10T04:00:00Z", temperature: 45.9, rain: 0, uv: 0, wind: 4, code: 0, daylight: false),
+        ])
+
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: nearTheEdge, now: evening, unit: .celsius)
+
+        // Both are 8°C once rounded.
+        #expect(prompt.contains("- 8 PM: 8°C (cool),"))
+        #expect(prompt.contains("- 9 PM: 8°C (cool),"))
+    }
+
+    @Test func wholeDayPromptInTheEveningSaysItsDark() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: nil, now: evening, unit: .fahrenheit, deviceTimeZone: pacific)
+
+        #expect(prompt.contains("Current local time: 8:05 PM. It's dark outside, so sun protection isn't needed."))
+        #expect(prompt.contains("Today's forecast, including the hours that have passed:"))
+        #expect(prompt.contains("Recommend what to wear and bring for the rest of tonight."))
+    }
+
+    @Test func wholeDayPromptInTheAfternoonDoesntSayItsDark() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: nil, now: afternoon, unit: .fahrenheit, deviceTimeZone: pacific)
+
+        #expect(!prompt.contains("dark"))
     }
 
     @Test func celsiusPromptStatesTemperaturesInCelsius() {
         let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, now: afternoon, unit: .celsius)
 
         // 72°F = 22.2°C, 58°F = 14.4°C
-        #expect(prompt.contains("High: 22°C at 4 PM, Low: 14°C at 10 PM"))
-        #expect(prompt.contains("- 4 PM: 22°C,"))
+        #expect(prompt.contains("High: 22°C (warm) at 4 PM, Low: 14°C (cool) at 10 PM"))
+        #expect(prompt.contains("- 4 PM: 22°C (warm),"))
         #expect(!prompt.contains("°F"))
     }
 
@@ -103,7 +142,7 @@ struct OutfitAdvisorPromptTests {
 
         // Germany uses Celsius and a 24-hour clock, but the prompt is English text for the model,
         // so no German "22 °C" spacing or "16 Uhr".
-        #expect(prompt.contains("High: 22°C at 4 PM, Low: 14°C at 10 PM"))
+        #expect(prompt.contains("High: 22°C (warm) at 4 PM, Low: 14°C (cool) at 10 PM"))
     }
 
     @Test func celsiusPromptRoundsLikeTheOnScreenForecast() {
@@ -116,7 +155,7 @@ struct OutfitAdvisorPromptTests {
 
         // 33°F = 0.56°C -> 1, 0°F = -17.8°C -> -18 (matches TemperatureUnit.formatted)
         let us = Locale(identifier: "en_US")
-        #expect(prompt.contains("High: 1°C at 4 PM, Low: -18°C at 5 PM"))
+        #expect(prompt.contains("High: 1°C (cold) at 4 PM, Low: -18°C (freezing) at 5 PM"))
         #expect(TemperatureUnit.celsius.formatted(fahrenheit: 33, locale: us) == "1°C")
         #expect(TemperatureUnit.celsius.formatted(fahrenheit: 0, locale: us) == "-18°C")
     }
@@ -135,6 +174,12 @@ struct OutfitAdvisorPromptTests {
         #expect(!instructions.contains("always consider sun protection"))
         #expect(instructions.contains("only suggest sun protection"))
         #expect(instructions.contains("daylight"))
+    }
+
+    @Test func instructionsBaseClothingOnHowTheTemperatureFeels() {
+        let instructions = OutfitAdvisor.instructions.lowercased()
+
+        #expect(instructions.contains("how it feels"))
     }
 
     @Test func instructionsAskForChangesInWordsRatherThanAnAverage() {

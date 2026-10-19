@@ -79,7 +79,9 @@ struct OutfitAdvisor: Sendable {
     You are a friendly outfit and packing assistant. Given the weather from now until \
     the end of the forecast, recommend what someone should wear and bring for that time. \
     Consider rain protection (umbrella, raincoat) and temperature layering (light or heavy \
-    jacket) when relevant to the forecast. Only suggest sun protection (sunglasses, sunscreen, \
+    jacket) when relevant to the forecast. Each temperature comes with how it feels (freezing, \
+    cold, cool, mild, warm or hot); base clothing on how it feels, whatever the time of day. \
+    Only suggest sun protection (sunglasses, sunscreen, \
     hat) when the forecast shows meaningful UV during daylight hours; never for hours after \
     dark. When the weather changes during the forecast, describe the change in words, such as \
     "bright until sunset" or "cooling off after 7", instead of averaging it away. \
@@ -93,15 +95,18 @@ struct OutfitAdvisor: Sendable {
     /// hourly forecast for it.
     ///
     /// `locale` only decides what `.system` means. Temperatures are always written in a fixed form with an
-    /// explicit unit ("72°F"), and times in English ("4 PM"), because the model reads them, not the user.
-    /// Conditions are in the user's language, like the weather provider's own descriptions.
-    static func prompt(for weather: DailyWeather, hourly: HourlyForecast?, now: Date, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent) -> String {
+    /// explicit unit and how they feel ("72°F (warm)"), and times in English ("4 PM"), because the model
+    /// reads them, not the user. Conditions are in the user's language, like the weather provider's own
+    /// descriptions. Without an hourly forecast there's no location time zone, so times are in
+    /// `deviceTimeZone`.
+    static func prompt(for weather: DailyWeather, hourly: HourlyForecast?, now: Date, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent, deviceTimeZone: TimeZone = .autoupdatingCurrent) -> String {
         let unit = unit.resolved(for: locale)
         func temperature(_ fahrenheit: Double) -> String {
-            unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)
+            // The feel goes by the rounded value shown, so two hours that both read 8°C feel the same.
+            let shown = unit.convert(fromFahrenheit: fahrenheit, locale: promptLocale).rounded()
+            return "\(unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)) (\(feel(shown, in: unit)))"
         }
-        // Without a forecast there's no location time zone, so fall back to the device's.
-        let timeZone = hourly?.timeZone ?? .autoupdatingCurrent
+        let timeZone = hourly?.timeZone ?? deviceTimeZone
         func formatted(_ date: Date, _ style: Date.FormatStyle) -> String {
             var style = style
             style.timeZone = timeZone
@@ -112,12 +117,17 @@ struct OutfitAdvisor: Sendable {
         func clockTime(_ date: Date) -> String { formatted(date, .dateTime.hour().minute()) }
 
         var currentTime = "Current local time: \(clockTime(now))."
-        guard let hourly else {
-            return wholeDayPrompt(for: weather, currentTime: currentTime, temperature: temperature)
-        }
-        let window = ForecastWindow(forecast: hourly, span: ForecastWindow.span(startingAt: now, in: timeZone))
-        guard let high = window.high, let low = window.low else {
-            return wholeDayPrompt(for: weather, currentTime: currentTime, temperature: temperature)
+        let window = hourly.map { ForecastWindow(forecast: $0, span: ForecastWindow.span(startingAt: now, in: timeZone)) }
+        guard let window, let high = window.high, let low = window.low else {
+            // No sunset to go by, so assume it's dark late in the evening and at night.
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = timeZone
+            let localHour = calendar.component(.hour, from: now)
+            let isDark = localHour >= 20 || localHour < 6
+            if isDark {
+                currentTime += " It's dark outside, so sun protection isn't needed."
+            }
+            return wholeDayPrompt(for: weather, currentTime: currentTime, isDark: isDark, temperature: temperature)
         }
 
         switch window.isDaylightAtStart {
@@ -168,20 +178,29 @@ struct OutfitAdvisor: Sendable {
         """
     }
 
+    /// How a whole-degree temperature in `unit` (Celsius or Fahrenheit) feels, so the model doesn't
+    /// judge the number itself: on its own it called 30°C at night "chilly". Each unit has its own
+    /// whole-degree bands, so the same number always gets the same word.
+    private static func feel(_ temperature: Double, in unit: TemperatureUnit) -> String {
+        let bands: [Double] = unit == .fahrenheit ? [32, 46, 59, 72, 84] : [0, 8, 15, 22, 29]
+        let words = ["freezing", "cold", "cool", "mild", "warm"]
+        return zip(bands, words).first { temperature < $0.0 }?.1 ?? "hot"
+    }
+
     /// For when there's no hourly forecast to cover: the whole day's high, low and maximums.
-    /// It leaves out the day's peak UV, which may have passed, so a plan made after dark
-    /// doesn't suggest sunscreen.
-    private static func wholeDayPrompt(for weather: DailyWeather, currentTime: String, temperature: (Double) -> String) -> String {
+    /// It leaves out the day's peak UV, which may have passed, and after dark asks about the night,
+    /// so a plan made in the evening doesn't suggest sunscreen.
+    private static func wholeDayPrompt(for weather: DailyWeather, currentTime: String, isDark: Bool, temperature: (Double) -> String) -> String {
         """
         \(currentTime)
 
-        Today's forecast:
+        \(isDark ? "Today's forecast, including the hours that have passed:" : "Today's forecast:")
         - Condition: \(weather.conditionDescription)
         - High: \(temperature(weather.highTemperatureF)), Low: \(temperature(weather.lowTemperatureF))
         - Chance of precipitation: \(weather.precipitationProbability)%
         - Wind: \(Int(weather.windSpeedMph.rounded())) mph
 
-        Recommend what to wear and bring for the rest of today.
+        Recommend what to wear and bring for the rest of \(isDark ? "tonight" : "today").
         """
     }
 
