@@ -879,6 +879,84 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.loadedHigh == 47.6)
     }
 
+    @Test func savedPlansOutfitForCurrentLocationSaysItsUpdatingWhileWaitingForTheFirstFix() async throws {
+        let location = FakeLocationProvider()
+        let fetcher = GatedDayPlanFetcher()
+        let viewModel = makeCurrentLocationViewModel(location: location, fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: .currentLocation))
+
+        viewModel.start()
+        #expect(viewModel.isUpdatingSavedPlan)
+
+        location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 47.6) }
+        #expect(viewModel.isUpdatingSavedPlan)
+
+        await fetcher.complete(latitude: 47.6, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.state.loadedHigh == 10 }
+        #expect(!viewModel.isUpdatingSavedPlan)
+    }
+
+    @Test func locationErrorWhileWaitingForTheFirstFixStopsSayingTheSavedPlanIsUpdating() async throws {
+        let location = FakeLocationProvider()
+        let viewModel = makeCurrentLocationViewModel(location: location, fetcher: GatedDayPlanFetcher(), saved: .saved(high: 99, summary: "Saved outfit", location: .currentLocation))
+
+        viewModel.start()
+        location.fail("No location")
+
+        #expect(!viewModel.isUpdatingSavedPlan)
+        #expect(viewModel.refreshFailureMessage == "No location")
+        #expect(viewModel.state.readySummary == "Saved outfit")
+    }
+
+    @Test func refreshBehindTheSavedPlansOutfitSaysItsUpdatingBeforeTheLoadRuns() async throws {
+        let fetcher = GatedDayPlanFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
+
+        viewModel.start()
+
+        #expect(viewModel.isUpdatingSavedPlan)
+    }
+
+    @Test func loadCancelledBeforeItRunsWritesNothingSoTheNextGPSFixLoads() async throws {
+        let location = FakeLocationProvider()
+        let fetcher = FakeDayPlanFetcher()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = cityA
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { nil },
+            publishSnapshot: { _ in }
+        )
+
+        // City B's load is enqueued, then superseded before it gets to run.
+        locationPreference.selection = .custom(name: "City B", latitude: 20, longitude: 20)
+        locationPreference.selection = .currentLocation
+        // Main-actor jobs run in order, so B's load has run (and returned) once this resumes.
+        await Task.yield()
+        #expect(viewModel.state.isIdle)
+
+        location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
+        try await waitUntil { viewModel.state.readySummary != nil }
+        #expect(await fetcher.requestedCoordinates.map(\.latitude) == [47.6])
+    }
+
+    @Test func tryAgainAfterAFailedSuggestionPrewarmsTheModel() async throws {
+        let fetcher = GatedDayPlanFetcher(availability: .available, recommendation: .failure(FakeFetchError()))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher)
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.state.recommendationFailureMessage != nil }
+        #expect(fetcher.prewarmCount == 1)
+
+        viewModel.retryRecommendation()
+
+        #expect(fetcher.prewarmCount == 2)
+    }
+
     @Test func savedPlanWithoutAnOutfitSaysTheModelIsUnavailableBeforeTheFreshWeatherArrives() async throws {
         let fetcher = GatedDayPlanFetcher(availability: .unavailable(.appleIntelligenceNotEnabled))
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: nil, location: cityA))
@@ -913,6 +991,20 @@ struct DayPlanViewModelTests {
 // MARK: - Helpers
 
 private let cityA = LocationSelection.custom(name: "City A", latitude: 10, longitude: 10)
+
+@MainActor
+private func makeCurrentLocationViewModel(location: FakeLocationProvider, fetcher: DayPlanFetching, saved: PlanSnapshot? = nil) -> DayPlanViewModel {
+    let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+    locationPreference.selection = .currentLocation
+    return DayPlanViewModel(
+        locationManager: location,
+        locationPreference: locationPreference,
+        providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+        fetcher: fetcher,
+        loadSnapshot: { saved },
+        publishSnapshot: { _ in }
+    )
+}
 
 @MainActor
 private func makeCustomCityViewModel(fetcher: DayPlanFetching, saved: PlanSnapshot? = nil, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
@@ -1115,10 +1207,12 @@ private actor FakeDayPlanFetcher: WholeRecommendationFetching {
 private actor GatedDayPlanFetcher: DayPlanFetching {
     private var pending: [Double: CheckedContinuation<DailyWeather, Error>] = [:]
     private let availability: RecommendationAvailability
+    private let recommendationResult: Result<OutfitRecommendation, Error>
     private let prewarms = Mutex(0)
 
-    init(availability: RecommendationAvailability = .available) {
+    init(availability: RecommendationAvailability = .available, recommendation: Result<OutfitRecommendation, Error> = .success(.placeholder)) {
         self.availability = availability
+        recommendationResult = recommendation
     }
 
     nonisolated var prewarmCount: Int { prewarms.withLock { $0 } }
@@ -1147,11 +1241,11 @@ private actor GatedDayPlanFetcher: DayPlanFetching {
     }
 
     func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
-        .placeholder
+        try recommendationResult.get()
     }
 
     func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
-        .placeholder
+        try recommendationResult.get()
     }
 }
 

@@ -117,6 +117,7 @@ final class DayPlanViewModel: ObservableObject {
         }
         guard case .loaded(let weather, let hourly, let provider, _) = state else { return }
         loadTask?.cancel()
+        fetcher.prewarmRecommendation()
         loadTask = Task { await loadRecommendation(weather: weather, hourly: hourly, provider: provider) }
     }
 
@@ -132,6 +133,7 @@ final class DayPlanViewModel: ObservableObject {
                 // Keep today's Saved Plan on screen; its refresh starts with the next fix.
                 // Otherwise go .idle so handleGPSCoordinate loads the next fix.
                 if !isShowingSavedPlan { state = .idle }
+                isUpdatingSavedPlan = isShowingSavedPlanOutfit
                 locationManager.requestLocation()
             }
         case .custom(_, let latitude, let longitude):
@@ -145,6 +147,8 @@ final class DayPlanViewModel: ObservableObject {
             loadTask?.cancel()
             loadTask = nil
             refreshFailureMessage = nil
+            // The Saved Plan's refresh starts with the fix, so it's already updating.
+            isUpdatingSavedPlan = isShowingSavedPlanOutfit
             locationManager.requestLocation()
         case .custom(_, let latitude, let longitude):
             startLoad(for: CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
@@ -156,6 +160,8 @@ final class DayPlanViewModel: ObservableObject {
     private func startLoad(for coordinate: CLLocationCoordinate2D) -> Task<Void, Never> {
         loadTask?.cancel()
         refreshFailureMessage = nil
+        // Set here, not in the task, so the caption and disabled refresh button show at once.
+        isUpdatingSavedPlan = isShowingSavedPlanOutfit
         let task = Task { await loadPlan(for: coordinate) }
         loadTask = task
         return task
@@ -202,13 +208,14 @@ final class DayPlanViewModel: ObservableObject {
     }
 
     private func loadPlan(for coordinate: CLLocationCoordinate2D) async {
+        // Superseded before it ran (e.g. by a quick second selection change): write nothing.
+        guard !Task.isCancelled else { return }
         if !isShowingSavedPlan { state = .loadingWeather }
         // Read here (not in the provider sink, which fires before @Published updates).
         let provider = providerPreference.provider
         // Loads the model while the weather is in flight, so the suggestion starts sooner (#23).
         fetcher.prewarmRecommendation()
-        isUpdatingSavedPlan = isShowingSavedPlanOutfit
-        // A superseding load sets this itself; one that ends here clears it.
+        // `startLoad` set isUpdatingSavedPlan; a superseding load sets it itself, one that ends here clears it.
         defer { if !Task.isCancelled { isUpdatingSavedPlan = false } }
         await prepareSavedPlanWithoutOutfitForRefresh()
         do {
