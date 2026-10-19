@@ -556,11 +556,11 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.loadedHigh == 20)
         #expect(viewModel.state.isRecommendationLoading)
 
-        // City B's suggestion finishes first, then City A's superseded one.
+        // City B's recommendation completes, then City A's superseded one arrives late.
         await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "City B outfit", items: [])))
         try await waitUntil { viewModel.state.readySummary == "City B outfit" }
         await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "City A outfit", items: [])))
-        await Task.yield()
+        try await Task.sleep(for: .milliseconds(50))
 
         #expect(!recorder.states.contains { $0.readySummary == "Saved outfit" && $0.loadedHigh != 99 })
         #expect(viewModel.state.readySummary == "City B outfit")
@@ -700,22 +700,35 @@ struct DayPlanViewModelTests {
         providerPreference.provider = .apple
         let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = cityA
+        var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: providerPreference,
             fetcher: fetcher,
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: cityA, provider: .apple) },
-            publishSnapshot: { _ in }
+            publishSnapshot: { snapshots.append($0) }
         )
 
         viewModel.start()
         try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
         #expect(viewModel.state.loadedHigh == 99)
+        let recorder = StateRecorder(viewModel)
+        defer { recorder.stop() }
 
         select(.openMeteo, in: providerPreference, for: viewModel)
 
         try await waitUntil { viewModel.state.loadedHigh == 10 && viewModel.state.isRecommendationLoading }
+        try await waitUntil { await fetcher.pendingRecommendationCount == 2 }
+        await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "Open-Meteo outfit", items: [])))
+        try await waitUntil { viewModel.state.readySummary == "Open-Meteo outfit" }
+        await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "Apple outfit", items: [])))
+        try await Task.sleep(for: .milliseconds(50))
+
+        // The old provider's refresh had the same weather, so only the outfit tells the plans apart.
+        #expect(!recorder.states.dropFirst().contains { $0.readySummary == "Saved outfit" })
+        #expect(viewModel.state.readySummary == "Open-Meteo outfit")
+        #expect(snapshots.map(\.provider) == [.openMeteo])
     }
 
     // MARK: Perceived latency (#23)
