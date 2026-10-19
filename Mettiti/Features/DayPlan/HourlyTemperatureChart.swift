@@ -4,7 +4,7 @@ import Accessibility
 
 struct HourlyTemperatureChart: View {
     let hourly: HourlyForecast
-    @EnvironmentObject private var temperaturePreference: TemperaturePreferenceStore
+    @Environment(TemperaturePreferenceStore.self) private var temperaturePreference
     @Environment(\.colorScheme) private var colorScheme
     /// Grows with Dynamic Type from the 9pt the axis labels have at the default size.
     @ScaledMetric(relativeTo: .caption2) private var hourLabelSize: CGFloat = 9

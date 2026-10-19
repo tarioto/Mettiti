@@ -1,9 +1,11 @@
 import Foundation
+import Observation
 import WidgetKit
 
 @MainActor
-final class TemperaturePreferenceStore: ObservableObject {
-    @Published var unit: TemperatureUnit {
+@Observable
+final class TemperaturePreferenceStore {
+    var unit: TemperatureUnit {
         didSet {
             guard unit != oldValue else { return }
             saveUnit(unit)

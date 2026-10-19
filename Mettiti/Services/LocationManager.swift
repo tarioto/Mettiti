@@ -1,19 +1,20 @@
 import CoreLocation
-import Combine
 
 /// What `DayPlanViewModel` needs from a location source, so tests can drive it without CoreLocation.
 @MainActor
 protocol LocationProviding: AnyObject {
-    var coordinatePublisher: AnyPublisher<CLLocationCoordinate2D?, Never> { get }
-    var errorMessagePublisher: AnyPublisher<String?, Never> { get }
+    /// Called with each fix.
+    var onCoordinate: ((CLLocationCoordinate2D) -> Void)? { get set }
+    /// Called with a message to show when there's no fix to be had.
+    var onError: ((String) -> Void)? { get set }
     func requestLocation()
 }
 
+/// Not `@Observable`: no view reads its state, so it reports fixes and failures through callbacks.
 @MainActor
-final class LocationManager: NSObject, ObservableObject {
-    @Published var coordinate: CLLocationCoordinate2D?
-    @Published var authorizationStatus: CLAuthorizationStatus
-    @Published var errorMessage: String?
+final class LocationManager: NSObject, LocationProviding {
+    var onCoordinate: ((CLLocationCoordinate2D) -> Void)?
+    var onError: ((String) -> Void)?
 
     private let manager = CLLocationManager()
     private var unknownLocationRetries = 0
@@ -21,14 +22,12 @@ final class LocationManager: NSObject, ObservableObject {
     private static var deniedMessage: String { String(localized: "Location access is off. Enable it in Settings to get weather for your area.") }
 
     override init() {
-        authorizationStatus = manager.authorizationStatus
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyKilometer
     }
 
     func requestLocation() {
-        errorMessage = nil
         unknownLocationRetries = 0
         switch manager.authorizationStatus {
         case .notDetermined:
@@ -36,16 +35,11 @@ final class LocationManager: NSObject, ObservableObject {
         case .authorizedWhenInUse, .authorizedAlways:
             manager.requestLocation()
         case .denied, .restricted:
-            errorMessage = Self.deniedMessage
+            onError?(Self.deniedMessage)
         @unknown default:
             break
         }
     }
-}
-
-extension LocationManager: LocationProviding {
-    var coordinatePublisher: AnyPublisher<CLLocationCoordinate2D?, Never> { $coordinate.eraseToAnyPublisher() }
-    var errorMessagePublisher: AnyPublisher<String?, Never> { $errorMessage.eraseToAnyPublisher() }
 }
 
 extension LocationManager: CLLocationManagerDelegate {
@@ -53,11 +47,10 @@ extension LocationManager: CLLocationManagerDelegate {
         let status = manager.authorizationStatus
         Task { @MainActor [weak self] in
             guard let self else { return }
-            authorizationStatus = status
             if status == .authorizedWhenInUse || status == .authorizedAlways {
                 self.manager.requestLocation()
             } else if status == .denied || status == .restricted {
-                errorMessage = Self.deniedMessage
+                onError?(Self.deniedMessage)
             }
         }
     }
@@ -65,7 +58,7 @@ extension LocationManager: CLLocationManagerDelegate {
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         Task { @MainActor in
-            coordinate = location.coordinate
+            onCoordinate?(location.coordinate)
         }
     }
 
@@ -91,11 +84,11 @@ private extension LocationManager {
 
         switch code {
         case .denied:
-            errorMessage = Self.deniedMessage
+            onError?(Self.deniedMessage)
         case .network:
-            errorMessage = String(localized: "Couldn't determine your location. Check your connection and try again.")
+            onError?(String(localized: "Couldn't determine your location. Check your connection and try again."))
         default:
-            errorMessage = String(localized: "Couldn't find your location right now. Try again, or set a location in Settings.")
+            onError?(String(localized: "Couldn't find your location right now. Try again, or set a location in Settings."))
         }
     }
 }

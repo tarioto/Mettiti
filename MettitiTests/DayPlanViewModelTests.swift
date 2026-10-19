@@ -1,5 +1,5 @@
-import Combine
 import CoreLocation
+import Observation
 import Synchronization
 import Testing
 @testable import Mettiti
@@ -52,7 +52,7 @@ struct DayPlanViewModelTests {
         viewModel.start()
         try await waitUntil { viewModel.state.isLoaded }
 
-        locationPreference.selection = .currentLocation
+        select(.currentLocation, in: locationPreference, for: viewModel)
         location.fail("Couldn't find your location right now.")
         #expect(viewModel.state.isFailed)
         let requestsBeforeRefresh = location.locationRequestCount
@@ -110,10 +110,10 @@ struct DayPlanViewModelTests {
         location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
         try await waitUntil { viewModel.state.isLoaded }
 
-        locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
+        select(.custom(name: "City A", latitude: 10, longitude: 10), in: locationPreference, for: viewModel)
         try await waitUntil { viewModel.state.isLoaded }
 
-        locationPreference.selection = .currentLocation
+        select(.currentLocation, in: locationPreference, for: viewModel)
         let requestsBeforeRefresh = location.locationRequestCount
 
         await viewModel.refresh()
@@ -163,7 +163,7 @@ struct DayPlanViewModelTests {
         let loadA = Task { await viewModel.refresh() }
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
 
-        locationPreference.selection = .custom(name: "City B", latitude: 20, longitude: 20)
+        select(.custom(name: "City B", latitude: 20, longitude: 20), in: locationPreference, for: viewModel)
         try await waitUntil { await fetcher.isWaiting(onLatitude: 20) }
 
         await fetcher.complete(latitude: 20, with: .success(.forecast(high: 20)))
@@ -192,7 +192,7 @@ struct DayPlanViewModelTests {
         let loadA = Task { await viewModel.refresh() }
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
 
-        locationPreference.selection = .custom(name: "City B", latitude: 20, longitude: 20)
+        select(.custom(name: "City B", latitude: 20, longitude: 20), in: locationPreference, for: viewModel)
         try await waitUntil { await fetcher.isWaiting(onLatitude: 20) }
 
         await fetcher.complete(latitude: 20, with: .success(.forecast(high: 20)))
@@ -345,7 +345,7 @@ struct DayPlanViewModelTests {
         viewModel.start()
         try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
 
-        locationPreference.selection = .custom(name: "City B", latitude: 20, longitude: 20)
+        select(.custom(name: "City B", latitude: 20, longitude: 20), in: locationPreference, for: viewModel)
         try await waitUntil { await fetcher.pendingRecommendationCount == 2 }
 
         // City B's recommendation completes, then City A's stale one arrives late.
@@ -377,7 +377,7 @@ struct DayPlanViewModelTests {
 
         // Same main-actor turn: the retry is cancelled before it ever runs.
         viewModel.retryRecommendation()
-        locationPreference.selection = .currentLocation
+        select(.currentLocation, in: locationPreference, for: viewModel)
         try await Task.sleep(for: .milliseconds(50))
 
         #expect(viewModel.state.isIdle)
@@ -405,20 +405,18 @@ struct DayPlanViewModelTests {
         await fetcher.completeRecommendation(with: .failure(FakeFetchError()))
         try await waitUntil { viewModel.state.recommendationFailureMessage != nil }
 
-        var highsAfterSwitch: [Double?] = []
-        let recorder = viewModel.$state.sink { highsAfterSwitch.append($0.loadedHigh) }
-        highsAfterSwitch.removeAll()
+        let recorder = StateRecorder(viewModel, skippingCurrent: true)
 
         viewModel.retryRecommendation()
-        locationPreference.selection = .custom(name: "City B", latitude: 20, longitude: 20)
+        select(.custom(name: "City B", latitude: 20, longitude: 20), in: locationPreference, for: viewModel)
         try await waitUntil { viewModel.state.loadedHigh == 20 && viewModel.state.isRecommendationLoading }
         try await Task.sleep(for: .milliseconds(50))
 
         await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "City B", items: [])))
         try await waitUntil { viewModel.state.readySummary == "City B" }
-        recorder.cancel()
+        recorder.stop()
 
-        #expect(!highsAfterSwitch.contains(10))
+        #expect(!recorder.states.map(\.loadedHigh).contains(10))
         #expect(snapshots.map(\.weather.highTemperatureF) == [10, 20])
         #expect(snapshots.map(\.recommendation?.summary) == [nil, "City B"])
     }
@@ -440,7 +438,7 @@ struct DayPlanViewModelTests {
         viewModel.start()
         try await waitUntil { viewModel.state.isLoaded }
 
-        locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
+        select(.custom(name: "City A", latitude: 10, longitude: 10), in: locationPreference, for: viewModel)
 
         #expect(viewModel.state.isLoaded)
         let requested = await fetcher.requestedCoordinates
@@ -528,7 +526,7 @@ struct DayPlanViewModelTests {
         viewModel.start()
         try await waitUntil { viewModel.refreshFailureMessage != nil }
 
-        locationPreference.selection = .custom(name: "City B", latitude: 20, longitude: 20)
+        select(.custom(name: "City B", latitude: 20, longitude: 20), in: locationPreference, for: viewModel)
 
         try await waitUntil { viewModel.state.loadedHigh == 20 }
         #expect(viewModel.state.isRecommendationLoading)
@@ -679,7 +677,7 @@ struct DayPlanViewModelTests {
         try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
         #expect(viewModel.state.loadedHigh == 99)
 
-        providerPreference.provider = .openMeteo
+        select(.openMeteo, in: providerPreference, for: viewModel)
 
         try await waitUntil { viewModel.state.loadedHigh == 10 && viewModel.state.isRecommendationLoading }
     }
@@ -723,17 +721,16 @@ struct DayPlanViewModelTests {
 
         viewModel.start()
         // Subscribed after start, so the first recorded state is the Saved Plan, not .idle.
-        var states: [LoadState] = []
-        let subscription = viewModel.$state.sink { states.append($0) }
-        defer { subscription.cancel() }
+        let recorder = StateRecorder(viewModel)
+        defer { recorder.stop() }
         try await waitUntil { fetcher.isStreaming }
         // The fake handles events in order, so the partial is delivered before the finished outfit.
         fetcher.send(partial: OutfitRecommendation(summary: "Half a", items: []))
         fetcher.finish(with: .success(OutfitRecommendation(summary: "Fresh outfit", items: [])))
         try await waitUntil { viewModel.state.readySummary == "Fresh outfit" }
 
-        #expect(!states.contains { $0.partialSummary != nil })
-        #expect(states.dropLast().allSatisfy { $0.readySummary == "Saved outfit" && $0.loadedHigh == 99 })
+        #expect(!recorder.states.contains { $0.partialSummary != nil })
+        #expect(recorder.states.dropLast().allSatisfy { $0.readySummary == "Saved outfit" && $0.loadedHigh == 99 })
         #expect(viewModel.state.loadedHigh == 10)
     }
 
@@ -755,17 +752,16 @@ struct DayPlanViewModelTests {
         viewModel.start()
         try await waitUntil { viewModel.refreshFailureMessage != nil }
 
-        var states: [LoadState] = []
-        let subscription = viewModel.$state.sink { states.append($0) }
-        defer { subscription.cancel() }
+        let recorder = StateRecorder(viewModel)
+        defer { recorder.stop() }
         let refresh = Task { await viewModel.refresh() }
         try await waitUntil { fetcher.isStreaming }
         fetcher.send(partial: OutfitRecommendation(summary: "Half a", items: []))
         fetcher.finish(with: .success(OutfitRecommendation(summary: "Fresh outfit", items: [])))
         await refresh.value
 
-        #expect(!states.contains { $0.partialSummary != nil })
-        #expect(states.dropLast().allSatisfy { $0.readySummary == "Saved outfit" })
+        #expect(!recorder.states.contains { $0.partialSummary != nil })
+        #expect(recorder.states.dropLast().allSatisfy { $0.readySummary == "Saved outfit" })
         #expect(viewModel.state.readySummary == "Fresh outfit")
     }
 
@@ -792,16 +788,15 @@ struct DayPlanViewModelTests {
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: nil, location: cityA), publishSnapshot: { snapshots.append($0) })
         viewModel.start()
         try await waitUntil { viewModel.state.recommendationFailureMessage != nil }
-        var states: [LoadState] = []
-        let subscription = viewModel.$state.sink { states.append($0) }
-        defer { subscription.cancel() }
+        let recorder = StateRecorder(viewModel)
+        defer { recorder.stop() }
 
         viewModel.retryRecommendation()
         try await waitUntil { fetcher.isStreaming }
         // The earlier failure (and its Try Again button) gives way to the outfit loading on the
         // Saved Plan's weather while the fresh weather loads.
-        #expect(states.dropFirst().first.map { $0.loadedHigh == 99 && $0.isRecommendationLoading } == true)
-        #expect(!states.dropFirst().contains { $0.recommendationFailureMessage != nil })
+        #expect(recorder.states.dropFirst().first.map { $0.loadedHigh == 99 && $0.isRecommendationLoading } == true)
+        #expect(!recorder.states.dropFirst().contains { $0.recommendationFailureMessage != nil })
         fetcher.send(partial: OutfitRecommendation(summary: "Bring a", items: []))
         try await waitUntil { viewModel.state.partialSummary == "Bring a" }
         #expect(viewModel.state.loadedHigh == 10)
@@ -867,7 +862,7 @@ struct DayPlanViewModelTests {
 
         let loadA = Task { await viewModel.refresh() }
         try await waitUntil { await fetcher.isHoldingAvailability }
-        locationPreference.selection = .currentLocation
+        select(.currentLocation, in: locationPreference, for: viewModel)
         #expect(viewModel.state.isIdle)
 
         await fetcher.releaseAvailability()
@@ -932,8 +927,8 @@ struct DayPlanViewModelTests {
         )
 
         // City B's load is enqueued, then superseded before it gets to run.
-        locationPreference.selection = .custom(name: "City B", latitude: 20, longitude: 20)
-        locationPreference.selection = .currentLocation
+        select(.custom(name: "City B", latitude: 20, longitude: 20), in: locationPreference, for: viewModel)
+        select(.currentLocation, in: locationPreference, for: viewModel)
         // Main-actor jobs run in order, so B's load has run (and returned) once this resumes.
         await Task.yield()
         #expect(viewModel.state.isIdle)
@@ -1390,27 +1385,65 @@ private func waitUntil(timeout: Duration = .seconds(2), _ condition: () async ->
     }
 }
 
+/// Changes the selection the way Settings does, then tells the view model as ContentView does.
+/// Reselections are passed on too, so the view model's own guard against them is tested.
+@MainActor
+private func select(_ selection: LocationSelection, in store: LocationPreferenceStore, for viewModel: DayPlanViewModel) {
+    store.selection = selection
+    viewModel.locationSelectionDidChange()
+}
+
+/// Changes the provider the way Settings does, then tells the view model as ContentView does.
+@MainActor
+private func select(_ provider: WeatherProvider, in store: WeatherProviderPreferenceStore, for viewModel: DayPlanViewModel) {
+    store.provider = provider
+    viewModel.providerDidChange()
+}
+
+/// Records each `state` the view model shows. Like SwiftUI, it reads the value once the change's
+/// main-actor job finishes, so a state overwritten within the same job isn't recorded.
+@MainActor
+private final class StateRecorder {
+    private(set) var states: [LoadState] = []
+    private let viewModel: DayPlanViewModel
+    private var isRecording = true
+
+    init(_ viewModel: DayPlanViewModel, skippingCurrent: Bool = false) {
+        self.viewModel = viewModel
+        record()
+        if skippingCurrent { states.removeAll() }
+    }
+
+    func stop() {
+        isRecording = false
+    }
+
+    private func record() {
+        guard isRecording else { return }
+        let state = withObservationTracking { viewModel.state } onChange: { [weak self] in
+            Task { @MainActor in self?.record() }
+        }
+        states.append(state)
+    }
+}
+
 @MainActor
 private final class FakeLocationProvider: LocationProviding {
-    @Published private var coordinate: CLLocationCoordinate2D?
-    @Published private var errorMessage: String?
-
-    var coordinatePublisher: AnyPublisher<CLLocationCoordinate2D?, Never> { $coordinate.eraseToAnyPublisher() }
-    var errorMessagePublisher: AnyPublisher<String?, Never> { $errorMessage.eraseToAnyPublisher() }
+    var onCoordinate: ((CLLocationCoordinate2D) -> Void)?
+    var onError: ((String) -> Void)?
 
     private(set) var locationRequestCount = 0
 
     func requestLocation() {
         locationRequestCount += 1
-        errorMessage = nil
     }
 
     func fail(_ message: String) {
-        errorMessage = message
+        onError?(message)
     }
 
     func deliver(_ coordinate: CLLocationCoordinate2D) {
-        self.coordinate = coordinate
+        onCoordinate?(coordinate)
     }
 }
 
