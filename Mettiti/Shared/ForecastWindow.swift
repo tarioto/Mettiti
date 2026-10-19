@@ -2,7 +2,6 @@ import Foundation
 
 /// The stretch of the hourly forecast that a plan covers, summarized for the outfit advice.
 struct ForecastWindow {
-    static let minimumLength: TimeInterval = 3 * 60 * 60
     /// From this UV index on, sun protection is worth bringing up (the WHO's "moderate").
     static let meaningfulUVIndex: Double = 3
 
@@ -27,15 +26,6 @@ struct ForecastWindow {
         } else {
             isDaylightAtStart = hours.first?.isDaylight
         }
-    }
-
-    /// From `now` until the end of the day in `timeZone`, but at least 3 hours, so a plan made
-    /// late in the evening still covers the next few hours past midnight.
-    static func span(startingAt now: Date, in timeZone: TimeZone) -> DateInterval {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timeZone
-        let endOfDay = calendar.dateInterval(of: .day, for: now)?.end ?? now
-        return DateInterval(start: now, end: max(endOfDay, now.addingTimeInterval(minimumLength)))
     }
 
     var high: HourlyTemperaturePoint? { hours.max { $0.meanF < $1.meanF } }

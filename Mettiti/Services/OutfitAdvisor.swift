@@ -15,13 +15,11 @@ enum OutfitAdvisorError: UserFacingError {
 
 struct OutfitAdvisor: Sendable {
     var unitProvider: @Sendable () -> TemperatureUnit = { SharedStore.loadTemperatureUnit() }
-    /// The advice covers the forecast from this moment on.
-    var now: @Sendable () -> Date = { .now }
     private let preparedSession = PreparedSession()
 
-    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation {
         try Self.checkAvailability()
-        let response = try await Self.makeSession().respond(to: Self.prompt(for: weather, hourly: hourly, now: now(), unit: unitProvider()), generating: OutfitRecommendation.self)
+        let response = try await Self.makeSession().respond(to: Self.prompt(for: weather, hourly: hourly, span: span, unit: unitProvider()), generating: OutfitRecommendation.self)
         return response.content
     }
 
@@ -36,10 +34,10 @@ struct OutfitAdvisor: Sendable {
 
     /// Streams the recommendation, reporting the suggestion so far after each update. Uses the
     /// session from `prewarm()` if there is one.
-    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
         try Self.checkAvailability()
         let session = preparedSession.take() ?? Self.makeSession()
-        let stream = session.streamResponse(to: Self.prompt(for: weather, hourly: hourly, now: now(), unit: unitProvider()), generating: OutfitRecommendation.self)
+        let stream = session.streamResponse(to: Self.prompt(for: weather, hourly: hourly, span: span, unit: unitProvider()), generating: OutfitRecommendation.self)
         for try await partial in stream {
             await onPartial(Self.draft(from: partial.content))
         }
@@ -91,22 +89,21 @@ struct OutfitAdvisor: Sendable {
     "chilly morning", "mild afternoon", or "hot and sunny".
     """
 
-    /// Covers `ForecastWindow.span` from `now`, hour by hour, or the whole day when there's no
-    /// hourly forecast for it.
+    /// Covers `span`, hour by hour, or the whole day when there's no hourly forecast for it.
     ///
     /// `locale` only decides what `.system` means. Temperatures are always written in a fixed form with an
     /// explicit unit and how they feel ("72°F (warm)"), and times in English ("4 PM"), because the model
     /// reads them, not the user. Conditions are in the user's language, like the weather provider's own
-    /// descriptions. Without an hourly forecast there's no location time zone, so times are in
-    /// `deviceTimeZone`.
-    static func prompt(for weather: DailyWeather, hourly: HourlyForecast?, now: Date, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent, deviceTimeZone: TimeZone = .autoupdatingCurrent) -> String {
+    /// descriptions. Times are in the span's time zone.
+    static func prompt(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent) -> String {
         let unit = unit.resolved(for: locale)
         func temperature(_ fahrenheit: Double) -> String {
             // The feel goes by the rounded value shown, so two hours that both read 8°C feel the same.
             let shown = unit.convert(fromFahrenheit: fahrenheit, locale: promptLocale).rounded()
             return "\(unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)) (\(feel(shown, in: unit)))"
         }
-        let timeZone = hourly?.timeZone ?? deviceTimeZone
+        let now = span.interval.start
+        let timeZone = span.timeZone
         func formatted(_ date: Date, _ style: Date.FormatStyle) -> String {
             var style = style
             style.timeZone = timeZone
@@ -117,7 +114,7 @@ struct OutfitAdvisor: Sendable {
         func clockTime(_ date: Date) -> String { formatted(date, .dateTime.hour().minute()) }
 
         var currentTime = "Current local time: \(clockTime(now))."
-        let window = hourly.map { ForecastWindow(forecast: $0, span: ForecastWindow.span(startingAt: now, in: timeZone)) }
+        let window = hourly.map { ForecastWindow(forecast: $0, span: span.interval) }
         guard let window, let high = window.high, let low = window.low else {
             // No sunset to go by, so assume it's dark late in the evening and at night.
             var calendar = Calendar(identifier: .gregorian)
@@ -164,7 +161,7 @@ struct OutfitAdvisor: Sendable {
             return "- \(hour(point.date)): \(parts.joined(separator: ", "))"
         }
 
-        let end = hour(window.span.end)
+        let end = clockTime(window.span.end)
         return """
         \(currentTime)
 

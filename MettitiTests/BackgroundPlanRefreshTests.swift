@@ -345,9 +345,9 @@ private actor RecordingPlanFetcher: DayPlanFetching {
         Issue.record("Background refresh has no one waiting on screen, so it shouldn't prewarm")
     }
 
-    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
         Issue.record("Background refresh has no one to show partial suggestions to, so it shouldn't stream")
-        return try await recommendation(for: weather, hourly: hourly)
+        return try await recommendation(for: weather, hourly: hourly, span: span)
     }
 
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?) {
@@ -365,7 +365,7 @@ private actor RecordingPlanFetcher: DayPlanFetching {
         return stream
     }
 
-    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation {
         recommendationRequestCount += 1
         if let generationStarted {
             generationStarted.yield()

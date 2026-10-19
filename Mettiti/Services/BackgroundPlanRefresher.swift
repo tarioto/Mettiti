@@ -55,8 +55,10 @@ struct BackgroundPlanRefresher {
 
         let provider = provider()
         guard let (weather, hourly) = try? await fetcher.fetchWeather(for: coordinate, from: provider) else { return .failed }
+        // Always the rest of the day for now; the widgets follow the Plan Window in #101.
+        let span = PlanSpan(window: .restOfDay, startingAt: now(), timeZone: hourly?.timeZone ?? calendar.timeZone)
         let recommendation: OutfitRecommendation? = if availability == .available {
-            try? await fetcher.recommendation(for: weather, hourly: hourly)
+            try? await fetcher.recommendation(for: weather, hourly: hourly, span: span)
         } else {
             nil
         }
@@ -73,7 +75,7 @@ struct BackgroundPlanRefresher {
            latest.recommendation != nil || recommendation == nil {
             return .supersededByApp
         }
-        publish(PlanSnapshot(weather: weather, recommendation: recommendation, generatedAt: now(), provider: provider, location: selection, hourly: hourly))
+        publish(PlanSnapshot(weather: weather, recommendation: recommendation, generatedAt: now(), provider: provider, location: selection, hourly: hourly, span: span))
         return recommendation == nil ? .refreshedWeatherOnly : .refreshed
     }
 

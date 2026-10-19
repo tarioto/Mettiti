@@ -99,6 +99,25 @@ struct HourlyTemperatureChartTests {
         #expect(descriptor.title == "Hourly forecast")
     }
 
+    @Test func audioGraphSummaryNamesTheShadedPlanWindow() throws {
+        let points = [point(hour: 0, meanF: 60), point(hour: 1, meanF: 55)]
+        let span = PlanSpan(window: .threeHours, startingAt: date("2026-10-09T21:20:00Z"), timeZone: pacific)
+        let descriptor = chartDescriptor(points: points, unit: .fahrenheit, span: span).makeChartDescriptor()
+
+        let summary = normalized(try #require(descriptor.summary))
+        #expect(summary.hasSuffix(". Shaded: Next 3 hours, from 2:20 PM to 5:20 PM"))
+    }
+
+    @Test func audioGraphSummaryLeavesOutAPlanWindowTheChartDoesntShow() throws {
+        let points = [point(hour: 0, meanF: 60), point(hour: 1, meanF: 55)]
+        // The day before the chart's hours.
+        let span = PlanSpan(window: .threeHours, startingAt: date("2026-10-08T21:20:00Z"), timeZone: pacific)
+        let descriptor = chartDescriptor(points: points, unit: .fahrenheit, span: span).makeChartDescriptor()
+
+        let summary = try #require(descriptor.summary)
+        #expect(!summary.contains("Shaded"))
+    }
+
     @Test func audioGraphWithNoHoursIsEmpty() throws {
         let descriptor = chartDescriptor(points: [], unit: .celsius).makeChartDescriptor()
 
@@ -115,11 +134,12 @@ struct HourlyTemperatureChartTests {
         HourlyForecast(timeZone: TimeZone(identifier: "America/Los_Angeles")!, points: []).hourFormat.locale(Self.enUS)
     }
 
-    private func chartDescriptor(points: [HourlyTemperaturePoint], unit: TemperatureUnit, hourFormat: Date.FormatStyle? = nil) -> HourlyChartDescriptor {
+    private func chartDescriptor(points: [HourlyTemperaturePoint], unit: TemperatureUnit, hourFormat: Date.FormatStyle? = nil, span: PlanSpan? = nil) -> HourlyChartDescriptor {
         HourlyChartDescriptor(
             points: points,
             hourFormat: hourFormat ?? self.hourFormat,
             scale: HourlyChartScale(points: points, unit: unit, palette: .light),
+            span: span,
             locale: Self.enUS
         )
     }

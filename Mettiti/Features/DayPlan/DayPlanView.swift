@@ -4,6 +4,8 @@ struct DayPlanView: View {
     let weather: DailyWeather
     let recommendation: RecommendationState
     var hourly: HourlyForecast? = nil
+    /// What the plan covers; nil in previews.
+    var span: PlanSpan? = nil
     var provider: WeatherProvider = .openMeteo
     var onRetryRecommendation: () -> Void = {}
     @Environment(TemperaturePreferenceStore.self) private var temperaturePreference
@@ -44,7 +46,12 @@ struct DayPlanView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(weather.conditionDescription)
                         .font(.title2.bold())
-                    Text("\(temperaturePreference.unit.formattedHighLow(highFahrenheit: weather.highTemperatureF, lowFahrenheit: weather.lowTemperatureF))  •  \((Double(weather.precipitationProbability) / 100).formatted(.percent)) rain  •  UV \(Int(weather.uvIndex.rounded()))", comment: "Weather card details: high/low, chance of rain, UV index")
+                    if let span, forecastWindow != nil {
+                        Text(span.window.name())
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("\(temperaturePreference.unit.formattedHighLow(highFahrenheit: details.highF, lowFahrenheit: details.lowF))  •  \((Double(details.precipitationProbability) / 100).formatted(.percent)) rain  •  UV \(Int(details.uvIndex.rounded()))", comment: "Weather card details: high/low, chance of rain, UV index")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -56,18 +63,39 @@ struct DayPlanView: View {
             }
 
             if let hourly {
-                HourlyTemperatureChart(hourly: hourly)
+                HourlyTemperatureChart(hourly: hourly, span: span)
             }
         }
         .padding()
         .cardGlass()
     }
 
+    /// The hourly forecast over the plan's span, or nil without one (or with no hours in it),
+    /// when the weather card falls back to the whole day.
+    private var forecastWindow: ForecastWindow? {
+        guard let hourly, let span else { return nil }
+        let window = ForecastWindow(forecast: hourly, span: span.interval)
+        return window.hours.isEmpty ? nil : window
+    }
+
+    /// The weather card's numbers: the plan's span when there's an hourly forecast for it,
+    /// otherwise the whole day.
+    private var details: (highF: Double, lowF: Double, precipitationProbability: Int, uvIndex: Double) {
+        guard let window = forecastWindow, let high = window.high, let low = window.low else {
+            return (weather.highTemperatureF, weather.lowTemperatureF, weather.precipitationProbability, weather.uvIndex)
+        }
+        return (high.meanF, low.meanF, window.wettest?.precipitationProbability ?? 0, window.peakDaylightUV?.uvIndex ?? 0)
+    }
+
     private var planCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(CardType.plan.title)
+            Text(span?.title() ?? CardType.plan.title)
                 .font(.headline)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .center)
+                .accessibilityLabel(span?.accessibilityLabel() ?? CardType.plan.title)
+                .accessibilityAddTraits(.isHeader)
             Divider()
             progressCaption(for: .plan)
             switch recommendation {

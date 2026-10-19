@@ -6,7 +6,8 @@ enum LoadState {
     case idle
     case loadingWeather
     /// Weather is shown as soon as it arrives; the outfit recommendation follows separately.
-    case loaded(weather: DailyWeather, hourly: HourlyForecast?, provider: WeatherProvider, recommendation: RecommendationState)
+    /// `span` is what the plan covers.
+    case loaded(weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, provider: WeatherProvider, recommendation: RecommendationState)
     case failed(String)
 }
 
@@ -24,6 +25,7 @@ final class DayPlanViewModel {
     private let locationManager: LocationProviding
     private let locationPreference: LocationPreferenceStore
     private let providerPreference: WeatherProviderPreferenceStore
+    private let planWindowPreference: PlanWindowPreferenceStore
     private let fetcher: DayPlanFetching
     private let loadSnapshot: @MainActor () -> PlanSnapshot?
     private let publishSnapshot: @MainActor (PlanSnapshot) -> Void
@@ -44,14 +46,17 @@ final class DayPlanViewModel {
     @ObservationIgnored private var lastLoadRequestedAt: Date?
     /// The only load allowed to update `state`; starting another cancels it.
     @ObservationIgnored private var loadTask: Task<Void, Never>?
-    /// The selection and provider last loaded for, so hearing about one that hasn't changed does nothing.
+    /// The selection, provider and Plan Window last loaded for, so hearing about one that hasn't
+    /// changed does nothing.
     @ObservationIgnored private var appliedSelection: LocationSelection
     @ObservationIgnored private var appliedProvider: WeatherProvider
+    @ObservationIgnored private var appliedPlanWindow: PlanWindow
 
-    init(locationManager: LocationProviding, locationPreference: LocationPreferenceStore, providerPreference: WeatherProviderPreferenceStore, fetcher: DayPlanFetching = DayPlanFetcher(), loadSnapshot: @escaping @MainActor () -> PlanSnapshot? = SharedStore.load, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = DayPlanViewModel.saveAndReloadWidgets, now: @escaping @MainActor () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent) {
+    init(locationManager: LocationProviding, locationPreference: LocationPreferenceStore, providerPreference: WeatherProviderPreferenceStore, planWindowPreference: PlanWindowPreferenceStore, fetcher: DayPlanFetching = DayPlanFetcher(), loadSnapshot: @escaping @MainActor () -> PlanSnapshot? = SharedStore.load, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = DayPlanViewModel.saveAndReloadWidgets, now: @escaping @MainActor () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent) {
         self.locationManager = locationManager
         self.locationPreference = locationPreference
         self.providerPreference = providerPreference
+        self.planWindowPreference = planWindowPreference
         self.fetcher = fetcher
         self.loadSnapshot = loadSnapshot
         self.publishSnapshot = publishSnapshot
@@ -59,6 +64,7 @@ final class DayPlanViewModel {
         self.calendar = calendar
         appliedSelection = locationPreference.selection
         appliedProvider = providerPreference.provider
+        appliedPlanWindow = planWindowPreference.window
 
         locationManager.onCoordinate = { [weak self] coordinate in
             self?.handleGPSCoordinate(coordinate)
@@ -93,26 +99,54 @@ final class DayPlanViewModel {
         Task { await refresh() }
     }
 
+    /// Remakes the outfit for the Plan Window preference's window, unless it's the one already
+    /// loaded. The weather on screen is kept; a Saved Plan's is stale, so that plan reloads whole.
+    func planWindowDidChange() {
+        guard planWindowPreference.window != appliedPlanWindow else { return }
+        appliedPlanWindow = planWindowPreference.window
+        guard hasStarted else { return }
+        if isShowingSavedPlan {
+            // The Saved Plan is for the old window, so the new one loads in the open. Cancelled
+            // now, not when the refresh starts, so the old window's load can't write in between.
+            isShowingSavedPlan = false
+            loadTask?.cancel()
+            Task { await refresh() }
+            return
+        }
+        // A load still fetching the weather shows `.loadingWeather`, and reads the new window once
+        // it has the weather.
+        remakeRecommendationForWeatherOnScreen()
+    }
+
     func start() {
         guard !hasStarted else { return }
         hasStarted = true
         appliedSelection = locationPreference.selection
         appliedProvider = providerPreference.provider
+        appliedPlanWindow = planWindowPreference.window
         showSavedPlanIfCurrent()
         beginLoading(for: locationPreference.selection)
     }
 
-    /// Shows the Saved Plan right away when it's from today for the same location and provider,
-    /// so launch doesn't wait on the network and the on-device model.
+    /// Shows the Saved Plan right away when it's from today for the same location, provider and
+    /// Plan Window, so launch doesn't wait on the network and the on-device model.
     private func showSavedPlanIfCurrent() {
         isShowingSavedPlan = false
         guard let snapshot = loadSnapshot(),
               snapshot.isFromToday(now: now(), calendar: calendar),
               snapshot.location == locationPreference.selection,
-              snapshot.provider == providerPreference.provider else { return }
+              snapshot.provider == providerPreference.provider,
+              snapshot.planWindow == planWindowPreference.window else { return }
         isShowingSavedPlan = true
         let recommendation: RecommendationState = snapshot.recommendation.map { .ready($0) } ?? .loading
-        state = .loaded(weather: snapshot.weather, hourly: snapshot.hourly, provider: providerPreference.provider, recommendation: recommendation)
+        let span = snapshot.span ?? PlanSpan(window: .restOfDay, startingAt: snapshot.generatedAt, timeZone: snapshot.hourly?.timeZone ?? calendar.timeZone)
+        state = .loaded(weather: snapshot.weather, hourly: snapshot.hourly, span: span, provider: providerPreference.provider, recommendation: recommendation)
+    }
+
+    /// The Plan Window preference's span from now, in the forecast location's time zone (the
+    /// device's without an hourly forecast).
+    private func currentSpan(for hourly: HourlyForecast?) -> PlanSpan {
+        PlanSpan(window: planWindowPreference.window, startingAt: now(), timeZone: hourly?.timeZone ?? calendar.timeZone)
     }
 
     /// How old the plan can get before returning to the app refreshes it on the same day. The
@@ -146,10 +180,16 @@ final class DayPlanViewModel {
             Task { await refresh() }
             return
         }
-        guard case .loaded(let weather, let hourly, let provider, _) = state else { return }
+        remakeRecommendationForWeatherOnScreen()
+    }
+
+    /// Asks the model again for the weather on screen, covering the Plan Window from now.
+    private func remakeRecommendationForWeatherOnScreen() {
+        guard case .loaded(let weather, let hourly, _, let provider, _) = state else { return }
         loadTask?.cancel()
         fetcher.prewarmRecommendation()
-        loadTask = Task { await loadRecommendation(weather: weather, hourly: hourly, provider: provider) }
+        let span = currentSpan(for: hourly)
+        loadTask = Task { await loadRecommendation(weather: weather, hourly: hourly, span: span, provider: provider) }
     }
 
     func refresh() async {
@@ -224,8 +264,8 @@ final class DayPlanViewModel {
         if isShowingSavedPlan {
             refreshFailureMessage = message
             // A Saved Plan without an outfit shows .loading; nothing is loading it any more.
-            if case .loaded(let weather, let hourly, let provider, .loading) = state {
-                state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .failed(message))
+            if case .loaded(let weather, let hourly, let span, let provider, .loading) = state {
+                state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .failed(message))
             }
         } else {
             state = .failed(message)
@@ -245,7 +285,7 @@ final class DayPlanViewModel {
         do {
             let (weather, hourly) = try await fetcher.fetchWeather(for: coordinate, from: provider)
             guard !Task.isCancelled else { return }
-            await loadRecommendation(weather: weather, hourly: hourly, provider: provider)
+            await loadRecommendation(weather: weather, hourly: hourly, span: currentSpan(for: hourly), provider: provider)
         } catch {
             guard !Task.isCancelled else { return }
             fail(UserFacingMessage.describing(error))
@@ -253,7 +293,7 @@ final class DayPlanViewModel {
     }
 
     /// Fills in the recommendation for weather that's already on screen; never fails the whole plan.
-    private func loadRecommendation(weather: DailyWeather, hourly: HourlyForecast?, provider: WeatherProvider) async {
+    private func loadRecommendation(weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, provider: WeatherProvider) async {
         // A retry runs this directly as `loadTask`, so it needs its own guard (#10).
         guard !Task.isCancelled else { return }
         let recommendation: RecommendationState
@@ -268,12 +308,12 @@ final class DayPlanViewModel {
             // the suggestion as it streams in, so the Saved Plan is no longer what's on screen.
             if !isShowingSavedPlanOutfit {
                 isShowingSavedPlan = false
-                state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .loading)
+                state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .loading)
             }
             do {
-                recommendation = .ready(try await fetcher.recommendation(for: weather, hourly: hourly) { [weak self] partial in
+                recommendation = .ready(try await fetcher.recommendation(for: weather, hourly: hourly, span: span) { [weak self] partial in
                     guard let self, !Task.isCancelled, !self.isShowingSavedPlanOutfit else { return }
-                    self.state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .generating(partial))
+                    self.state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .generating(partial))
                 })
             } catch {
                 recommendation = .failed(UserFacingMessage.describing(error))
@@ -287,14 +327,14 @@ final class DayPlanViewModel {
         }
         isShowingSavedPlan = false
         refreshFailureMessage = nil
-        state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: recommendation)
-        publishSnapshot(PlanSnapshot(weather: weather, recommendation: recommendation.outfit, generatedAt: now(), provider: provider, location: locationPreference.selection, hourly: hourly))
+        state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: recommendation)
+        publishSnapshot(PlanSnapshot(weather: weather, recommendation: recommendation.outfit, generatedAt: now(), provider: provider, location: locationPreference.selection, hourly: hourly, span: span))
     }
 
     /// Whether today's Saved Plan is on screen with its outfit, which partial suggestions
     /// mustn't replace. Stays true after a failed refresh, so the next one holds partials back too.
     private var isShowingSavedPlanOutfit: Bool {
-        guard isShowingSavedPlan, case .loaded(_, _, _, .ready) = state else { return false }
+        guard isShowingSavedPlan, case .loaded(_, _, _, _, .ready) = state else { return false }
         return true
     }
 
@@ -302,13 +342,13 @@ final class DayPlanViewModel {
     /// its Try Again button) gives way to the outfit loading, and if the model can't make one,
     /// that shows right away instead of only once the refresh finishes.
     private func prepareSavedPlanWithoutOutfitForRefresh() async {
-        guard isShowingSavedPlan, !isShowingSavedPlanOutfit, case .loaded(let weather, let hourly, let provider, let recommendation) = state else { return }
+        guard isShowingSavedPlan, !isShowingSavedPlanOutfit, case .loaded(let weather, let hourly, let span, let provider, let recommendation) = state else { return }
         if case .failed = recommendation {
-            state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .loading)
+            state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .loading)
         }
         guard case .unavailable(let reason) = await fetcher.recommendationAvailability(),
               !Task.isCancelled else { return }
-        state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .unavailable(reason))
+        state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .unavailable(reason))
     }
 
     /// Default snapshot sink: shares the plan with the widget and refreshes its timelines.

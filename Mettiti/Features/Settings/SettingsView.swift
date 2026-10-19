@@ -8,8 +8,10 @@ struct SettingsView: View {
     @Bindable var cardPreference: CardPreferenceStore
     @Bindable var themePreference: ThemePreferenceStore
     @Bindable var providerPreference: WeatherProviderPreferenceStore
+    @Bindable var planWindowPreference: PlanWindowPreferenceStore
     @Environment(AppIconPreferenceStore.self) private var appIconPreference
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var searchText = ""
     @State private var isSearching = false
@@ -83,6 +85,32 @@ struct SettingsView: View {
                     Text("Weather Source")
                 } footer: {
                     Text("Apple Weather uses the same data as the Weather app. With either source, the hourly chart's shaded band shows the forecast spread from Open-Meteo's ensemble.")
+                }
+
+                Section {
+                    // Five segments don't fit at accessibility text sizes, where a menu lists them in full.
+                    if dynamicTypeSize.isAccessibilitySize {
+                        Picker("Plan Window", selection: $planWindowPreference.window) {
+                            ForEach(PlanWindow.allCases) { window in
+                                Text(window.name()).tag(window)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                    } else {
+                        Picker("Plan Window", selection: $planWindowPreference.window) {
+                            ForEach(PlanWindow.allCases) { window in
+                                Text(window.label)
+                                    .accessibilityLabel(window.name())
+                                    .tag(window)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+                } header: {
+                    Text("Plan Window")
+                } footer: {
+                    Text("How far ahead from now the outfit advice covers. Rest of day runs until midnight, but at least 3 hours.")
                 }
 
                 Section("Temperature Unit") {
@@ -273,7 +301,8 @@ private enum GeocodeError: Error {
         temperaturePreference: TemperaturePreferenceStore(),
         cardPreference: CardPreferenceStore(),
         themePreference: ThemePreferenceStore(),
-        providerPreference: WeatherProviderPreferenceStore()
+        providerPreference: WeatherProviderPreferenceStore(),
+        planWindowPreference: PlanWindowPreferenceStore()
     )
     .environment(AppIconPreferenceStore())
 }
