@@ -26,6 +26,7 @@
 		24EBF2BC5713E761CFF7F218 /* WeatherAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D53059B3E838014506476E /* WeatherAttributionView.swift */; };
 		26F4E4AFBD0C174C2C5B9B06 /* OutfitAdvisorPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */; };
 		292FE55023362D9859EB24EF /* AppIcon-Dev.icon in Resources */ = {isa = PBXBuildFile; fileRef = B46F8D422DBEF88B22C30973 /* AppIcon-Dev.icon */; };
+		3B9811EDD4A40B3EE05D8F07 /* OpenMeteoFixtureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40F9E19950E9B566A883A1BE /* OpenMeteoFixtureTests.swift */; };
 		3CAA5D287DC2CED186446B80 /* PlanSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */; };
 		40D7A45064DD9CEF5144111C /* DailyWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17648820A03F760374204482 /* DailyWeather.swift */; };
 		40E7BA3BA819305BAF3C9333 /* DayPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB5D5EA13231AFF54DF1457B /* DayPlanView.swift */; };
@@ -47,6 +48,7 @@
 		78F692245C9F0A44CA2CF188 /* AppIcon-Sunset.icon in Resources */ = {isa = PBXBuildFile; fileRef = CA92278BFD00779BF33A3538 /* AppIcon-Sunset.icon */; };
 		7E8C0765B97E916B567E5F72 /* PreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B36B9A8F2969786148CEC84 /* PreferenceStoreTests.swift */; };
 		823024F22A9F25A1EFB42EA6 /* RefreshFailureNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1911B207E85E261EB49A38A2 /* RefreshFailureNotice.swift */; };
+		8243A3811D49F7EA8AE9D70B /* open-meteo-forecast.json in Resources */ = {isa = PBXBuildFile; fileRef = 41788BB535845B241782C615 /* open-meteo-forecast.json */; };
 		853AA46C5BE5F1C704DBFB25 /* DayPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75914F126959B2AAE4ABEDF2 /* DayPlanViewModel.swift */; };
 		8822F19E4CA5B57699A2DC69 /* EmojiWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3370B4271C590694D37B1BEC /* EmojiWidget.swift */; };
 		8A30EB00F9A949266296014D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1169A0DDECF191A9E6DAD135 /* ContentView.swift */; };
@@ -87,6 +89,7 @@
 		E6884B41028DD96F6001FE20 /* DisplayedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */; };
 		E84BF9813F6DE7B61F8F02F4 /* WidgetPlanTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88158BB15FF22E7B4D23559A /* WidgetPlanTimelineTests.swift */; };
 		E9922BA1EEE0B6016DE4E02B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C4D723016F4DC3AC3BFDA537 /* PrivacyInfo.xcprivacy */; };
+		E9F1520164403B2903978419 /* open-meteo-ensemble.json in Resources */ = {isa = PBXBuildFile; fileRef = A0D7DE2314C0B3D59A466B76 /* open-meteo-ensemble.json */; };
 		F1CDAF56F215F17FCCA4B743 /* EmptyPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26083B123692217C0408627C /* EmptyPlanView.swift */; };
 		F24DB7EA6A74E1042EB31FB2 /* OutfitRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC3B818C88DB31994FCBDC2 /* OutfitRecommendation.swift */; };
 		F289267E1C6ED89D4E7A4CD8 /* PlanSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BACE58624BBE532A80687F9 /* PlanSnapshot.swift */; };
@@ -159,6 +162,8 @@
 		3B36B9A8F2969786148CEC84 /* PreferenceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferenceStoreTests.swift; sourceTree = "<group>"; };
 		409CA5998A0FD530AFD3E822 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		40DE379AB97AB9FDA3A80A43 /* TemperaturePreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperaturePreferenceStore.swift; sourceTree = "<group>"; };
+		40F9E19950E9B566A883A1BE /* OpenMeteoFixtureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMeteoFixtureTests.swift; sourceTree = "<group>"; };
+		41788BB535845B241782C615 /* open-meteo-forecast.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "open-meteo-forecast.json"; sourceTree = "<group>"; };
 		41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanViewModelTests.swift; sourceTree = "<group>"; };
 		4258A411E1AD84FABBC377ED /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		463C9BDC2137A1A038617881 /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
@@ -185,6 +190,7 @@
 		9E29684554562655E6B0531E /* MettitiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MettitiApp.swift; sourceTree = "<group>"; };
 		9F76D0918FE0A1D37C2D7998 /* OpenMeteoHourlyTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMeteoHourlyTime.swift; sourceTree = "<group>"; };
 		A0966F7A65D295E017C2097D /* WeatherAPIQueryItems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAPIQueryItems.swift; sourceTree = "<group>"; };
+		A0D7DE2314C0B3D59A466B76 /* open-meteo-ensemble.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "open-meteo-ensemble.json"; sourceTree = "<group>"; };
 		A1D53059B3E838014506476E /* WeatherAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAttributionView.swift; sourceTree = "<group>"; };
 		A49C154E60C20C8E675F55A6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A9A8B88813468D2AEC54765D /* StoredPreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredPreference.swift; sourceTree = "<group>"; };
@@ -259,6 +265,7 @@
 				41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */,
 				6E72CE62D40BB1122CBF98F3 /* HourlyForecastTests.swift */,
 				239B073054ECD22EBF022A34 /* HourlyTemperatureChartTests.swift */,
+				40F9E19950E9B566A883A1BE /* OpenMeteoFixtureTests.swift */,
 				030820C24BA9ED9108C38C47 /* OutfitAdvisorDraftTests.swift */,
 				58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */,
 				08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */,
@@ -272,6 +279,7 @@
 				F735BBDBE3437765D0A5EC9B /* WeatherServiceTests.swift */,
 				88158BB15FF22E7B4D23559A /* WidgetPlanTimelineTests.swift */,
 				992D6EDE75226790FB26579A /* WMOWeatherCodeTests.swift */,
+				4CA56A833F88D5FC744269BE /* Fixtures */,
 			);
 			path = MettitiTests;
 			sourceTree = "<group>";
@@ -299,6 +307,15 @@
 				A1D53059B3E838014506476E /* WeatherAttributionView.swift */,
 			);
 			path = DayPlan;
+			sourceTree = "<group>";
+		};
+		4CA56A833F88D5FC744269BE /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				A0D7DE2314C0B3D59A466B76 /* open-meteo-ensemble.json */,
+				41788BB535845B241782C615 /* open-meteo-forecast.json */,
+			);
+			path = Fixtures;
 			sourceTree = "<group>";
 		};
 		4CB37DA89A0223A47AFB8027 /* MettitiWidgets */ = {
@@ -427,6 +444,7 @@
 			buildConfigurationList = 33AF92592AF80E686C165859 /* Build configuration list for PBXNativeTarget "MettitiTests" */;
 			buildPhases = (
 				17466DF24AA95C860DAA539B /* Sources */,
+				7D6569B3412C613AA34D3A87 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -515,6 +533,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7D6569B3412C613AA34D3A87 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E9F1520164403B2903978419 /* open-meteo-ensemble.json in Resources */,
+				8243A3811D49F7EA8AE9D70B /* open-meteo-forecast.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F50ECBC18416CE1A03E18296 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -545,6 +572,7 @@
 				1C1274F0E23B931CB16553AA /* DayPlanViewModelTests.swift in Sources */,
 				961B270CF8434ABE5CAB501C /* HourlyForecastTests.swift in Sources */,
 				D73324A0AA0E6FF613BC582B /* HourlyTemperatureChartTests.swift in Sources */,
+				3B9811EDD4A40B3EE05D8F07 /* OpenMeteoFixtureTests.swift in Sources */,
 				8E82577FEFB8D8795FF81690 /* OutfitAdvisorDraftTests.swift in Sources */,
 				26F4E4AFBD0C174C2C5B9B06 /* OutfitAdvisorPromptTests.swift in Sources */,
 				CDBAE51DE89D9B58AFDE2763 /* PlanSnapshotTests.swift in Sources */,
