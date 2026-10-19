@@ -3,15 +3,18 @@ import WidgetKit
 
 struct EmojiWidgetEntryView: View {
     var entry: PlanEntry
+    @ScaledMetric(relativeTo: .title) private var emojiSize: CGFloat = 34
 
     var body: some View {
         if let snapshot = entry.snapshot, let recommendation = snapshot.recommendation {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 ForEach(recommendation.displayedItems(limit: 4)) { row in
                     Text(row.item.emoji)
-                        .font(.system(size: 34))
+                        .font(.system(size: emojiSize))
                 }
             }
+            // Cap growth so four emoji still fit a small widget.
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .padding(4)
             .containerBackground(.fill.tertiary, for: .widget)
         } else if let snapshot = entry.snapshot {

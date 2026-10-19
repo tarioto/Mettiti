@@ -1,10 +1,13 @@
 import SwiftUI
 import Charts
+import Accessibility
 
 struct HourlyTemperatureChart: View {
     let hourly: HourlyForecast
     @EnvironmentObject private var temperaturePreference: TemperaturePreferenceStore
     @Environment(\.colorScheme) private var colorScheme
+    /// Grows with Dynamic Type from the 9pt the axis labels have at the default size.
+    @ScaledMetric(relativeTo: .caption2) private var hourLabelSize: CGFloat = 9
 
     private static let halfHour: TimeInterval = 1800
     private static let hour: TimeInterval = 3600
@@ -63,7 +66,7 @@ struct HourlyTemperatureChart: View {
                         // label lines up with the line, and the first one stays inside the plot.
                         AxisValueLabel(horizontalSpacing: 0) {
                             Text(date.formatted(hourFormat))
-                                .font(.system(size: 9))
+                                .font(.system(size: hourLabelSize))
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -88,6 +91,7 @@ struct HourlyTemperatureChart: View {
                 }
             }
             .frame(height: 124)
+            .accessibilityChartDescriptor(HourlyChartDescriptor(points: hourly.points, hourFormat: hourFormat, scale: scale))
 
             Text(hasSpread ? "Shaded band shows model spread · bars show chance of rain" : "Bars show chance of rain")
                 .font(.caption2)
@@ -201,6 +205,117 @@ struct HourlyChartScale {
     /// The heat colour at `displayedValue`'s height in the range.
     func color(for displayedValue: Double) -> Color {
         palette.color(atFraction: height > 0 ? (displayedValue - range.lowerBound) / height : 0)
+    }
+}
+
+/// The chart as an audio graph for VoiceOver, built once per body evaluation.
+///
+/// The x axis counts hours (0, 1, 2…) rather than holding their dates, because VoiceOver would
+/// read dates in the device's time zone; each index is described by its hour label in the
+/// forecast's own zone, so on a fall-back day both "1 AM"s keep their own place.
+struct HourlyChartDescriptor: AXChartDescriptorRepresentable {
+    struct Hour: Equatable {
+        /// The hour as the axis labels write it, e.g. "3 PM".
+        let label: String
+        /// The mean temperature in the displayed unit.
+        let temperature: Double
+        /// The mean temperature as the chart's marks write it, e.g. "72°".
+        let formattedTemperature: String
+        /// 0...100; hours without a chance of rain count as 0, matching their empty bar.
+        let precipitationProbability: Int
+    }
+
+    let hours: [Hour]
+    /// The plotted temperature range, in the displayed unit.
+    let temperatureRange: ClosedRange<Double>
+    /// The day's high and low and when they happen, or nil with no hours.
+    let summary: String?
+    private let unit: TemperatureUnit
+    private let locale: Locale
+
+    init(points: [HourlyTemperaturePoint], hourFormat: Date.FormatStyle, scale: HourlyChartScale, locale: Locale = .autoupdatingCurrent) {
+        unit = scale.unit
+        self.locale = locale
+        temperatureRange = scale.range
+        hours = points.map { point in
+            Hour(
+                label: point.date.formatted(hourFormat),
+                temperature: scale.unit.convert(fromFahrenheit: point.meanF, locale: locale),
+                formattedTemperature: scale.unit.formatted(fahrenheit: point.meanF, locale: locale),
+                precipitationProbability: point.precipitationProbability ?? 0
+            )
+        }
+
+        // The first hour to reach the high or the low, as the chart reads left to right.
+        if let high = zip(points, hours).max(by: { $0.0.meanF < $1.0.meanF })?.1,
+           let low = zip(points, hours).min(by: { $0.0.meanF < $1.0.meanF })?.1 {
+            summary = String(
+                localized: "High \(high.formattedTemperature) at \(high.label), low \(low.formattedTemperature) at \(low.label)",
+                locale: locale,
+                comment: "VoiceOver summary of the hourly chart; the arguments are the high temperature, its hour, the low temperature and its hour, e.g. High 72° at 3 PM, low 55° at 6 AM"
+            )
+        } else {
+            summary = nil
+        }
+    }
+
+    func makeChartDescriptor() -> AXChartDescriptor {
+        let labels = hours.map(\.label)
+        let xAxis = AXNumericDataAxisDescriptor(
+            title: String(localized: "Time", comment: "VoiceOver title for the hourly chart's time axis"),
+            range: 0...Double(max(hours.count - 1, 0)),
+            gridlinePositions: [],
+            valueDescriptionProvider: { index in
+                guard !labels.isEmpty else { return "" }
+                return labels[min(max(Int(index.rounded()), 0), labels.count - 1)]
+            }
+        )
+
+        // Each hour's own text, so VoiceOver reads exactly what the marks show; any other value
+        // (e.g. while scrubbing the axis) is converted back and formatted the same way.
+        let formattedByValue = Dictionary(hours.map { ($0.temperature, $0.formattedTemperature) }, uniquingKeysWith: { first, _ in first })
+        let unit = unit
+        let locale = locale
+        let yAxis = AXNumericDataAxisDescriptor(
+            title: String(localized: "Temperature", comment: "VoiceOver name for the hourly chart's temperature axis and line"),
+            range: temperatureRange,
+            gridlinePositions: [],
+            valueDescriptionProvider: { value in
+                if let formatted = formattedByValue[value] { return formatted }
+                let fahrenheit = unit.resolved(for: locale) == .fahrenheit ? value : value * 9 / 5 + 32
+                return unit.formatted(fahrenheit: fahrenheit, locale: locale)
+            }
+        )
+
+        let rainAxis = AXNumericDataAxisDescriptor(
+            title: String(localized: "Chance of rain", comment: "VoiceOver title for the hourly chart's chance of rain values"),
+            range: 0...100,
+            gridlinePositions: [],
+            valueDescriptionProvider: { value in
+                (value / 100).formatted(.percent.precision(.fractionLength(0)).locale(locale))
+            }
+        )
+
+        let series = AXDataSeriesDescriptor(
+            name: String(localized: "Temperature", comment: "VoiceOver name for the hourly chart's temperature axis and line"),
+            isContinuous: true,
+            dataPoints: hours.enumerated().map { index, hour in
+                AXDataPoint(
+                    x: Double(index),
+                    y: hour.temperature,
+                    additionalValues: [.number(Double(hour.precipitationProbability))]
+                )
+            }
+        )
+
+        return AXChartDescriptor(
+            title: String(localized: "Hourly forecast", comment: "VoiceOver title for the hourly temperature chart"),
+            summary: summary,
+            xAxis: xAxis,
+            yAxis: yAxis,
+            additionalAxes: [rainAxis],
+            series: [series]
+        )
     }
 }
 

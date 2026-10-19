@@ -11,6 +11,7 @@ struct WeatherOnlyPlanView: View {
             Image(systemName: WMOWeatherCode.symbolName(for: weather.conditionCode))
                 .font(.title2)
                 .symbolRenderingMode(.multicolor)
+                .accessibilityHidden(true)
             Text(weather.conditionDescription)
                 .font(.headline)
                 .lineLimit(2)

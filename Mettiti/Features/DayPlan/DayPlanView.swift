@@ -8,6 +8,7 @@ struct DayPlanView: View {
     var onRetryRecommendation: () -> Void = {}
     @EnvironmentObject private var temperaturePreference: TemperaturePreferenceStore
     @EnvironmentObject private var cardPreference: CardPreferenceStore
+    @ScaledMetric(relativeTo: .largeTitle) private var conditionSymbolSize: CGFloat = 44
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -49,8 +50,9 @@ struct DayPlanView: View {
                 }
                 Spacer()
                 Image(systemName: WMOWeatherCode.symbolName(for: weather.conditionCode))
-                    .font(.system(size: 44))
+                    .font(.system(size: conditionSymbolSize))
                     .symbolRenderingMode(.multicolor)
+                    .accessibilityHidden(true)
             }
 
             if let hourly {
@@ -253,12 +255,14 @@ private struct DayPlanPreview: View {
 
 private struct ItemRow: View {
     let item: RecommendedItem
+    @ScaledMetric(relativeTo: .title) private var emojiSize: CGFloat = 34
+    @ScaledMetric(relativeTo: .title) private var emojiColumnWidth: CGFloat = 44
 
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
             Text(item.emoji)
-                .font(.system(size: 34))
-                .frame(width: 44)
+                .font(.system(size: emojiSize))
+                .frame(width: emojiColumnWidth)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)
                     .font(.subheadline.weight(.semibold))
