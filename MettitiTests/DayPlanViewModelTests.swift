@@ -1,4 +1,5 @@
 import CoreLocation
+import FoundationModels
 import Observation
 import Synchronization
 import Testing
@@ -443,6 +444,41 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.isLoaded)
         let requested = await fetcher.requestedCoordinates
         #expect(requested.count == 1)
+    }
+
+    // MARK: System errors (#29)
+
+    @Test func offlineWeatherFetchFailsThePlanWithAFriendlyMessage() async throws {
+        let fetcher = FakeDayPlanFetcher(weather: .failure(URLError(.notConnectedToInternet)))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher)
+
+        viewModel.start()
+        try await waitUntil { viewModel.state.isFailed }
+
+        #expect(viewModel.state.failureMessage == "You're offline. Check your connection and try again.")
+    }
+
+    @Test func offlineRefreshKeepsTodaysPlanWithAFriendlyNotice() async throws {
+        let fetcher = GatedDayPlanFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
+
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .failure(URLError(.timedOut)))
+
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+        #expect(viewModel.refreshFailureMessage == "The weather service is taking too long to respond. Try again in a moment.")
+    }
+
+    @Test func modelErrorFailsTheSuggestionWithAFriendlyMessage() async throws {
+        let busy = LanguageModelSession.GenerationError.rateLimited(.init(debugDescription: "Raw system text"))
+        let fetcher = FakeDayPlanFetcher(recommendation: .failure(busy))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher)
+
+        viewModel.start()
+        try await waitUntil { viewModel.state.recommendationFailureMessage != nil }
+
+        #expect(viewModel.state.recommendationFailureMessage == "Apple Intelligence is busy right now. Try again in a moment.")
     }
 
     // MARK: Saved Plan on launch (#22)
@@ -1308,6 +1344,11 @@ private extension LoadState {
         return false
     }
 
+    var failureMessage: String? {
+        if case .failed(let message) = self { return message }
+        return nil
+    }
+
     var loadedHigh: Double? {
         if case .loaded(let weather, _, _, _) = self { return weather.highTemperatureF }
         return nil
@@ -1369,7 +1410,7 @@ private extension DailyWeather {
     }
 }
 
-private struct FakeFetchError: LocalizedError {
+private struct FakeFetchError: UserFacingError {
     var errorDescription: String? { "Stale request failed" }
 }
 
