@@ -1,8 +1,10 @@
 import Foundation
+import Observation
 
 @MainActor
-final class WeatherProviderPreferenceStore: ObservableObject {
-    @Published var provider: WeatherProvider {
+@Observable
+final class WeatherProviderPreferenceStore {
+    var provider: WeatherProvider {
         didSet { storedProvider.save(provider) }
     }
 

@@ -1,27 +1,15 @@
 import SwiftUI
-import Combine
 
 struct ContentView: View {
-    @StateObject private var locationManager = LocationManager()
-    @StateObject private var locationPreference = LocationPreferenceStore()
-    @StateObject private var temperaturePreference = TemperaturePreferenceStore()
-    @StateObject private var cardPreference = CardPreferenceStore()
-    @StateObject private var themePreference = ThemePreferenceStore()
-    @StateObject private var providerPreference: WeatherProviderPreferenceStore
-    @StateObject private var viewModel: DayPlanViewModel
+    let viewModel: DayPlanViewModel
+    let locationPreference: LocationPreferenceStore
+    let temperaturePreference: TemperaturePreferenceStore
+    let cardPreference: CardPreferenceStore
+    let themePreference: ThemePreferenceStore
+    let providerPreference: WeatherProviderPreferenceStore
     @State private var showingSettings = false
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
-
-    init() {
-        let manager = LocationManager()
-        let preference = LocationPreferenceStore()
-        let providerPreference = WeatherProviderPreferenceStore()
-        _locationManager = StateObject(wrappedValue: manager)
-        _locationPreference = StateObject(wrappedValue: preference)
-        _providerPreference = StateObject(wrappedValue: providerPreference)
-        _viewModel = StateObject(wrappedValue: DayPlanViewModel(locationManager: manager, locationPreference: preference, providerPreference: providerPreference))
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -69,13 +57,19 @@ struct ContentView: View {
             }
         }
         .background(themeBackground)
-        .environmentObject(temperaturePreference)
-        .environmentObject(cardPreference)
+        .environment(temperaturePreference)
+        .environment(cardPreference)
         .tint(themePreference.theme.accentColor)
         .onChange(of: themePreference.appearance, initial: true) { _, appearance in
             applyAppearance(appearance)
         }
         .onAppear { viewModel.start() }
+        .onChange(of: locationPreference.selection) {
+            viewModel.locationSelectionDidChange()
+        }
+        .onChange(of: providerPreference.provider) {
+            viewModel.providerDidChange()
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { viewModel.refreshIfStale() }
         }
@@ -151,5 +145,15 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    let locationPreference = LocationPreferenceStore()
+    let providerPreference = WeatherProviderPreferenceStore()
+    ContentView(
+        viewModel: DayPlanViewModel(locationManager: LocationManager(), locationPreference: locationPreference, providerPreference: providerPreference),
+        locationPreference: locationPreference,
+        temperaturePreference: TemperaturePreferenceStore(),
+        cardPreference: CardPreferenceStore(),
+        themePreference: ThemePreferenceStore(),
+        providerPreference: providerPreference
+    )
+    .environment(AppIconPreferenceStore())
 }

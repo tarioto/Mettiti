@@ -1,5 +1,5 @@
 import CoreLocation
-import Combine
+import Observation
 import WidgetKit
 
 enum LoadState {
@@ -11,14 +11,15 @@ enum LoadState {
 }
 
 @MainActor
-final class DayPlanViewModel: ObservableObject {
-    @Published private(set) var state: LoadState = .idle
+@Observable
+final class DayPlanViewModel {
+    private(set) var state: LoadState = .idle
     /// Why refreshing today's Saved Plan failed. The Saved Plan stays on screen with this as a
     /// notice instead of the error screen; cleared when the next load starts.
-    @Published private(set) var refreshFailureMessage: String?
+    private(set) var refreshFailureMessage: String?
     /// True while a refresh runs behind the Saved Plan's outfit, which stays on screen until the
     /// fresh plan is complete, so the screen can say it's updating (#23).
-    @Published private(set) var isUpdatingSavedPlan = false
+    private(set) var isUpdatingSavedPlan = false
 
     private let locationManager: LocationProviding
     private let locationPreference: LocationPreferenceStore
@@ -29,21 +30,23 @@ final class DayPlanViewModel: ObservableObject {
     private let now: @MainActor () -> Date
     /// Defines "today"; autoupdating so a time zone change while the app is in memory counts.
     private let calendar: Calendar
-    private var hasStarted = false
+    @ObservationIgnored private var hasStarted = false
     /// Last GPS fix; only Current Location refreshes reuse it, so custom-city loads never set it.
     /// Cleared on every selection change so returning to Current Location waits for a fresh fix.
-    private var lastCoordinate: CLLocationCoordinate2D?
+    @ObservationIgnored private var lastCoordinate: CLLocationCoordinate2D?
     /// True while today's Saved Plan is on screen in place of a fresh one (#22): while the fresh
     /// one loads in the background, and after that failed (with `refreshFailureMessage`) so a later
     /// refresh or GPS fix still replaces it in place. Cleared once a fresh plan is on screen or
     /// another selection or provider replaces it.
-    private var isShowingSavedPlan = false
+    @ObservationIgnored private var isShowingSavedPlan = false
     /// When the newest load was asked for: its weather fetch, or for Current Location the
     /// location request it's waiting on (which may never deliver a fix).
-    private var lastLoadRequestedAt: Date?
+    @ObservationIgnored private var lastLoadRequestedAt: Date?
     /// The only load allowed to update `state`; starting another cancels it.
-    private var loadTask: Task<Void, Never>?
-    private var cancellables = Set<AnyCancellable>()
+    @ObservationIgnored private var loadTask: Task<Void, Never>?
+    /// The selection and provider last loaded for, so hearing about one that hasn't changed does nothing.
+    @ObservationIgnored private var appliedSelection: LocationSelection
+    @ObservationIgnored private var appliedProvider: WeatherProvider
 
     init(locationManager: LocationProviding, locationPreference: LocationPreferenceStore, providerPreference: WeatherProviderPreferenceStore, fetcher: DayPlanFetching = DayPlanFetcher(), loadSnapshot: @escaping @MainActor () -> PlanSnapshot? = SharedStore.load, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = DayPlanViewModel.saveAndReloadWidgets, now: @escaping @MainActor () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent) {
         self.locationManager = locationManager
@@ -54,45 +57,45 @@ final class DayPlanViewModel: ObservableObject {
         self.publishSnapshot = publishSnapshot
         self.now = now
         self.calendar = calendar
+        appliedSelection = locationPreference.selection
+        appliedProvider = providerPreference.provider
 
-        locationManager.coordinatePublisher
-            .compactMap { $0 }
-            .sink { [weak self] coordinate in
-                self?.handleGPSCoordinate(coordinate)
-            }
-            .store(in: &cancellables)
+        locationManager.onCoordinate = { [weak self] coordinate in
+            self?.handleGPSCoordinate(coordinate)
+        }
+        locationManager.onError = { [weak self] message in
+            self?.handleGPSError(message)
+        }
+    }
 
-        locationManager.errorMessagePublisher
-            .compactMap { $0 }
-            .sink { [weak self] message in
-                self?.handleGPSError(message)
-            }
-            .store(in: &cancellables)
+    /// Loads the plan for the location preference's selection, unless it's the one already loaded.
+    func locationSelectionDidChange() {
+        let selection = locationPreference.selection
+        guard selection != appliedSelection else { return }
+        appliedSelection = selection
+        hasStarted = true
+        isShowingSavedPlan = false
+        isUpdatingSavedPlan = false
+        state = .idle
+        lastCoordinate = nil
+        beginLoading(for: selection)
+    }
 
-        // removeDuplicates before dropFirst so reselecting the initial selection is skipped too.
-        locationPreference.$selection
-            .removeDuplicates()
-            .dropFirst()
-            .sink { [weak self] selection in
-                self?.applySelection(selection)
-            }
-            .store(in: &cancellables)
-
-        providerPreference.$provider
-            .removeDuplicates()
-            .dropFirst()
-            .sink { [weak self] _ in
-                guard let self, self.hasStarted else { return }
-                // The Saved Plan is for the old provider, so the new one loads in the open.
-                self.isShowingSavedPlan = false
-                Task { await self.refresh() }
-            }
-            .store(in: &cancellables)
+    /// Reloads the plan from the provider preference's provider, unless it's the one already loaded.
+    func providerDidChange() {
+        guard providerPreference.provider != appliedProvider else { return }
+        appliedProvider = providerPreference.provider
+        guard hasStarted else { return }
+        // The Saved Plan is for the old provider, so the new one loads in the open.
+        isShowingSavedPlan = false
+        Task { await refresh() }
     }
 
     func start() {
         guard !hasStarted else { return }
         hasStarted = true
+        appliedSelection = locationPreference.selection
+        appliedProvider = providerPreference.provider
         showSavedPlanIfCurrent()
         beginLoading(for: locationPreference.selection)
     }
@@ -196,15 +199,6 @@ final class DayPlanViewModel: ObservableObject {
         return task
     }
 
-    private func applySelection(_ selection: LocationSelection) {
-        hasStarted = true
-        isShowingSavedPlan = false
-        isUpdatingSavedPlan = false
-        state = .idle
-        lastCoordinate = nil
-        beginLoading(for: selection)
-    }
-
     private func handleGPSCoordinate(_ coordinate: CLLocationCoordinate2D) {
         guard case .currentLocation = locationPreference.selection else { return }
         lastCoordinate = coordinate
@@ -240,7 +234,6 @@ final class DayPlanViewModel: ObservableObject {
         // Superseded before it ran (e.g. by a quick second selection change): write nothing.
         guard !Task.isCancelled else { return }
         if !isShowingSavedPlan { state = .loadingWeather }
-        // Read here (not in the provider sink, which fires before @Published updates).
         let provider = providerPreference.provider
         // Loads the model while the weather is in flight, so the suggestion starts sooner (#23).
         fetcher.prewarmRecommendation()

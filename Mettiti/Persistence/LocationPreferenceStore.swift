@@ -1,8 +1,10 @@
 import Foundation
+import Observation
 
 @MainActor
-final class LocationPreferenceStore: ObservableObject {
-    @Published var selection: LocationSelection {
+@Observable
+final class LocationPreferenceStore {
+    var selection: LocationSelection {
         didSet {
             guard selection != oldValue else { return }
             storedSelection.save(selection)
