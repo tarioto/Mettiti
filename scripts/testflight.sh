@@ -12,6 +12,11 @@
 # Uploading uses the Apple account signed in to Xcode (Settings > Accounts). To use an
 # App Store Connect API key instead (as CI does), set ASC_KEY_PATH (the .p8 file),
 # ASC_KEY_ID and ASC_ISSUER_ID.
+#
+# Signing uses the team's Apple Development (archive) and Apple Distribution (upload)
+# certificates from the keychain. CI imports them from the DEV_CERT_P12 and DIST_CERT_P12
+# secrets (each a base64 .p12 exported from Xcode > Settings > Accounts > Manage Certificates,
+# with its password in DEV_CERT_PASSWORD / DIST_CERT_PASSWORD), so it never creates new ones.
 
 set -euo pipefail
 

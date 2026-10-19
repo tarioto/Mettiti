@@ -41,6 +41,38 @@ jobs:
           echo "path=$key_path" >> "$GITHUB_OUTPUT"
           echo "configured=true" >> "$GITHUB_OUTPUT"
 
+      # Import the team's stored signing certificates: Apple Development signs the archive and
+      # Apple Distribution signs the upload. Without them, automatic signing creates a new
+      # development certificate on every fresh runner until the account hits its limit.
+      - name: Import signing certificates
+        if: steps.key.outputs.configured == 'true'
+        env:
+          DEV_CERT_P12: ${{ secrets.DEV_CERT_P12 }}
+          DEV_CERT_PASSWORD: ${{ secrets.DEV_CERT_PASSWORD }}
+          DIST_CERT_P12: ${{ secrets.DIST_CERT_P12 }}
+          DIST_CERT_PASSWORD: ${{ secrets.DIST_CERT_PASSWORD }}
+        run: |
+          if [[ -z "$DEV_CERT_P12" || -z "$DIST_CERT_P12" ]]; then
+            echo "::error::DEV_CERT_P12 and DIST_CERT_P12 must both be set; see scripts/testflight.sh."
+            exit 1
+          fi
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password=$(openssl rand -base64 24)
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          import_cert() {
+            local cert_path="$RUNNER_TEMP/cert.p12"
+            printf '%s' "$1" | base64 --decode > "$cert_path"
+            security import "$cert_path" -k "$keychain" -P "$2" -T /usr/bin/codesign -T /usr/bin/security
+            rm -f "$cert_path"
+          }
+          import_cert "$DEV_CERT_P12" "$DEV_CERT_PASSWORD"
+          import_cert "$DIST_CERT_P12" "$DIST_CERT_PASSWORD"
+          security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          security find-identity -v -p codesigning "$keychain"
+
       - name: Archive and upload
         if: steps.key.outputs.configured == 'true'
         env:
@@ -49,6 +81,8 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: scripts/testflight.sh
 
-      - name: Remove API key
+      - name: Remove API key and certificates
         if: always()
-        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
+        run: |
+          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/cert.p12"
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2> /dev/null || true
