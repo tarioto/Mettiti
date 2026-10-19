@@ -6,8 +6,8 @@ struct DayPlanView: View {
     var hourly: HourlyForecast? = nil
     var provider: WeatherProvider = .openMeteo
     var onRetryRecommendation: () -> Void = {}
-    @EnvironmentObject private var temperaturePreference: TemperaturePreferenceStore
-    @EnvironmentObject private var cardPreference: CardPreferenceStore
+    @Environment(TemperaturePreferenceStore.self) private var temperaturePreference
+    @Environment(CardPreferenceStore.self) private var cardPreference
     @ScaledMetric(relativeTo: .largeTitle) private var conditionSymbolSize: CGFloat = 44
 
     var body: some View {
@@ -35,7 +35,7 @@ struct DayPlanView: View {
 
     private var weatherCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Weather")
+            Text(CardType.weather.title)
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
             Divider()
@@ -65,7 +65,7 @@ struct DayPlanView: View {
 
     private var planCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Today's plan")
+            Text(CardType.plan.title)
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
             Divider()
@@ -95,7 +95,7 @@ struct DayPlanView: View {
 
     private var wearAndBringCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Wear & bring")
+            Text(CardType.wearAndBring.title)
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
             Divider()
@@ -248,8 +248,8 @@ private struct DayPlanPreview: View {
             DayPlanView(weather: .placeholder, recommendation: recommendation)
                 .padding()
         }
-        .environmentObject(TemperaturePreferenceStore())
-        .environmentObject(CardPreferenceStore())
+        .environment(TemperaturePreferenceStore())
+        .environment(CardPreferenceStore())
     }
 }
 

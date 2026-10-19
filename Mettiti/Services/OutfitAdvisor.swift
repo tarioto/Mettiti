@@ -2,7 +2,7 @@ import Foundation
 import FoundationModels
 import Synchronization
 
-enum OutfitAdvisorError: Error, LocalizedError {
+enum OutfitAdvisorError: UserFacingError {
     case modelUnavailable(String)
 
     var errorDescription: String? {

@@ -1,7 +1,7 @@
 import Foundation
 import CoreLocation
 
-enum WeatherServiceError: Error, LocalizedError {
+enum WeatherServiceError: UserFacingError {
     case invalidResponse
     case decodingFailed
 
@@ -23,10 +23,14 @@ struct OpenMeteoForecast {
 }
 
 struct WeatherService {
+    /// How long a weather request may sit without receiving data before it fails as timed out.
+    /// Shorter than URLSession's 60 seconds, so a bad connection gets a message instead of a long wait (#29).
+    static let requestTimeout: TimeInterval = 15
+
     func fetchForecast(for coordinate: CLLocationCoordinate2D) async throws -> OpenMeteoForecast {
         guard let url = Self.forecastURL(for: coordinate) else { throw WeatherServiceError.invalidResponse }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: Self.requestTimeout))
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw WeatherServiceError.invalidResponse
         }

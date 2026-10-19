@@ -3,12 +3,12 @@ import CoreLocation
 import MapKit
 
 struct SettingsView: View {
-    @ObservedObject var preference: LocationPreferenceStore
-    @ObservedObject var temperaturePreference: TemperaturePreferenceStore
-    @ObservedObject var cardPreference: CardPreferenceStore
-    @ObservedObject var themePreference: ThemePreferenceStore
-    @ObservedObject var providerPreference: WeatherProviderPreferenceStore
-    @EnvironmentObject private var appIconPreference: AppIconPreferenceStore
+    let preference: LocationPreferenceStore
+    @Bindable var temperaturePreference: TemperaturePreferenceStore
+    @Bindable var cardPreference: CardPreferenceStore
+    @Bindable var themePreference: ThemePreferenceStore
+    @Bindable var providerPreference: WeatherProviderPreferenceStore
+    @Environment(AppIconPreferenceStore.self) private var appIconPreference
     @Environment(\.dismiss) private var dismiss
 
     @State private var searchText = ""
@@ -275,5 +275,5 @@ private enum GeocodeError: Error {
         themePreference: ThemePreferenceStore(),
         providerPreference: WeatherProviderPreferenceStore()
     )
-    .environmentObject(AppIconPreferenceStore())
+    .environment(AppIconPreferenceStore())
 }

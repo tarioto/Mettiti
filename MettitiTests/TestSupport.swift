@@ -1,4 +1,5 @@
 import Foundation
+import Testing
 @testable import Mettiti
 
 let pacific = TimeZone(identifier: "America/Los_Angeles")!
@@ -26,4 +27,12 @@ extension PlanSnapshot {
 /// A throwaway defaults suite so preference tests never touch the app's real settings.
 func isolatedDefaults() -> UserDefaults {
     UserDefaults(suiteName: "MettitiTests.\(UUID().uuidString)")!
+}
+
+private final class FixtureBundleToken {}
+
+/// A hand-made API response in MettitiTests/Fixtures, in the shape the live API returns.
+func fixture(_ name: String) throws -> Data {
+    let url = try #require(Bundle(for: FixtureBundleToken.self).url(forResource: name, withExtension: "json"))
+    return try Data(contentsOf: url)
 }

@@ -1,3 +1,4 @@
+import Observation
 import StoreKit
 import UIKit
 
@@ -69,12 +70,13 @@ enum AppIconSelection: Hashable {
 
 /// Decides which home screen icon to show: the Icon Choice if there is one, otherwise the Build Icon for the Install Source.
 @MainActor
-final class AppIconPreferenceStore: ObservableObject {
+@Observable
+final class AppIconPreferenceStore {
     nonisolated static let betaIconName = "AppIcon-Beta"
 
-    @Published private(set) var selection: AppIconSelection
+    private(set) var selection: AppIconSelection
     /// What Default shows. Assumes the primary icon until the Install Source is known.
-    @Published private(set) var buildIcon: BuildIcon = AppIconPreferenceStore.primaryBuildIcon
+    private(set) var buildIcon: BuildIcon = AppIconPreferenceStore.primaryBuildIcon
 
     private let saveIconChoice: (ThemeIcon?) -> Void
     private let supportsAlternateIconsProvider: () -> Bool

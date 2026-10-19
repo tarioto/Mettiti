@@ -1,8 +1,10 @@
 import Foundation
+import Observation
 
 @MainActor
-final class CardPreferenceStore: ObservableObject {
-    @Published var cards: [CardConfig] {
+@Observable
+final class CardPreferenceStore {
+    var cards: [CardConfig] {
         didSet { storedCards.save(cards) }
     }
 

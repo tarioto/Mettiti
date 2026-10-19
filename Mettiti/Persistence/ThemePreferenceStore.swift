@@ -1,11 +1,13 @@
 import Foundation
+import Observation
 
 @MainActor
-final class ThemePreferenceStore: ObservableObject {
-    @Published var theme: AppTheme {
+@Observable
+final class ThemePreferenceStore {
+    var theme: AppTheme {
         didSet { storedTheme.save(theme) }
     }
-    @Published var appearance: AppAppearance {
+    var appearance: AppAppearance {
         didSet { storedAppearance.save(appearance) }
     }
 
