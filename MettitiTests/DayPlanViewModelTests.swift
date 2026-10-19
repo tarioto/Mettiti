@@ -562,9 +562,34 @@ struct DayPlanViewModelTests {
         await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "City A outfit", items: [])))
         try await Task.sleep(for: .milliseconds(50))
 
-        #expect(!recorder.states.contains { $0.readySummary == "Saved outfit" && $0.loadedHigh != 99 })
+        // After the Saved Plan, only City B's loading states and weather are shown.
+        #expect(recorder.states.dropFirst().allSatisfy { $0.isIdle || $0.isLoadingWeather || $0.loadedHigh == 20 })
         #expect(viewModel.state.readySummary == "City B outfit")
         #expect(snapshots.map(\.location) == [cityB])
+    }
+
+    @Test func weatherFailureForAnotherCityChosenDuringTheRefreshFailsThePlanInsteadOfKeepingTheSavedOne() async throws {
+        let fetcher = GatedDayPlanFetcher()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = cityA
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: cityA) },
+            publishSnapshot: { _ in }
+        )
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+
+        select(.custom(name: "City B", latitude: 20, longitude: 20), in: locationPreference, for: viewModel)
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 20) }
+        await fetcher.complete(latitude: 20, with: .failure(FakeFetchError()))
+
+        // The Saved Plan is City A's, so City B's failure shows the error screen, not a notice.
+        try await waitUntil { viewModel.state.isFailed }
+        #expect(viewModel.refreshFailureMessage == nil)
     }
 
     @Test func failedRefreshKeepsTodaysPlanOnScreenWithANoticeUntilTheNextLoad() async throws {
@@ -600,13 +625,14 @@ struct DayPlanViewModelTests {
         let fetcher = GatedDayPlanFetcher()
         let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .currentLocation
+        var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
             fetcher: fetcher,
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
-            publishSnapshot: { _ in }
+            publishSnapshot: { snapshots.append($0) }
         )
 
         viewModel.start()
@@ -614,6 +640,7 @@ struct DayPlanViewModelTests {
 
         #expect(viewModel.state.readySummary == "Saved outfit")
         #expect(viewModel.refreshFailureMessage == "Couldn't find your location right now.")
+        #expect(snapshots.isEmpty)
 
         location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
         try await waitUntil { await fetcher.isWaiting(onLatitude: 47.6) }
@@ -621,6 +648,7 @@ struct DayPlanViewModelTests {
         await fetcher.complete(latitude: 47.6, with: .success(.forecast(high: 10)))
         try await waitUntil { viewModel.state.loadedHigh == 10 }
         #expect(viewModel.refreshFailureMessage == nil)
+        #expect(snapshots.map(\.weather.highTemperatureF) == [10])
     }
 
     @Test func refreshBeforeTheFirstGPSFixKeepsTodaysPlanAndTheNextFixRefreshesIt() async throws {
@@ -1061,6 +1089,7 @@ struct DayPlanViewModelTests {
         try await waitUntil { viewModel.refreshFailureMessage != nil }
 
         #expect(viewModel.state.readySummary == "Saved outfit")
+        #expect(viewModel.state.loadedHigh == 99)
         #expect(viewModel.refreshFailureMessage == RecommendationState.unavailable(.modelNotReady).problemMessage)
         #expect(snapshots.isEmpty)
     }
