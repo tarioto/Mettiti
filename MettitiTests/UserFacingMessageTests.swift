@@ -46,6 +46,8 @@ struct UserFacingMessageTests {
 
     // MARK: iOS 27 model errors, which replace GenerationError
 
+    // Only the iOS 27 SDK (Swift 6.4, Xcode 27) has these types; see UserFacingMessage.
+    #if compiler(>=6.4)
     @Test @available(iOS 27, *)
     func iOS27ModelFailuresSayNoSuggestionsThisTime() {
         let errors: [any Error] = [
@@ -86,6 +88,7 @@ struct UserFacingMessageTests {
         let error = LanguageModelError.unsupportedLanguageOrLocale(.init(languageCode: .french, debugDescription: "Raw system text"))
         #expect(UserFacingMessage.describing(error) == "Outfit suggestions aren't available in your language yet.")
     }
+    #endif
 
     @Test func appErrorsKeepTheirOwnMessage() {
         #expect(UserFacingMessage.describing(WeatherServiceError.decodingFailed) == "Received an unexpected response from the weather service.")

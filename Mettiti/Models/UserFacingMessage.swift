@@ -14,9 +14,11 @@ enum UserFacingMessage {
         if let error = error as? URLError {
             return describing(error)
         }
+        #if compiler(>=6.4)
         if #available(iOS 27, *), let message = modelMessage(for: error) {
             return message
         }
+        #endif
         if let error = error as? LanguageModelSession.GenerationError {
             return describing(error)
         }
@@ -52,6 +54,9 @@ enum UserFacingMessage {
         }
     }
 
+    // The iOS 27 error types only exist in the iOS 27 SDK, which ships with Swift 6.4 (Xcode 27).
+    // Older toolchains, such as CI's Xcode 26, compile without them.
+    #if compiler(>=6.4)
     /// The on-device model's errors from iOS 27; nil for any other error.
     @available(iOS 27, *)
     private static func modelMessage(for error: any Error) -> String? {
@@ -90,6 +95,7 @@ enum UserFacingMessage {
             return nil
         }
     }
+    #endif
 
     private static var modelBusy: String {
         String(localized: "Apple Intelligence is busy right now. Try again in a moment.")
