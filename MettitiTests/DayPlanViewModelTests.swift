@@ -532,6 +532,41 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.isRecommendationLoading)
     }
 
+    @Test func choosingAnotherCityDuringTheRefreshNeverShowsTheSavedOutfitWithItsWeather() async throws {
+        let fetcher = GatedRecommendationFetcher()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = cityA
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: cityA) },
+            publishSnapshot: { snapshots.append($0) }
+        )
+        viewModel.start()
+        try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
+        let recorder = StateRecorder(viewModel)
+        defer { recorder.stop() }
+
+        let cityB = LocationSelection.custom(name: "City B", latitude: 20, longitude: 20)
+        select(cityB, in: locationPreference, for: viewModel)
+        try await waitUntil { await fetcher.pendingRecommendationCount == 2 }
+        #expect(viewModel.state.loadedHigh == 20)
+        #expect(viewModel.state.isRecommendationLoading)
+
+        // City B's suggestion finishes first, then City A's superseded one.
+        await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "City B outfit", items: [])))
+        try await waitUntil { viewModel.state.readySummary == "City B outfit" }
+        await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "City A outfit", items: [])))
+        await Task.yield()
+
+        #expect(!recorder.states.contains { $0.readySummary == "Saved outfit" && $0.loadedHigh != 99 })
+        #expect(viewModel.state.readySummary == "City B outfit")
+        #expect(snapshots.map(\.location) == [cityB])
+    }
+
     @Test func failedRefreshKeepsTodaysPlanOnScreenWithANoticeUntilTheNextLoad() async throws {
         let fetcher = GatedDayPlanFetcher()
         var snapshots: [PlanSnapshot] = []
@@ -547,6 +582,7 @@ struct DayPlanViewModelTests {
 
         try await waitUntil { viewModel.refreshFailureMessage != nil }
         #expect(viewModel.refreshFailureMessage == FakeFetchError().errorDescription)
+        #expect(viewModel.state.loadedHigh == 99)
         #expect(viewModel.state.readySummary == "Saved outfit")
         #expect(snapshots.isEmpty)
 
