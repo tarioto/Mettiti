@@ -1761,12 +1761,12 @@ private final class MainActorGatedRecommendationFetcher: DayPlanFetching {
 
     nonisolated func prewarmRecommendation() {}
 
-    func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation {
         try await withCheckedThrowingContinuation { pending.append($0) }
     }
 
-    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
-        try await recommendation(for: weather)
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+        try await recommendation(for: weather, hourly: hourly)
     }
 }
 
