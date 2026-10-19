@@ -759,6 +759,38 @@ struct DayPlanViewModelTests {
         #expect(snapshots.map(\.provider) == [.openMeteo])
     }
 
+    @Test func oldProvidersSuggestionFinishingRightAfterTheChangeIsNeverShownOrSaved() async throws {
+        let fetcher = MainActorGatedRecommendationFetcher()
+        let providerPreference = WeatherProviderPreferenceStore(defaults: isolatedDefaults())
+        providerPreference.provider = .apple
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = cityA
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: providerPreference,
+            fetcher: fetcher,
+            loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: cityA, provider: .apple) },
+            publishSnapshot: { snapshots.append($0) }
+        )
+        viewModel.start()
+        try await waitUntil { fetcher.pendingCount == 1 }
+        let recorder = StateRecorder(viewModel)
+        defer { recorder.stop() }
+
+        // The old suggestion resumes in the same main-actor job as the change, so it runs before
+        // the new provider's load starts.
+        fetcher.complete(with: OutfitRecommendation(summary: "Apple outfit", items: []))
+        select(.openMeteo, in: providerPreference, for: viewModel)
+        try await waitUntil { fetcher.pendingCount == 1 }
+        fetcher.complete(with: OutfitRecommendation(summary: "Open-Meteo outfit", items: []))
+        try await waitUntil { viewModel.state.readySummary == "Open-Meteo outfit" }
+
+        #expect(!recorder.states.contains { $0.readySummary == "Apple outfit" })
+        #expect(snapshots.map(\.provider) == [.openMeteo])
+    }
+
     // MARK: Perceived latency (#23)
 
     @Test func modelIsPrewarmedWhileWeatherIsStillLoading() async throws {
@@ -1663,6 +1695,37 @@ private actor GatedRecommendationFetcher: WholeRecommendationFetching {
         try await withCheckedThrowingContinuation { continuation in
             pending.append(continuation)
         }
+    }
+}
+
+/// Returns weather right away (high = latitude) but holds each recommendation on the main actor
+/// until the test completes it, so a completion resumes the load ahead of work queued after it.
+@MainActor
+private final class MainActorGatedRecommendationFetcher: DayPlanFetching {
+    private var pending: [CheckedContinuation<OutfitRecommendation, Error>] = []
+
+    var pendingCount: Int { pending.count }
+
+    func complete(with recommendation: OutfitRecommendation) {
+        pending.removeFirst().resume(returning: recommendation)
+    }
+
+    nonisolated func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?) {
+        (.forecast(high: coordinate.latitude), nil)
+    }
+
+    nonisolated func recommendationAvailability() async -> RecommendationAvailability {
+        .available
+    }
+
+    nonisolated func prewarmRecommendation() {}
+
+    func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
+        try await withCheckedThrowingContinuation { pending.append($0) }
+    }
+
+    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+        try await recommendation(for: weather)
     }
 }
 
