@@ -26,6 +26,9 @@ final class DayPlanViewModel: ObservableObject {
     private let fetcher: DayPlanFetching
     private let loadSnapshot: @MainActor () -> PlanSnapshot?
     private let publishSnapshot: @MainActor (PlanSnapshot) -> Void
+    private let now: @MainActor () -> Date
+    /// Defines "today"; autoupdating so a time zone change while the app is in memory counts.
+    private let calendar: Calendar
     private var hasStarted = false
     /// Last GPS fix; only Current Location refreshes reuse it, so custom-city loads never set it.
     /// Cleared on every selection change so returning to Current Location waits for a fresh fix.
@@ -35,17 +38,21 @@ final class DayPlanViewModel: ObservableObject {
     /// refresh or GPS fix still replaces it in place. Cleared once a fresh plan is on screen or
     /// another selection or provider replaces it.
     private var isShowingSavedPlan = false
+    /// When the newest load began fetching weather; `appDidBecomeActive` refreshes once it's stale.
+    private var lastLoadStartedAt: Date?
     /// The only load allowed to update `state`; starting another cancels it.
     private var loadTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
 
-    init(locationManager: LocationProviding, locationPreference: LocationPreferenceStore, providerPreference: WeatherProviderPreferenceStore, fetcher: DayPlanFetching = DayPlanFetcher(), loadSnapshot: @escaping @MainActor () -> PlanSnapshot? = SharedStore.load, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = DayPlanViewModel.saveAndReloadWidgets) {
+    init(locationManager: LocationProviding, locationPreference: LocationPreferenceStore, providerPreference: WeatherProviderPreferenceStore, fetcher: DayPlanFetching = DayPlanFetcher(), loadSnapshot: @escaping @MainActor () -> PlanSnapshot? = SharedStore.load, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = DayPlanViewModel.saveAndReloadWidgets, now: @escaping @MainActor () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent) {
         self.locationManager = locationManager
         self.locationPreference = locationPreference
         self.providerPreference = providerPreference
         self.fetcher = fetcher
         self.loadSnapshot = loadSnapshot
         self.publishSnapshot = publishSnapshot
+        self.now = now
+        self.calendar = calendar
 
         locationManager.coordinatePublisher
             .compactMap { $0 }
@@ -94,12 +101,30 @@ final class DayPlanViewModel: ObservableObject {
     private func showSavedPlanIfCurrent() {
         isShowingSavedPlan = false
         guard let snapshot = loadSnapshot(),
-              snapshot.isFromToday(now: .now, calendar: .current),
+              snapshot.isFromToday(now: now(), calendar: calendar),
               snapshot.location == locationPreference.selection,
               snapshot.provider == providerPreference.provider else { return }
         isShowingSavedPlan = true
         let recommendation: RecommendationState = snapshot.recommendation.map { .ready($0) } ?? .loading
         state = .loaded(weather: snapshot.weather, hourly: snapshot.hourly, provider: providerPreference.provider, recommendation: recommendation)
+    }
+
+    /// How old the plan can get before returning to the app refreshes it on the same day. The
+    /// day's high, low and rain chance rarely move within a few hours, and each refresh reruns
+    /// the on-device model, so quick app switches never refresh but morning to evening does.
+    static let foregroundRefreshInterval: TimeInterval = 3 * 60 * 60
+
+    /// Refreshes a plan left in memory once it's from an earlier day or older than
+    /// `foregroundRefreshInterval` (#24). Same rules as launch: today's Saved Plan stays on screen
+    /// while the fresh one loads; a plan from an earlier day is never shown as current.
+    func appDidBecomeActive() {
+        guard hasStarted, let lastLoadStartedAt else { return }
+        let now = now()
+        guard !calendar.isDate(lastLoadStartedAt, inSameDayAs: now)
+                || now.timeIntervalSince(lastLoadStartedAt) >= Self.foregroundRefreshInterval else { return }
+        showSavedPlanIfCurrent()
+        if !isShowingSavedPlan { state = .idle }
+        beginLoading(for: locationPreference.selection)
     }
 
     func retry() {
@@ -162,6 +187,7 @@ final class DayPlanViewModel: ObservableObject {
         refreshFailureMessage = nil
         // Set here, not in the task, so the caption and disabled refresh button show at once.
         isUpdatingSavedPlan = isShowingSavedPlanOutfit
+        lastLoadStartedAt = now()
         let task = Task { await loadPlan(for: coordinate) }
         loadTask = task
         return task
@@ -264,7 +290,7 @@ final class DayPlanViewModel: ObservableObject {
         isShowingSavedPlan = false
         refreshFailureMessage = nil
         state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: recommendation)
-        publishSnapshot(PlanSnapshot(weather: weather, recommendation: recommendation.outfit, generatedAt: .now, provider: provider, location: locationPreference.selection, hourly: hourly))
+        publishSnapshot(PlanSnapshot(weather: weather, recommendation: recommendation.outfit, generatedAt: now(), provider: provider, location: locationPreference.selection, hourly: hourly))
     }
 
     /// Whether today's Saved Plan is on screen with its outfit, which partial suggestions

@@ -33,7 +33,7 @@ _Avoid_: Icon theme, icon setting
 ### Day plan
 
 **Saved Plan**:
-The last day plan the app or the background refresh produced, shared with the widgets (`PlanSnapshot` in code). On launch, a Saved Plan from today for the same location and weather source is shown right away while a fresh one loads.
+The last day plan the app or the background refresh produced, shared with the widgets (`PlanSnapshot` in code). On launch, a Saved Plan from today for the same location and weather source is shown right away while a fresh one loads. Returning to the app on a later day, or 3 hours after the last load, follows the same rule.
 _Avoid_: Cached plan, snapshot (outside code)
 
 ## Relationships

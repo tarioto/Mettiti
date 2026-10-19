@@ -1051,6 +1051,132 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.loadedHigh == 10)
         #expect(viewModel.refreshFailureMessage == nil)
     }
+
+    // MARK: Returning to the app (#24)
+
+    @Test func returningOnANewDayClearsYesterdaysPlanAndLoadsToday() async throws {
+        let clock = FakeClock(date("2026-10-18T20:00:00-07:00"))
+        let fetcher = GatedDayPlanFetcher()
+        let store = FakeSnapshotStore()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock)
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 99)))
+        try await waitUntil { viewModel.state.loadedHigh == 99 }
+
+        clock.now = date("2026-10-19T07:00:00-07:00")
+        viewModel.appDidBecomeActive()
+
+        #expect(viewModel.state.loadedHigh == nil)
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        #expect(viewModel.state.loadedHigh == nil)
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.state.loadedHigh == 10 }
+        #expect(store.published.map(\.weather.highTemperatureF) == [99, 10])
+    }
+
+    @Test func returningSoonAfterTheLastLoadKeepsThePlanWithoutRefetching() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock)
+        viewModel.start()
+        try await waitUntil { viewModel.state.isLoaded }
+
+        clock.now = date("2026-10-19T10:59:00-07:00")
+        viewModel.appDidBecomeActive()
+
+        #expect(viewModel.state.isLoaded)
+        try await Task.sleep(for: .milliseconds(50))
+        let requested = await fetcher.requestedCoordinates
+        #expect(requested.count == 1)
+    }
+
+    @Test func returningHoursLaterTheSameDayRefreshesWithThePlanStillOnScreen() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = GatedDayPlanFetcher()
+        let store = FakeSnapshotStore()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock)
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 99)))
+        try await waitUntil { viewModel.state.loadedHigh == 99 }
+
+        clock.now = date("2026-10-19T11:00:00-07:00")
+        viewModel.appDidBecomeActive()
+
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        #expect(viewModel.state.loadedHigh == 99)
+        #expect(viewModel.isUpdatingSavedPlan)
+        await fetcher.complete(latitude: 10, with: .failure(FakeFetchError()))
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+        #expect(viewModel.state.loadedHigh == 99)
+        #expect(store.published.count == 1)
+    }
+
+    @Test func returningOnANewDayShowsTodaysPlanFromTheBackgroundRefreshWhileItReloads() async throws {
+        let clock = FakeClock(date("2026-10-18T20:00:00-07:00"))
+        let fetcher = GatedDayPlanFetcher()
+        let store = FakeSnapshotStore()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock)
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 99)))
+        try await waitUntil { viewModel.state.loadedHigh == 99 }
+
+        store.saved = .saved(high: 50, summary: "Background outfit", location: cityA, generatedAt: date("2026-10-19T00:05:00-07:00"))
+        clock.now = date("2026-10-19T07:00:00-07:00")
+        viewModel.appDidBecomeActive()
+
+        #expect(viewModel.state.readySummary == "Background outfit")
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        #expect(viewModel.state.loadedHigh == 50)
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.state.loadedHigh == 10 }
+    }
+
+    @Test func returningOnANewDayInCurrentLocationWaitsForAFreshFix() async throws {
+        let clock = FakeClock(date("2026-10-18T20:00:00-07:00"))
+        let location = FakeLocationProvider()
+        let fetcher = GatedDayPlanFetcher()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { nil },
+            publishSnapshot: { _ in },
+            now: { clock.now },
+            calendar: gregorianCalendar(in: pacific)
+        )
+        viewModel.start()
+        location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 47.6) }
+        await fetcher.complete(latitude: 47.6, with: .success(.forecast(high: 99)))
+        try await waitUntil { viewModel.state.loadedHigh == 99 }
+
+        clock.now = date("2026-10-19T07:00:00-07:00")
+        viewModel.appDidBecomeActive()
+
+        #expect(viewModel.state.isIdle)
+        #expect(location.locationRequestCount == 2)
+        location.deliver(CLLocationCoordinate2D(latitude: 40.7, longitude: -74.0))
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 40.7) }
+        await fetcher.complete(latitude: 40.7, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.state.loadedHigh == 10 }
+    }
+
+    @Test func becomingActiveBeforeAnyLoadDoesNothing() async throws {
+        let fetcher = FakeDayPlanFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: FakeClock(.now))
+
+        viewModel.appDidBecomeActive()
+
+        #expect(viewModel.state.isIdle)
+        let requested = await fetcher.requestedCoordinates
+        #expect(requested.isEmpty)
+    }
 }
 
 // MARK: - Helpers
@@ -1083,6 +1209,44 @@ private func makeCustomCityViewModel(fetcher: DayPlanFetching, saved: PlanSnapsh
         loadSnapshot: { saved },
         publishSnapshot: publishSnapshot
     )
+}
+
+/// A view model whose Saved Plan store and clock the test controls, for tests that move time on.
+@MainActor
+private func makeCustomCityViewModel(fetcher: DayPlanFetching, store: FakeSnapshotStore, clock: FakeClock) -> DayPlanViewModel {
+    let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+    locationPreference.selection = cityA
+    return DayPlanViewModel(
+        locationManager: FakeLocationProvider(),
+        locationPreference: locationPreference,
+        providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+        fetcher: fetcher,
+        loadSnapshot: { store.saved },
+        publishSnapshot: { store.publish($0) },
+        now: { clock.now },
+        calendar: gregorianCalendar(in: pacific)
+    )
+}
+
+@MainActor
+private final class FakeClock {
+    var now: Date
+
+    init(_ now: Date) {
+        self.now = now
+    }
+}
+
+/// Stands in for the shared Saved Plan: the latest published plan is the one loaded next.
+@MainActor
+private final class FakeSnapshotStore {
+    var saved: PlanSnapshot?
+    private(set) var published: [PlanSnapshot] = []
+
+    func publish(_ snapshot: PlanSnapshot) {
+        published.append(snapshot)
+        saved = snapshot
+    }
 }
 
 private extension PlanSnapshot {
