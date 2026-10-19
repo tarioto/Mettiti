@@ -276,7 +276,7 @@ final class DayPlanViewModel: ObservableObject {
                 state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .loading)
             }
             do {
-                recommendation = .ready(try await fetcher.recommendation(for: weather) { [weak self] partial in
+                recommendation = .ready(try await fetcher.recommendation(for: weather, hourly: hourly) { [weak self] partial in
                     guard let self, !Task.isCancelled, !self.isShowingSavedPlanOutfit else { return }
                     self.state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .generating(partial))
                 })

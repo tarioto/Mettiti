@@ -56,7 +56,7 @@ struct BackgroundPlanRefresher {
         let provider = provider()
         guard let (weather, hourly) = try? await fetcher.fetchWeather(for: coordinate, from: provider) else { return .failed }
         let recommendation: OutfitRecommendation? = if availability == .available {
-            try? await fetcher.recommendation(for: weather)
+            try? await fetcher.recommendation(for: weather, hourly: hourly)
         } else {
             nil
         }

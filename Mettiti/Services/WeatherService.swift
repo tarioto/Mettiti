@@ -15,11 +15,11 @@ enum WeatherServiceError: Error, LocalizedError {
     }
 }
 
-/// Today's forecast plus the hourly chance of rain for the hourly chart, from one request.
+/// Today's forecast plus the hourly forecast, from one request.
 struct OpenMeteoForecast {
     let daily: DailyWeather
-    /// Keyed by the start of each hour. Empty if the response had no usable hourly data.
-    let hourlyPrecipitation: [Date: Int]
+    /// The 24 hours from now, with sunrises and sunsets. Nil if the response had no usable hourly data.
+    let hourly: HourlyForecast?
 }
 
 struct WeatherService {
@@ -31,16 +31,16 @@ struct WeatherService {
             throw WeatherServiceError.invalidResponse
         }
 
-        return try Self.forecast(from: data)
+        return try Self.forecast(from: data, now: Date())
     }
 
-    /// Two days of hourly data so the chart's next 24 hours are covered late in the day.
-    /// The daily values only use the first day.
+    /// Two days of hourly data so the next 24 hours are covered late in the day. The daily
+    /// values only use the first day; sunrise and sunset come from both.
     static func forecastURL(for coordinate: CLLocationCoordinate2D) -> URL? {
         var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
         components.queryItems = coordinate.weatherAPIQueryItems + [
-            URLQueryItem(name: "daily", value: "temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,windspeed_10m_max,weathercode"),
-            URLQueryItem(name: "hourly", value: "precipitation_probability"),
+            URLQueryItem(name: "daily", value: "temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,windspeed_10m_max,weathercode,sunrise,sunset"),
+            URLQueryItem(name: "hourly", value: "temperature_2m,precipitation_probability,uv_index,windspeed_10m,weathercode,is_day"),
             URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
             URLQueryItem(name: "windspeed_unit", value: "mph"),
             URLQueryItem(name: "timezone", value: "auto"),
@@ -49,7 +49,7 @@ struct WeatherService {
         return components.url
     }
 
-    static func forecast(from data: Data) throws -> OpenMeteoForecast {
+    static func forecast(from data: Data, now: Date) throws -> OpenMeteoForecast {
         let decoded: OpenMeteoResponse
         do {
             decoded = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
@@ -95,20 +95,44 @@ struct WeatherService {
             conditionCode: code,
             conditionDescription: WMOWeatherCode.description(for: code)
         )
-        return OpenMeteoForecast(daily: daily, hourlyPrecipitation: hourlyPrecipitation(from: decoded))
+        return OpenMeteoForecast(daily: daily, hourly: hourlyForecast(from: decoded, timeZone: timeZone, now: now))
     }
 
-    private static func hourlyPrecipitation(from decoded: OpenMeteoResponse) -> [Date: Int] {
+    /// The 24 hours from `now` (including the hour in progress). Open-Meteo gives a single
+    /// value per hour, so min and max equal the mean; DayPlanFetcher layers the ensemble's
+    /// spread on top.
+    private static func hourlyForecast(from decoded: OpenMeteoResponse, timeZone: TimeZone, now: Date) -> HourlyForecast? {
         guard
             let hourly = decoded.hourly,
             let strategy = OpenMeteoHourlyTime.parseStrategy(utcOffsetSeconds: decoded.utc_offset_seconds)
-        else { return [:] }
-        var result: [Date: Int] = [:]
-        for (time, probability) in zip(hourly.time, hourly.precipitation_probability) {
-            guard let date = try? Date(time, strategy: strategy), let probability else { continue }
-            result[date] = probability
+        else { return nil }
+        func value<T>(_ values: [T?]?, at index: Int) -> T? {
+            guard let values, index < values.count else { return nil }
+            return values[index]
         }
-        return result
+        let allPoints = hourly.time.enumerated().compactMap { index, time -> HourlyTemperaturePoint? in
+            guard
+                let date = try? Date(time, strategy: strategy),
+                let temperature = value(hourly.temperature_2m, at: index)
+            else { return nil }
+            return HourlyTemperaturePoint(
+                date: date,
+                meanF: temperature,
+                minF: temperature,
+                maxF: temperature,
+                precipitationProbability: value(hourly.precipitation_probability, at: index),
+                uvIndex: value(hourly.uv_index, at: index),
+                windSpeedMph: value(hourly.windspeed_10m, at: index),
+                conditionCode: value(hourly.weathercode, at: index),
+                isDaylight: value(hourly.is_day, at: index).map { $0 == 1 }
+            )
+        }
+        let points = HourlyForecast.upcoming(allPoints, from: now)
+        guard !points.isEmpty else { return nil }
+
+        let sunrises = (decoded.daily.sunrise ?? []).compactMap { try? Date($0, strategy: strategy) }.map { SunEvent(kind: .sunrise, date: $0) }
+        let sunsets = (decoded.daily.sunset ?? []).compactMap { try? Date($0, strategy: strategy) }.map { SunEvent(kind: .sunset, date: $0) }
+        return HourlyForecast(timeZone: timeZone, points: points, sunEvents: (sunrises + sunsets).sorted { $0.date < $1.date })
     }
 }
 
@@ -121,15 +145,23 @@ private struct OpenMeteoResponse: Decodable {
         let uv_index_max: [Double]
         let windspeed_10m_max: [Double]
         let weathercode: [Int]
+        let sunrise: [String]?
+        let sunset: [String]?
     }
+    /// Each series is optional, and so is each value, so a gap costs only that value.
     struct Hourly: Decodable {
         let time: [String]
-        let precipitation_probability: [Int?]
+        let temperature_2m: [Double?]?
+        let precipitation_probability: [Int?]?
+        let uv_index: [Double?]?
+        let windspeed_10m: [Double?]?
+        let weathercode: [Int?]?
+        let is_day: [Int?]?
     }
     let timezone: String?
     let utc_offset_seconds: Int?
     let daily: Daily
-    /// Optional so a malformed hourly block costs only the chart's rain bars, not the forecast.
+    /// Optional so a malformed hourly block costs only the hourly forecast, not the daily one.
     let hourly: Hourly?
 
     private enum CodingKeys: String, CodingKey {

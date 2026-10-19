@@ -1420,8 +1420,8 @@ private protocol WholeRecommendationFetching: DayPlanFetching {}
 extension WholeRecommendationFetching {
     func prewarmRecommendation() {}
 
-    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
-        try await recommendation(for: weather)
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+        try await recommendation(for: weather, hourly: hourly)
     }
 }
 
@@ -1455,7 +1455,7 @@ private actor FakeDayPlanFetcher: WholeRecommendationFetching {
         return (try weatherResult.get(), nil)
     }
 
-    func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation {
         recommendationRequestCount += 1
         return try recommendationResult.get()
     }
@@ -1498,11 +1498,11 @@ private actor GatedDayPlanFetcher: DayPlanFetching {
         availability
     }
 
-    func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation {
         try recommendationResult.get()
     }
 
-    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
         try recommendationResult.get()
     }
 }
@@ -1532,7 +1532,7 @@ private actor GatedRecommendationFetcher: WholeRecommendationFetching {
         .available
     }
 
-    func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation {
         try await withCheckedThrowingContinuation { continuation in
             pending.append(continuation)
         }
@@ -1582,14 +1582,14 @@ private final class StreamingRecommendationFetcher: DayPlanFetching {
         .available
     }
 
-    func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation {
         Issue.record("The app should stream suggestions instead")
         return .placeholder
     }
 
     func prewarmRecommendation() {}
 
-    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
         streaming.withLock { $0 = true }
         for await event in events {
             switch event {
@@ -1628,7 +1628,7 @@ private actor AvailabilityGatedFetcher: WholeRecommendationFetching {
         return .available
     }
 
-    func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation {
         .placeholder
     }
 }

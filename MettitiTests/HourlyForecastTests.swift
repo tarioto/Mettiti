@@ -51,28 +51,16 @@ struct HourlyForecastTests {
         ])
     }
 
-    @Test func eachHourTakesTheChanceOfRainForThatHour() {
-        let forecast = HourlyForecast(timeZone: pacific, points: [
-            point(at: date("2026-10-09T20:00:00Z")),
-            point(at: date("2026-10-09T21:00:00Z")),
-            point(at: date("2026-10-09T22:00:00Z")),
-        ])
-
-        let merged = forecast.applyingPrecipitation([
-            date("2026-10-09T20:00:00Z"): 30,
-            date("2026-10-09T22:00:00Z"): 70,
-            date("2026-10-09T23:00:00Z"): 90,
-        ])
-
-        #expect(merged.points.map(\.precipitationProbability) == [30, nil, 70])
-        #expect(merged.points.map(\.meanF) == [64, 64, 64])
-    }
-
-    @Test func spreadFromTheEnsembleKeepsEachHoursOwnMeanAndChanceOfRain() {
+    @Test func spreadFromTheEnsembleKeepsEachHoursOwnMeanAndWeather() {
         let hour = date("2026-10-09T20:00:00Z")
-        let apple = HourlyForecast(timeZone: pacific, points: [
-            HourlyTemperaturePoint(date: hour, meanF: 70, minF: 70, maxF: 70, precipitationProbability: 40),
-        ])
+        let sunset = SunEvent(kind: .sunset, date: date("2026-10-10T01:30:00Z"))
+        let apple = HourlyForecast(
+            timeZone: pacific,
+            points: [
+                HourlyTemperaturePoint(date: hour, meanF: 70, minF: 70, maxF: 70, precipitationProbability: 40, uvIndex: 4, windSpeedMph: 9, conditionCode: 2, isDaylight: true),
+            ],
+            sunEvents: [sunset]
+        )
         let ensemble = HourlyForecast(timeZone: pacific, points: [point(at: hour)])
 
         let merged = apple.applyingSpread(from: ensemble)
@@ -81,6 +69,11 @@ struct HourlyForecastTests {
         #expect(merged.points.map(\.minF) == [66])
         #expect(merged.points.map(\.maxF) == [74])
         #expect(merged.points.map(\.precipitationProbability) == [40])
+        #expect(merged.points.map(\.uvIndex) == [4])
+        #expect(merged.points.map(\.windSpeedMph) == [9])
+        #expect(merged.points.map(\.conditionCode) == [2])
+        #expect(merged.points.map(\.isDaylight) == [true])
+        #expect(merged.sunEvents == [sunset])
     }
 
     @Test func aRefetchedHourKeepsItsIdentity() {
