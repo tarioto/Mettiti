@@ -67,12 +67,17 @@ struct DayPlanView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
             Divider()
+            progressCaption(for: .plan)
             switch recommendation {
             case .ready(let outfit):
                 Text(outfit.summary)
                     .font(.body)
                     .foregroundStyle(.secondary)
-            case .loading:
+            case .generating(let partial) where !partial.summary.isEmpty:
+                Text(partial.summary)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            case .loading, .generating:
                 Text(SkeletonLoadingView.recommendation.summary)
                     .font(.body)
                     .foregroundStyle(.secondary)
@@ -92,13 +97,15 @@ struct DayPlanView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
             Divider()
+            progressCaption(for: .wearAndBring)
 
             switch recommendation {
             case .ready(let outfit):
                 itemList(outfit.items)
+            case .generating(let partial):
+                itemList(partial.items, paddedWithPlaceholders: true)
             case .loading:
-                itemList(SkeletonLoadingView.recommendation.items)
-                    .redacted(reason: .placeholder)
+                itemList([], paddedWithPlaceholders: true)
             case .unavailable, .failed:
                 recommendationNotice(for: .wearAndBring)
             }
@@ -108,19 +115,37 @@ struct DayPlanView: View {
         .cardGlass()
     }
 
-    private func itemList(_ items: [RecommendedItem]) -> some View {
-        VStack(spacing: 12) {
+    /// With `paddedWithPlaceholders`, placeholder rows fill in up to the skeleton's count, so the
+    /// card doesn't change height as streamed items arrive.
+    private func itemList(_ items: [RecommendedItem], paddedWithPlaceholders: Bool = false) -> some View {
+        let placeholders = paddedWithPlaceholders ? Array(SkeletonLoadingView.recommendation.items.dropFirst(items.count)) : []
+        return VStack(spacing: 12) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 ItemRow(item: item)
             }
+            ForEach(Array(placeholders.enumerated()), id: \.offset) { _, item in
+                ItemRow(item: item)
+                    .redacted(reason: .placeholder)
+            }
         }
+    }
+
+    /// While the outfit is on its way, only the first visible suggestion card says so, so it isn't repeated.
+    @ViewBuilder
+    private func progressCaption(for card: CardType) -> some View {
+        if recommendation.isInProgress, card == firstSuggestionCard {
+            ProgressCaption("Putting together today's outfit…")
+        }
+    }
+
+    private var firstSuggestionCard: CardType? {
+        cardPreference.visibleOrderedTypes.first { $0 != .weather }
     }
 
     /// The full explanation and action go in the first visible suggestion card; any later one
     /// just notes there are no suggestions, so the message and button aren't repeated.
     @ViewBuilder
     private func recommendationNotice(for card: CardType) -> some View {
-        let firstSuggestionCard = cardPreference.visibleOrderedTypes.first { $0 != .weather }
         if card == firstSuggestionCard {
             RecommendationNoticeView(recommendation: recommendation, onRetry: onRetryRecommendation)
         } else {
@@ -163,18 +188,7 @@ private struct RecommendationNoticeView: View {
     }
 
     private var message: String {
-        switch recommendation {
-        case .unavailable(.deviceNotEligible):
-            return String(localized: "Outfit suggestions need a device that supports Apple Intelligence.")
-        case .unavailable(.appleIntelligenceNotEnabled):
-            return String(localized: "Turn on Apple Intelligence to get outfit suggestions.")
-        case .unavailable(.modelNotReady):
-            return String(localized: "Apple Intelligence is still getting ready. Try again soon.")
-        case .failed:
-            return String(localized: "Couldn't come up with outfit suggestions this time.")
-        case .loading, .ready:
-            return ""
-        }
+        recommendation.problemMessage ?? ""
     }
 
     @ViewBuilder
@@ -194,7 +208,7 @@ private struct RecommendationNoticeView: View {
                 Label("Try Again", systemImage: "arrow.clockwise")
             }
             .buttonStyle(.bordered)
-        case .unavailable(.deviceNotEligible), .loading, .ready:
+        case .unavailable(.deviceNotEligible), .loading, .generating, .ready:
             EmptyView()
         }
     }
@@ -218,6 +232,10 @@ private struct RecommendationNoticeView: View {
 
 #Preview("Suggestions loading") {
     DayPlanPreview(recommendation: .loading)
+}
+
+#Preview("Suggestions streaming") {
+    DayPlanPreview(recommendation: .generating(OutfitRecommendation(summary: "Expect mild temperatures with a chance", items: [OutfitRecommendation.placeholder.items[0]])))
 }
 
 private struct DayPlanPreview: View {

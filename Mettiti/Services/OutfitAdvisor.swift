@@ -1,5 +1,6 @@
 import Foundation
 import FoundationModels
+import Synchronization
 
 enum OutfitAdvisorError: Error, LocalizedError {
     case modelUnavailable(String)
@@ -14,19 +15,60 @@ enum OutfitAdvisorError: Error, LocalizedError {
 
 struct OutfitAdvisor: Sendable {
     var unitProvider: @Sendable () -> TemperatureUnit = { SharedStore.loadTemperatureUnit() }
+    private let preparedSession = PreparedSession()
 
     func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
-        let model = SystemLanguageModel.default
-        guard case .available = model.availability else {
-            throw OutfitAdvisorError.modelUnavailable(Self.message(for: model.availability))
-        }
-
-        let session = LanguageModelSession(instructions: Instructions { Self.instructions })
-
-        let prompt = Self.prompt(for: weather, unit: unitProvider())
-
-        let response = try await session.respond(to: prompt, generating: OutfitRecommendation.self)
+        try Self.checkAvailability()
+        let response = try await Self.makeSession().respond(to: Self.prompt(for: weather, unit: unitProvider()), generating: OutfitRecommendation.self)
         return response.content
+    }
+
+    /// Creates the next recommendation's session and loads the model into memory, so it can run
+    /// while the weather is still loading (#23). Does nothing when the model is unavailable.
+    func prewarm() {
+        guard Self.isAvailable else { return }
+        let session = Self.makeSession()
+        session.prewarm()
+        preparedSession.store(session)
+    }
+
+    /// Streams the recommendation, reporting the suggestion so far after each update. Uses the
+    /// session from `prewarm()` if there is one.
+    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+        try Self.checkAvailability()
+        let session = preparedSession.take() ?? Self.makeSession()
+        let stream = session.streamResponse(to: Self.prompt(for: weather, unit: unitProvider()), generating: OutfitRecommendation.self)
+        for try await partial in stream {
+            await onPartial(Self.draft(from: partial.content))
+        }
+        return try await stream.collect().content
+    }
+
+    /// The suggestion so far: fields the model hasn't reached are empty, and items appear once
+    /// they have an emoji and a name.
+    static func draft(from partial: OutfitRecommendation.PartiallyGenerated) -> OutfitRecommendation {
+        OutfitRecommendation(
+            summary: partial.summary ?? "",
+            items: (partial.items ?? []).compactMap { item in
+                guard let emoji = item.emoji, let name = item.name else { return nil }
+                return RecommendedItem(emoji: emoji, name: name, reason: item.reason ?? "")
+            }
+        )
+    }
+
+    private static func makeSession() -> LanguageModelSession {
+        LanguageModelSession(instructions: Instructions { instructions })
+    }
+
+    private static var isAvailable: Bool {
+        if case .available = SystemLanguageModel.default.availability { return true }
+        return false
+    }
+
+    private static func checkAvailability() throws {
+        guard isAvailable else {
+            throw OutfitAdvisorError.modelUnavailable(message(for: SystemLanguageModel.default.availability))
+        }
     }
 
     private static let promptLocale = Locale(identifier: "en_US_POSIX")
@@ -76,5 +118,19 @@ struct OutfitAdvisor: Sendable {
         @unknown default:
             return String(localized: "AI recommendations aren't available right now.")
         }
+    }
+}
+
+/// Holds the session `prewarm()` made until a recommendation takes it. Each session is used
+/// for one recommendation only, so later ones don't carry an earlier day's transcript.
+private final class PreparedSession: Sendable {
+    private let session = Mutex<LanguageModelSession?>(nil)
+
+    func store(_ newSession: LanguageModelSession) {
+        session.withLock { $0 = newSession }
+    }
+
+    func take() -> LanguageModelSession? {
+        session.withLock { $0.take() }
     }
 }
