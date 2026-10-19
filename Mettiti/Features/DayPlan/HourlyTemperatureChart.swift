@@ -193,18 +193,27 @@ struct HourlyChartScale {
 
     private var height: Double { range.upperBound - range.lowerBound }
 
+    /// The plotted value `fraction` of the way up the range (0 at the bottom, 1 at the top).
+    private func value(atFraction fraction: Double) -> Double {
+        range.lowerBound + fraction * height
+    }
+
+    /// How far up the range `value` sits, the inverse of `value(atFraction:)`.
+    private func fraction(of value: Double) -> Double {
+        height > 0 ? (value - range.lowerBound) / height : 0
+    }
+
     func precipitationBarValue(_ probability: Int) -> Double {
-        range.lowerBound + (Double(probability) / 100.0) * height
+        value(atFraction: Double(probability) / 100)
     }
 
     func percentageLabel(for rawValue: Double) -> String {
-        let fraction = height > 0 ? (rawValue - range.lowerBound) / height : 0
-        return fraction.formatted(.percent.precision(.fractionLength(0)))
+        fraction(of: rawValue).formatted(.percent.precision(.fractionLength(0)))
     }
 
     /// The heat colour at `displayedValue`'s height in the range.
     func color(for displayedValue: Double) -> Color {
-        palette.color(atFraction: height > 0 ? (displayedValue - range.lowerBound) / height : 0)
+        palette.color(atFraction: fraction(of: displayedValue))
     }
 }
 

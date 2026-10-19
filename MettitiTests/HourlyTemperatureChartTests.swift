@@ -30,6 +30,14 @@ struct HourlyTemperatureChartTests {
         #expect(scale.precipitationBarValue(100) == scale.range.upperBound)
     }
 
+    @Test func rainAxisLabelsReadTheChanceAtTheirBarHeight() {
+        let scale = HourlyChartScale(points: [point(minF: 50, maxF: 68)], unit: .celsius, palette: .light)
+
+        #expect(normalized(scale.percentageLabel(for: scale.precipitationBarValue(0))) == "0%")
+        #expect(normalized(scale.percentageLabel(for: scale.precipitationBarValue(50))) == "50%")
+        #expect(normalized(scale.percentageLabel(for: scale.precipitationBarValue(100))) == "100%")
+    }
+
     @Test func audioGraphHasOneDataPointPerHourIndexedFromZero() throws {
         let descriptor = chartDescriptor(points: (0..<5).map { point(hour: $0, meanF: 60) }, unit: .fahrenheit).makeChartDescriptor()
 

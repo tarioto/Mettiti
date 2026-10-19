@@ -35,7 +35,7 @@ struct DayPlanView: View {
 
     private var weatherCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Weather")
+            Text(CardType.weather.title)
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
             Divider()
@@ -65,7 +65,7 @@ struct DayPlanView: View {
 
     private var planCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Today's plan")
+            Text(CardType.plan.title)
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
             Divider()
@@ -95,7 +95,7 @@ struct DayPlanView: View {
 
     private var wearAndBringCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Wear & bring")
+            Text(CardType.wearAndBring.title)
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
             Divider()
