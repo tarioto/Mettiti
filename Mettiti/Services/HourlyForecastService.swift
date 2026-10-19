@@ -16,7 +16,7 @@ struct HourlyForecastService {
 
         guard let url = components.url else { throw WeatherServiceError.invalidResponse }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: WeatherService.requestTimeout))
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw WeatherServiceError.invalidResponse
         }

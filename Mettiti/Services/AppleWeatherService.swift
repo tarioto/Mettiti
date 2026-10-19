@@ -3,7 +3,7 @@ import CoreLocation
 import MapKit
 import WeatherKit
 
-enum AppleWeatherServiceError: Error, LocalizedError {
+enum AppleWeatherServiceError: UserFacingError {
     case unavailable
     case missingForecast
 

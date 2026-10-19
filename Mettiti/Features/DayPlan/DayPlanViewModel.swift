@@ -248,7 +248,7 @@ final class DayPlanViewModel {
             await loadRecommendation(weather: weather, hourly: hourly, provider: provider)
         } catch {
             guard !Task.isCancelled else { return }
-            fail(error.localizedDescription)
+            fail(UserFacingMessage.describing(error))
         }
     }
 
@@ -276,7 +276,7 @@ final class DayPlanViewModel {
                     self.state = .loaded(weather: weather, hourly: hourly, provider: provider, recommendation: .generating(partial))
                 })
             } catch {
-                recommendation = .failed(error.localizedDescription)
+                recommendation = .failed(UserFacingMessage.describing(error))
             }
         }
         guard !Task.isCancelled else { return }
