@@ -36,6 +36,12 @@ struct HourlyForecast: Codable, Sendable {
         return style
     }
 
+    /// True when the points carry an ensemble min/max spread, which comes from Open-Meteo
+    /// whichever provider supplied the rest, so it needs Open-Meteo's credit.
+    var hasSpread: Bool {
+        points.contains { $0.maxF > $0.minF }
+    }
+
     /// Up to 4 evenly spaced hours for the chart's x-axis labels.
     var axisDates: [Date] {
         guard !points.isEmpty else { return [] }

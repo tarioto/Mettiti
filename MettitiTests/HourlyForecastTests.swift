@@ -120,6 +120,19 @@ struct HourlyForecastTests {
         #expect(forecast.axisDates == [0, 6, 12, 18].map { start.addingTimeInterval(Double($0) * 3600) })
     }
 
+    @Test func forecastWithAnEnsembleSpreadHasSpread() {
+        let forecast = HourlyForecast(timeZone: pacific, points: [point(at: date("2026-10-09T20:00:00Z"))])
+
+        #expect(forecast.hasSpread)
+    }
+
+    @Test func forecastWithoutAnEnsembleSpreadHasNoSpread() {
+        let flat = point(at: date("2026-10-09T20:00:00Z")).with(minF: 64, maxF: 64)
+        let forecast = HourlyForecast(timeZone: pacific, points: [flat])
+
+        #expect(!forecast.hasSpread)
+    }
+
     private func point(at date: Date) -> HourlyTemperaturePoint {
         HourlyTemperaturePoint(date: date, meanF: 64, minF: 60, maxF: 68, precipitationProbability: nil)
     }
