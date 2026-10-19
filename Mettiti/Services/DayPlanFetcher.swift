@@ -5,11 +5,11 @@ import FoundationModels
 protocol DayPlanFetching: Sendable {
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?)
     func recommendationAvailability() async -> RecommendationAvailability
-    func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation
     /// Starts loading the on-device model so a recommendation requested soon after starts faster.
     func prewarmRecommendation()
-    /// Like `recommendation(for:)`, but reports the suggestion so far as the model writes it.
-    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation
+    /// Like `recommendation(for:hourly:)`, but reports the suggestion so far as the model writes it.
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation
 }
 
 struct DayPlanFetcher: DayPlanFetching {
@@ -21,11 +21,12 @@ struct DayPlanFetcher: DayPlanFetching {
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?) {
         switch provider {
         case .openMeteo:
-            // The forecast request also carries the hourly chance of rain for the chart.
+            // The forecast has one value per hour; the ensemble adds the chart's band around it.
+            // If that request fails, the chart just shows the line.
             async let ensembleTask: HourlyForecast? = try? hourlyForecastService.fetchHourlyForecast(for: coordinate)
             let forecast = try await weatherService.fetchForecast(for: coordinate)
-            let hourly = (await ensembleTask)?.applyingPrecipitation(forecast.hourlyPrecipitation)
-            return (forecast.daily, hourly)
+            guard let hourly = forecast.hourly, let ensemble = await ensembleTask else { return (forecast.daily, forecast.hourly) }
+            return (forecast.daily, hourly.applyingSpread(from: ensemble))
         case .apple:
             // WeatherKit has no hourly uncertainty, so borrow Open-Meteo's ensemble spread
             // for the chart's band. If that request fails, the chart just shows the line.
@@ -58,15 +59,15 @@ struct DayPlanFetcher: DayPlanFetching {
         }
     }
 
-    func recommendation(for weather: DailyWeather) async throws -> OutfitRecommendation {
-        try await outfitAdvisor.recommendation(for: weather)
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation {
+        try await outfitAdvisor.recommendation(for: weather, hourly: hourly)
     }
 
     func prewarmRecommendation() {
         outfitAdvisor.prewarm()
     }
 
-    func recommendation(for weather: DailyWeather, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
-        try await outfitAdvisor.recommendation(for: weather, onPartial: onPartial)
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+        try await outfitAdvisor.recommendation(for: weather, hourly: hourly, onPartial: onPartial)
     }
 }

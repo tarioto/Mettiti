@@ -8,6 +8,13 @@ struct HourlyTemperaturePoint: Identifiable, Codable, Sendable {
     /// Nil when the source had no chance of rain for this hour (e.g. the ensemble on its own).
     /// Optional decoding still reads the plain numbers older saved plans stored.
     let precipitationProbability: Int?
+    /// Nil for the ensemble on its own, and in plans saved before they were stored.
+    var uvIndex: Double? = nil
+    var windSpeedMph: Double? = nil
+    /// A WMO weather code, like `DailyWeather.conditionCode`.
+    var conditionCode: Int? = nil
+    /// Whether the sun is up during this hour.
+    var isDaylight: Bool? = nil
 
     /// Identified by its hour, so a refetch keeps each point's identity for diffing and animation.
     /// Computed, so it isn't saved; the "hourLabel" older saved plans stored is ignored on decode.
@@ -15,18 +22,26 @@ struct HourlyTemperaturePoint: Identifiable, Codable, Sendable {
 
     /// A copy with a different spread around the same mean.
     func with(minF: Double, maxF: Double) -> HourlyTemperaturePoint {
-        HourlyTemperaturePoint(date: date, meanF: meanF, minF: minF, maxF: maxF, precipitationProbability: precipitationProbability)
+        HourlyTemperaturePoint(date: date, meanF: meanF, minF: minF, maxF: maxF, precipitationProbability: precipitationProbability, uvIndex: uvIndex, windSpeedMph: windSpeedMph, conditionCode: conditionCode, isDaylight: isDaylight)
+    }
+}
+
+/// A sunrise or sunset.
+struct SunEvent: Codable, Sendable, Equatable {
+    enum Kind: String, Codable, Sendable {
+        case sunrise
+        case sunset
     }
 
-    /// A copy with a different chance of rain.
-    func with(precipitationProbability: Int?) -> HourlyTemperaturePoint {
-        HourlyTemperaturePoint(date: date, meanF: meanF, minF: minF, maxF: maxF, precipitationProbability: precipitationProbability)
-    }
+    let kind: Kind
+    let date: Date
 }
 
 struct HourlyForecast: Codable, Sendable {
     let timeZone: TimeZone
     let points: [HourlyTemperaturePoint]
+    /// Sunrises and sunsets around the points. Nil in plans saved before they were stored.
+    var sunEvents: [SunEvent]? = nil
 
     /// The hour in the forecast location's time zone, in the locale's preferred style:
     /// "3 PM" in the US, "15 Uhr" in Germany.
@@ -40,6 +55,11 @@ struct HourlyForecast: Codable, Sendable {
     /// whichever provider supplied the rest, so it needs Open-Meteo's credit.
     var hasSpread: Bool {
         points.contains { $0.maxF > $0.minF }
+    }
+
+    /// The hour in progress at `now` and the ones after it, up to 24 in all.
+    static func upcoming(_ points: [HourlyTemperaturePoint], from now: Date) -> [HourlyTemperaturePoint] {
+        Array(points.filter { $0.date.addingTimeInterval(60 * 60) > now }.prefix(24))
     }
 
     /// Up to 4 evenly spaced hours for the chart's x-axis labels.
@@ -71,16 +91,6 @@ struct HourlyForecast: Codable, Sendable {
                 maxF: point.meanF + (match.maxF - match.meanF)
             )
         }
-        return HourlyForecast(timeZone: timeZone, points: merged)
-    }
-
-    /// Sets each hour's chance of rain from `probabilities`, keyed by the start of the hour.
-    /// Hours with no entry keep their current value.
-    func applyingPrecipitation(_ probabilities: [Date: Int]) -> HourlyForecast {
-        let merged = points.map { point -> HourlyTemperaturePoint in
-            guard let probability = probabilities[point.date] else { return point }
-            return point.with(precipitationProbability: probability)
-        }
-        return HourlyForecast(timeZone: timeZone, points: merged)
+        return HourlyForecast(timeZone: timeZone, points: merged, sunEvents: sunEvents)
     }
 }

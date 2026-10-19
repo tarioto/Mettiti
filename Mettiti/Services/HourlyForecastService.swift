@@ -1,8 +1,8 @@
 import Foundation
 import CoreLocation
 
-/// The ensemble's hourly temperature spread. It has no chance of rain: that comes from the
-/// main forecast request instead (see `HourlyForecast.applyingPrecipitation`).
+/// The ensemble's hourly temperature spread, which `HourlyForecast.applyingSpread` wraps around
+/// the main forecast's hours. It has no chance of rain or other weather.
 struct HourlyForecastService {
     func fetchHourlyForecast(for coordinate: CLLocationCoordinate2D) async throws -> HourlyForecast {
         var components = URLComponents(string: "https://ensemble-api.open-meteo.com/v1/ensemble")!
@@ -61,8 +61,7 @@ struct HourlyForecastService {
             )
         }
 
-        let cutoff = now.addingTimeInterval(-1800)
-        let upcoming = Array(points.filter { $0.date >= cutoff }.prefix(24))
+        let upcoming = HourlyForecast.upcoming(points, from: now)
 
         guard !upcoming.isEmpty else {
             throw WeatherServiceError.decodingFailed

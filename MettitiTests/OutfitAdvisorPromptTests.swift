@@ -3,60 +3,159 @@ import Testing
 @testable import Mettiti
 
 struct OutfitAdvisorPromptTests {
+    /// The whole day peaked at UV 7 and a 90% chance of rain, but that was earlier.
     private let weather = DailyWeather(
-        date: .now,
-        highTemperatureF: 72,
-        lowTemperatureF: 58,
-        precipitationProbability: 20,
-        uvIndex: 5,
-        windSpeedMph: 8,
+        date: date("2026-10-09T07:00:00Z"),
+        highTemperatureF: 80,
+        lowTemperatureF: 50,
+        precipitationProbability: 90,
+        uvIndex: 7,
+        windSpeedMph: 20,
         conditionCode: 1,
         conditionDescription: "Partly Cloudy"
     )
 
-    @Test func celsiusPromptStatesHighAndLowInCelsius() {
-        let prompt = OutfitAdvisor.prompt(for: weather, unit: .celsius)
+    /// 4 PM to 11 PM PDT: sunny and mild, then dark and cooler after a 6:30 PM sunset.
+    private let hourly = HourlyForecast(
+        timeZone: pacific,
+        points: [
+            hour("2026-10-09T23:00:00Z", temperature: 72, rain: 0, uv: 5, wind: 6, code: 0, daylight: true),   // 4 PM
+            hour("2026-10-10T00:00:00Z", temperature: 70, rain: 0, uv: 3, wind: 7, code: 0, daylight: true),   // 5 PM
+            hour("2026-10-10T01:00:00Z", temperature: 66, rain: 10, uv: 1, wind: 8, code: 2, daylight: true),  // 6 PM
+            hour("2026-10-10T02:00:00Z", temperature: 62, rain: 20, uv: 0, wind: 11, code: 3, daylight: false), // 7 PM
+            hour("2026-10-10T03:00:00Z", temperature: 60, rain: 10, uv: 0, wind: 9, code: 3, daylight: false), // 8 PM
+            hour("2026-10-10T04:00:00Z", temperature: 59, rain: 0, uv: 0, wind: 8, code: 2, daylight: false),  // 9 PM
+            hour("2026-10-10T05:00:00Z", temperature: 58, rain: 0, uv: 0, wind: 6, code: 1, daylight: false),  // 10 PM
+            hour("2026-10-10T06:00:00Z", temperature: 58, rain: 0, uv: 0, wind: 5, code: 1, daylight: false),  // 11 PM
+        ],
+        sunEvents: [SunEvent(kind: .sunset, date: date("2026-10-10T01:30:00Z"))]
+    )
+
+    private let afternoon = date("2026-10-09T23:20:00Z") // 4:20 PM PDT
+    private let evening = date("2026-10-10T03:05:00Z")   // 8:05 PM PDT
+
+    @Test func promptStatesTheCurrentTimeAndTheSpan() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, now: afternoon, unit: .fahrenheit)
+
+        #expect(prompt.contains("Current local time: 4:20 PM"))
+        #expect(prompt.contains("from now until 12 AM"))
+    }
+
+    @Test func promptListsEachHourWithItsWeatherAndWhetherItsDayOrNight() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, now: afternoon, unit: .fahrenheit)
+
+        #expect(prompt.contains("- 4 PM: 72°F (warm), Clear sky, 0% chance of precipitation, UV index 5, wind 6 mph, daylight"))
+        #expect(prompt.contains("- 7 PM: 62°F (mild), Overcast, 20% chance of precipitation, UV index 0, wind 11 mph, dark"))
+    }
+
+    @Test func promptSummarizesTheSpanInsteadOfTheWholeDay() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, now: afternoon, unit: .fahrenheit)
+
+        #expect(prompt.contains("High: 72°F (warm) at 4 PM, Low: 58°F (cool) at 10 PM"))
+        #expect(prompt.contains("Highest chance of precipitation: 20% at 7 PM"))
+        #expect(prompt.contains("Sunset at 6:30 PM"))
+        #expect(prompt.contains("Daylight UV index peaks at 5 at 4 PM"))
+        #expect(!prompt.contains("80°F"))
+        #expect(!prompt.contains("90%"))
+        #expect(!prompt.contains("UV index: 7"))
+    }
+
+    @Test func promptAfterSunsetSaysTheSunIsDownForTheWholeSpan() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, now: evening, unit: .fahrenheit)
+
+        #expect(prompt.contains("Current local time: 8:05 PM. The sun is down."))
+        #expect(prompt.contains("No daylight hours in this forecast, so sun protection isn't needed."))
+        #expect(!prompt.contains("UV index peaks"))
+        #expect(!prompt.contains("Sunset"))
+    }
+
+    @Test func promptWithLowDaylightUVSaysSunProtectionIsntNeeded() {
+        let hazy = HourlyForecast(timeZone: pacific, points: [
+            hour("2026-10-09T23:00:00Z", temperature: 70, rain: 0, uv: 2, wind: 5, code: 3, daylight: true),
+            hour("2026-10-10T00:00:00Z", temperature: 68, rain: 0, uv: 1, wind: 5, code: 3, daylight: true),
+        ])
+
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: hazy, now: afternoon, unit: .fahrenheit)
+
+        #expect(prompt.contains("Daylight UV index stays low, so sun protection isn't needed."))
+    }
+
+    @Test func promptWithoutAnHourlyForecastFallsBackToTheWholeDayWithoutItsPeakUV() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: nil, now: afternoon, unit: .fahrenheit, deviceTimeZone: pacific)
+
+        #expect(prompt.contains("Current local time: 4:20 PM"))
+        #expect(prompt.contains("High: 80°F (warm), Low: 50°F (cool)"))
+        #expect(!prompt.contains("UV"))
+    }
+
+    @Test func aWarmNightIsStillDescribedAsHot() {
+        let tropical = HourlyForecast(timeZone: pacific, points: [
+            hour("2026-10-10T03:00:00Z", temperature: 86, rain: 0, uv: 0, wind: 4, code: 0, daylight: false),
+            hour("2026-10-10T04:00:00Z", temperature: 84, rain: 0, uv: 0, wind: 3, code: 0, daylight: false),
+        ])
+
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: tropical, now: evening, unit: .celsius)
+
+        // 86°F = 30°C, 84°F = 29°C
+        #expect(prompt.contains("High: 30°C (hot) at 8 PM, Low: 29°C (hot) at 9 PM"))
+        #expect(prompt.contains("- 8 PM: 30°C (hot), Clear sky"))
+    }
+
+    @Test func temperaturesThatReadTheSameFeelTheSame() {
+        let nearTheEdge = HourlyForecast(timeZone: pacific, points: [
+            hour("2026-10-10T03:00:00Z", temperature: 46.4, rain: 0, uv: 0, wind: 4, code: 0, daylight: false),
+            hour("2026-10-10T04:00:00Z", temperature: 45.9, rain: 0, uv: 0, wind: 4, code: 0, daylight: false),
+        ])
+
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: nearTheEdge, now: evening, unit: .celsius)
+
+        // Both are 8°C once rounded.
+        #expect(prompt.contains("- 8 PM: 8°C (cool),"))
+        #expect(prompt.contains("- 9 PM: 8°C (cool),"))
+    }
+
+    @Test func wholeDayPromptInTheEveningSaysItsDark() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: nil, now: evening, unit: .fahrenheit, deviceTimeZone: pacific)
+
+        #expect(prompt.contains("Current local time: 8:05 PM. It's dark outside, so sun protection isn't needed."))
+        #expect(prompt.contains("Today's forecast, including the hours that have passed:"))
+        #expect(prompt.contains("Recommend what to wear and bring for the rest of tonight."))
+    }
+
+    @Test func wholeDayPromptInTheAfternoonDoesntSayItsDark() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: nil, now: afternoon, unit: .fahrenheit, deviceTimeZone: pacific)
+
+        #expect(!prompt.contains("dark"))
+    }
+
+    @Test func celsiusPromptStatesTemperaturesInCelsius() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, now: afternoon, unit: .celsius)
 
         // 72°F = 22.2°C, 58°F = 14.4°C
-        #expect(prompt.contains("High: 22°C"))
-        #expect(prompt.contains("Low: 14°C"))
+        #expect(prompt.contains("High: 22°C (warm) at 4 PM, Low: 14°C (cool) at 10 PM"))
+        #expect(prompt.contains("- 4 PM: 22°C (warm),"))
         #expect(!prompt.contains("°F"))
     }
 
-    @Test func fahrenheitPromptStatesHighAndLowInFahrenheit() {
-        let prompt = OutfitAdvisor.prompt(for: weather, unit: .fahrenheit)
-
-        #expect(prompt.contains("High: 72°F"))
-        #expect(prompt.contains("Low: 58°F"))
-        #expect(!prompt.contains("°C"))
-    }
-
     @Test func systemUnitPromptUsesTheLocalesUnitButStaysInPromptFormat() {
-        let prompt = OutfitAdvisor.prompt(for: weather, unit: .system, locale: Locale(identifier: "de_DE"))
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, now: afternoon, unit: .system, locale: Locale(identifier: "de_DE"))
 
-        // Germany uses Celsius, but the prompt is English text for the model, so no German "22 °C" spacing.
-        #expect(prompt.contains("High: 22°C"))
-        #expect(prompt.contains("Low: 14°C"))
+        // Germany uses Celsius and a 24-hour clock, but the prompt is English text for the model,
+        // so no German "22 °C" spacing or "16 Uhr".
+        #expect(prompt.contains("High: 22°C (warm) at 4 PM, Low: 14°C (cool) at 10 PM"))
     }
 
     @Test func celsiusPromptRoundsLikeTheOnScreenForecast() {
-        let freezing = DailyWeather(
-            date: .now,
-            highTemperatureF: 33,
-            lowTemperatureF: 0,
-            precipitationProbability: 0,
-            uvIndex: 1,
-            windSpeedMph: 3,
-            conditionCode: 0,
-            conditionDescription: "Clear sky"
-        )
+        let freezing = HourlyForecast(timeZone: pacific, points: [
+            hour("2026-10-09T23:00:00Z", temperature: 33, rain: 0, uv: 0, wind: 3, code: 0, daylight: true),
+            hour("2026-10-10T00:00:00Z", temperature: 0, rain: 0, uv: 0, wind: 3, code: 0, daylight: true),
+        ])
 
-        let prompt = OutfitAdvisor.prompt(for: freezing, unit: .celsius)
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: freezing, now: afternoon, unit: .celsius)
 
         // 33°F = 0.56°C -> 1, 0°F = -17.8°C -> -18 (matches TemperatureUnit.formatted)
         let us = Locale(identifier: "en_US")
-        #expect(prompt.contains("High: 1°C"))
-        #expect(prompt.contains("Low: -18°C"))
+        #expect(prompt.contains("High: 1°C (cold) at 4 PM, Low: -18°C (freezing) at 5 PM"))
         #expect(TemperatureUnit.celsius.formatted(fahrenheit: 33, locale: us) == "1°C")
         #expect(TemperatureUnit.celsius.formatted(fahrenheit: 0, locale: us) == "-18°C")
     }
@@ -68,4 +167,39 @@ struct OutfitAdvisorPromptTests {
         #expect(instructions.contains("summary"))
         #expect(instructions.contains("reason"))
     }
+
+    @Test func instructionsOnlyAllowSunProtectionForMeaningfulDaylightUV() {
+        let instructions = OutfitAdvisor.instructions.lowercased()
+
+        #expect(!instructions.contains("always consider sun protection"))
+        #expect(instructions.contains("only suggest sun protection"))
+        #expect(instructions.contains("daylight"))
+    }
+
+    @Test func instructionsBaseClothingOnHowTheTemperatureFeels() {
+        let instructions = OutfitAdvisor.instructions.lowercased()
+
+        #expect(instructions.contains("how it feels"))
+    }
+
+    @Test func instructionsAskForChangesInWordsRatherThanAnAverage() {
+        let instructions = OutfitAdvisor.instructions.lowercased()
+
+        #expect(instructions.contains("describe the change in words"))
+        #expect(instructions.contains("instead of averaging"))
+    }
+}
+
+private func hour(_ iso: String, temperature: Double, rain: Int, uv: Double, wind: Double, code: Int, daylight: Bool) -> HourlyTemperaturePoint {
+    HourlyTemperaturePoint(
+        date: date(iso),
+        meanF: temperature,
+        minF: temperature,
+        maxF: temperature,
+        precipitationProbability: rain,
+        uvIndex: uv,
+        windSpeedMph: wind,
+        conditionCode: code,
+        isDaylight: daylight
+    )
 }

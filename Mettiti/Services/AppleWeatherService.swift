@@ -51,24 +51,32 @@ struct AppleWeatherService {
 
         // Apple Weather gives a single deterministic value per hour, so min and max equal
         // the mean here. DayPlanViewModel layers Open-Meteo's ensemble spread on top.
-        let cutoff = now.addingTimeInterval(-1800)
-        let points = hourlyForecast
-            .filter { $0.date >= cutoff }
-            .prefix(24)
-            .map { hour in
-                let temperatureF = hour.temperature.converted(to: .fahrenheit).value
-                return HourlyTemperaturePoint(
-                    date: hour.date,
-                    meanF: temperatureF,
-                    minF: temperatureF,
-                    maxF: temperatureF,
-                    precipitationProbability: Int((hour.precipitationChance * 100).rounded())
-                )
-            }
+        let points = HourlyForecast.upcoming(hourlyForecast.map { hour in
+            let temperatureF = hour.temperature.converted(to: .fahrenheit).value
+            return HourlyTemperaturePoint(
+                date: hour.date,
+                meanF: temperatureF,
+                minF: temperatureF,
+                maxF: temperatureF,
+                precipitationProbability: Int((hour.precipitationChance * 100).rounded()),
+                uvIndex: Double(hour.uvIndex.value),
+                windSpeedMph: hour.wind.speed.converted(to: .milesPerHour).value,
+                conditionCode: Self.wmoCode(for: hour.condition),
+                isDaylight: hour.isDaylight
+            )
+        }, from: now)
 
         guard !points.isEmpty else { throw AppleWeatherServiceError.missingForecast }
 
-        return (daily, HourlyForecast(timeZone: timeZone, points: Array(points)))
+        // The first days' sunrises and sunsets; a plan's span picks the ones it covers. Polar days and
+        // nights have neither.
+        let sunEvents = dailyForecast.prefix(3).flatMap { day in
+            [day.sun.sunrise.map { SunEvent(kind: .sunrise, date: $0) }, day.sun.sunset.map { SunEvent(kind: .sunset, date: $0) }]
+        }
+        .compactMap { $0 }
+        .sorted { $0.date < $1.date }
+
+        return (daily, HourlyForecast(timeZone: timeZone, points: points, sunEvents: sunEvents))
     }
 
     /// WeatherKit doesn't report the location's time zone, so look it up for custom cities.

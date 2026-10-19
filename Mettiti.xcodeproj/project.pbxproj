@@ -20,6 +20,7 @@
 		1F0ED80B7B844EF7919A72C4 /* ErrorStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EC46EB73556E2FA604A1514 /* ErrorStateView.swift */; };
 		1F4A136DE9BF08A5CDEA54F1 /* WeatherAPIQueryItems.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0966F7A65D295E017C2097D /* WeatherAPIQueryItems.swift */; };
 		204962105CCF093CEA52931E /* AppIconPreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02D1A8D51E57A06A197684CA /* AppIconPreferenceStoreTests.swift */; };
+		20AE36D6D4143A7A9CA664E6 /* ForecastWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B779A919D42BE0083E906105 /* ForecastWindow.swift */; };
 		21D8178824FA5D4D7036A718 /* CardType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C985AD59754D0385058546B /* CardType.swift */; };
 		21F7C19E902046B2E67CF2A7 /* WeatherProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */; };
 		241B9B9BEA697E1BD2B247F6 /* TemperatureUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A79BEE46D3A9A63D63C73B /* TemperatureUnit.swift */; };
@@ -67,6 +68,7 @@
 		9E08C22ABFCD699A8D0DEC0A /* DayPlanFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */; };
 		A4C2474336FE84EE971C7385 /* DailyWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17648820A03F760374204482 /* DailyWeather.swift */; };
 		AF8C4F88C4648F53F7C3847B /* ThemePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E787563EF8DF959D3C92ED1C /* ThemePreferenceStore.swift */; };
+		B69899D02EFFBE322436659C /* ForecastWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1263095AB21CA4F12F64B9 /* ForecastWindowTests.swift */; };
 		B6BD349BDFFFE31F5A8DE84E /* AppIcon-Midnight.icon in Resources */ = {isa = PBXBuildFile; fileRef = FD224A43A8B46F4476BE1E4D /* AppIcon-Midnight.icon */; };
 		BA73ACC3E1F155D24545A953 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = EB654C66EED1B5B2B071D576 /* Localizable.xcstrings */; };
 		BCFA1A4857E5A812AC3CEB9D /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABAA5E38B3ED44EB67EC5BD /* LocationManager.swift */; };
@@ -78,6 +80,7 @@
 		C94912957A59AB87AFC791A3 /* StoredPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A8B88813468D2AEC54765D /* StoredPreference.swift */; };
 		CC565D9F4EB262B22011BAD3 /* WMOWeatherCodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 992D6EDE75226790FB26579A /* WMOWeatherCodeTests.swift */; };
 		CDBAE51DE89D9B58AFDE2763 /* PlanSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */; };
+		CF485FD0D836C0EDF8779B5C /* ForecastWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B779A919D42BE0083E906105 /* ForecastWindow.swift */; };
 		D091C4CD571283FA174BF765 /* DescriptionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F7F9AB25CA3B39F9F5BD6C /* DescriptionWidget.swift */; };
 		D64B351AD06FDEE568DC1295 /* TemperaturePreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74AF60E97BAE1AD91452EF22 /* TemperaturePreferenceStoreTests.swift */; };
 		D73324A0AA0E6FF613BC582B /* HourlyTemperatureChartTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 239B073054ECD22EBF022A34 /* HourlyTemperatureChartTests.swift */; };
@@ -202,6 +205,7 @@
 		B3BC0BA00374A97BCBB85183 /* AppIcon-Ocean.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Ocean.icon"; sourceTree = "<group>"; };
 		B46F8D422DBEF88B22C30973 /* AppIcon-Dev.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Dev.icon"; sourceTree = "<group>"; };
 		B550D55202482A729D01EB75 /* WeatherAttributionLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAttributionLabel.swift; sourceTree = "<group>"; };
+		B779A919D42BE0083E906105 /* ForecastWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastWindow.swift; sourceTree = "<group>"; };
 		B8CBF1CA95D1465FC193EAD3 /* Shared.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Shared.xcstrings; sourceTree = "<group>"; };
 		BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanFetcher.swift; sourceTree = "<group>"; };
 		BF56FB0D8716881DD6B86696 /* HourlyForecastService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyForecastService.swift; sourceTree = "<group>"; };
@@ -214,6 +218,7 @@
 		D8999A866173F38C24ADDB7E /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		D966737D68177FDD437F8E59 /* HourlyTemperatureChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyTemperatureChart.swift; sourceTree = "<group>"; };
 		DB5D5EA13231AFF54DF1457B /* DayPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanView.swift; sourceTree = "<group>"; };
+		DD1263095AB21CA4F12F64B9 /* ForecastWindowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastWindowTests.swift; sourceTree = "<group>"; };
 		DF02175CFC638146DBFB8B80 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		DFF25927888A9142B7C9EB0B /* PlanTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanTimelineProvider.swift; sourceTree = "<group>"; };
 		E0F20748B7D794EDFDD25CF3 /* MettitiWidgetsExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = MettitiWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -267,6 +272,7 @@
 				02D1A8D51E57A06A197684CA /* AppIconPreferenceStoreTests.swift */,
 				6025660EBF339BC99DD24263 /* BackgroundPlanRefreshTests.swift */,
 				41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */,
+				DD1263095AB21CA4F12F64B9 /* ForecastWindowTests.swift */,
 				6E72CE62D40BB1122CBF98F3 /* HourlyForecastTests.swift */,
 				239B073054ECD22EBF022A34 /* HourlyTemperatureChartTests.swift */,
 				40F9E19950E9B566A883A1BE /* OpenMeteoFixtureTests.swift */,
@@ -411,6 +417,7 @@
 			children = (
 				17648820A03F760374204482 /* DailyWeather.swift */,
 				5B1FE68B45D6FB63A371394B /* DisplayedItem.swift */,
+				B779A919D42BE0083E906105 /* ForecastWindow.swift */,
 				074BBF182DDA9275E9C601F9 /* HourlyForecast.swift */,
 				29FB3179D1A9209D11E4326B /* LocationSelection.swift */,
 				2FC3B818C88DB31994FCBDC2 /* OutfitRecommendation.swift */,
@@ -576,6 +583,7 @@
 				204962105CCF093CEA52931E /* AppIconPreferenceStoreTests.swift in Sources */,
 				8F5373DA4B93DA2AA5893707 /* BackgroundPlanRefreshTests.swift in Sources */,
 				1C1274F0E23B931CB16553AA /* DayPlanViewModelTests.swift in Sources */,
+				B69899D02EFFBE322436659C /* ForecastWindowTests.swift in Sources */,
 				961B270CF8434ABE5CAB501C /* HourlyForecastTests.swift in Sources */,
 				D73324A0AA0E6FF613BC582B /* HourlyTemperatureChartTests.swift in Sources */,
 				3B9811EDD4A40B3EE05D8F07 /* OpenMeteoFixtureTests.swift in Sources */,
@@ -606,6 +614,7 @@
 				E6884B41028DD96F6001FE20 /* DisplayedItem.swift in Sources */,
 				8822F19E4CA5B57699A2DC69 /* EmojiWidget.swift in Sources */,
 				F1CDAF56F215F17FCCA4B743 /* EmptyPlanView.swift in Sources */,
+				20AE36D6D4143A7A9CA664E6 /* ForecastWindow.swift in Sources */,
 				472A728F857F194DF4206B4F /* HourlyForecast.swift in Sources */,
 				FBE3F3DC2229268BABE9AA6B /* LocationSelection.swift in Sources */,
 				677C0D2B5F5B8BBB6D583649 /* MettitiWidgetsBundle.swift in Sources */,
@@ -639,6 +648,7 @@
 				853AA46C5BE5F1C704DBFB25 /* DayPlanViewModel.swift in Sources */,
 				4972FE09034A30AB2EF51BCD /* DisplayedItem.swift in Sources */,
 				1F0ED80B7B844EF7919A72C4 /* ErrorStateView.swift in Sources */,
+				CF485FD0D836C0EDF8779B5C /* ForecastWindow.swift in Sources */,
 				6D1864C68B698E347EC9A59E /* HourlyForecast.swift in Sources */,
 				55700F0574090A169F5528ED /* HourlyForecastService.swift in Sources */,
 				FD12626622983A9D84C676EF /* HourlyTemperatureChart.swift in Sources */,
