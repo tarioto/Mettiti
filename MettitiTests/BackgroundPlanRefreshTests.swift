@@ -325,24 +325,26 @@ struct BackgroundPlanRefreshTests {
 
     // MARK: - Meaningful Change
 
-    /// Today's stale plan for Seattle, made at 9 AM for the rest of the day from the weather the
-    /// fetcher returns, with its basis nudged by `adjustingHighBy`°F.
-    private func staleSeattlePlan(in harness: Harness, adjustingHighBy deltaF: Double?) {
+    /// Today's stale plan for Seattle, made at 9 AM for `window` from the weather the fetcher
+    /// returns, with no basis.
+    private func staleSeattlePlanWithoutBasis(in harness: Harness, window: PlanWindow = .restOfDay) {
         let seattle = LocationSelection.custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
         harness.selection = seattle
-        var snapshot = PlanSnapshot.generated(at: date("2026-10-08T09:00:00-07:00"), window: .restOfDay, location: seattle)
-        if let deltaF {
-            var basis = WindowSummary(weather: .placeholder, hourly: nil, span: snapshot.span!)
-            basis.highF += deltaF
-            snapshot.adviceBasis = basis
-        }
-        harness.snapshot = snapshot
+        harness.snapshot = .generated(at: date("2026-10-08T09:00:00-07:00"), window: window, location: seattle)
+    }
+
+    /// The same, with a basis whose high is `deltaF`°F off the weather the fetcher returns.
+    private func staleSeattlePlan(in harness: Harness, window: PlanWindow = .restOfDay, basisHighOffBy deltaF: Double) {
+        staleSeattlePlanWithoutBasis(in: harness, window: window)
+        var basis = WindowSummary(weather: .placeholder, hourly: nil, span: harness.snapshot!.span!)
+        basis.highF += deltaF
+        harness.snapshot?.adviceBasis = basis
     }
 
     @Test func staleTodaysPlanWithNoMeaningfulChangeKeepsItsOutfitAndBasis() async {
         let now = date("2026-10-08T12:30:00-07:00")
         let harness = Harness(now: now)
-        staleSeattlePlan(in: harness, adjustingHighBy: 1)
+        staleSeattlePlan(in: harness, basisHighOffBy: 1)
 
         let outcome = await harness.refresher.refreshIfStale()
 
@@ -357,7 +359,7 @@ struct BackgroundPlanRefreshTests {
 
     @Test func staleTodaysPlanWithAMeaningfulChangeIsRemade() async {
         let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
-        staleSeattlePlan(in: harness, adjustingHighBy: 10)
+        staleSeattlePlan(in: harness, basisHighOffBy: 10)
 
         #expect(await harness.refresher.refreshIfStale() == .refreshed)
         #expect(await harness.fetcher.recommendationRequestCount == 1)
@@ -366,7 +368,7 @@ struct BackgroundPlanRefreshTests {
 
     @Test func staleTodaysPlanWithoutABasisIsAlwaysRemade() async {
         let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
-        staleSeattlePlan(in: harness, adjustingHighBy: nil)
+        staleSeattlePlanWithoutBasis(in: harness)
 
         #expect(await harness.refresher.refreshIfStale() == .refreshed)
         #expect(await harness.fetcher.recommendationRequestCount == 1)
@@ -376,16 +378,39 @@ struct BackgroundPlanRefreshTests {
     @Test func planForAnotherLocationIsRemadeEvenWithoutAMeaningfulChange() async {
         // The outfit was written for Seattle; Portland's weather may look the same but isn't.
         let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
-        staleSeattlePlan(in: harness, adjustingHighBy: 0)
+        staleSeattlePlan(in: harness, basisHighOffBy: 0)
         harness.selection = .custom(name: "Portland", latitude: 45.5, longitude: -122.7)
 
         #expect(await harness.refresher.refreshIfStale() == .refreshed)
         #expect(await harness.fetcher.recommendationRequestCount == 1)
     }
 
+    @Test func planForAnotherWindowThanTheSettingsDefaultIsRemadeEvenWithABasis() async {
+        let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
+        harness.planWindow = .threeHours
+        staleSeattlePlan(in: harness, window: .restOfDay, basisHighOffBy: 0)
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+        #expect(await harness.fetcher.recommendationRequestCount == 1)
+        #expect(harness.published.first?.adviceBasis?.window == .threeHours)
+    }
+
+    @Test(arguments: [0.0, 10.0])
+    func settingsWindowChangedDuringTheFetchIsNotPublished(basisHighOffBy deltaF: Double) async {
+        // Whether the outfit would be kept or remade, it's for the window the run started with.
+        let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
+        staleSeattlePlan(in: harness, basisHighOffBy: deltaF)
+        await harness.fetcher.duringWeatherFetch { @MainActor in
+            harness.planWindow = .oneHour
+        }
+
+        #expect(await harness.refresher.refreshIfStale() == .supersededByApp)
+        #expect(harness.published.isEmpty)
+    }
+
     @Test func planFromAnEarlierDayIsRemadeEvenWithoutAMeaningfulChange() async {
         let harness = Harness(now: date("2026-10-09T09:30:00-07:00"))
-        staleSeattlePlan(in: harness, adjustingHighBy: 0)
+        staleSeattlePlan(in: harness, basisHighOffBy: 0)
 
         #expect(await harness.refresher.refreshIfStale() == .refreshed)
         #expect(await harness.fetcher.recommendationRequestCount == 1)

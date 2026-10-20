@@ -10,8 +10,8 @@ struct BackgroundPlanRefresher {
         case alreadyCurrent
         /// A new plan was fetched and published.
         case refreshed
-        /// Fresh weather was published with today's outfit, which its weather had no Meaningful
-        /// Change for; the model wasn't asked.
+        /// Fresh weather was published with today's outfit, since there was no Meaningful Change
+        /// from the weather it was made for; the model wasn't asked.
         case refreshedKeepingOutfit
         /// Today's weather was published without outfit suggestions (model unavailable or failed).
         case refreshedWeatherOnly
@@ -21,7 +21,7 @@ struct BackgroundPlanRefresher {
         case skippedNoCoordinate
         /// The weather fetch failed; the saved plan was left as is.
         case failed
-        /// While this run was fetching, the app changed the city or provider, or saved a plan
+        /// While this run was fetching, the app changed the city, provider or Settings window, or saved a plan
         /// for today that is at least as complete; nothing published so the app's plan stays.
         case supersededByApp
         /// The task was cancelled (e.g. the system's background time expired); nothing published.
@@ -72,50 +72,47 @@ struct BackgroundPlanRefresher {
         guard let (weather, hourly) = try? await fetcher.fetchWeather(for: coordinate, from: provider) else { return .failed }
         let span = PlanSpan(window: window, startingAt: now(), timeZone: hourly?.timeZone ?? locationCalendar.timeZone)
         let freshSummary = WindowSummary(weather: weather, hourly: hourly, span: span)
-        // Today's outfit for this place, source and window still fits unless the weather it was
-        // written for changed meaningfully (#99); then only the weather is updated.
+        let recommendation: OutfitRecommendation?
+        let adviceBasis: WindowSummary?
+        let outcome: Outcome
+        // Today's outfit for this place, source and Settings window still fits unless the weather
+        // it was made for has had a Meaningful Change (#99); then only the weather is updated,
+        // and the basis stays so small changes still add up.
         if let saved = savedSnapshot,
            let outfit = saved.recommendation,
            let basis = saved.adviceBasis,
            saved.location == selection,
            saved.provider == provider,
+           saved.planWindow == window,
            saved.isFromToday(now: now(), calendar: locationCalendar),
            !freshSummary.differsMeaningfully(from: basis) {
-            return publishUnlessSuperseded(
-                PlanSnapshot(weather: weather, recommendation: outfit, generatedAt: now(), provider: provider, location: selection, hourly: hourly, span: span, adviceBasis: basis),
-                replacing: savedSnapshot, selection: selection, provider: provider,
-                outcome: .refreshedKeepingOutfit
-            )
-        }
-        let recommendation: OutfitRecommendation? = if availability == .available {
-            try? await fetcher.recommendation(for: weather, hourly: hourly, span: span)
+            recommendation = outfit
+            adviceBasis = basis
+            outcome = .refreshedKeepingOutfit
         } else {
-            nil
+            recommendation = if availability == .available {
+                try? await fetcher.recommendation(for: weather, hourly: hourly, span: span)
+            } else {
+                nil
+            }
+            adviceBasis = recommendation.map { _ in freshSummary }
+            outcome = recommendation == nil ? .refreshedWeatherOnly : .refreshed
         }
         // `try?` above also swallows `CancellationError`: if the system expired the task mid-generation,
         // don't replace the saved plan (maybe yesterday's full plan) with a weather-only one.
         guard !Task.isCancelled else { return .cancelled }
-        return publishUnlessSuperseded(
-            PlanSnapshot(weather: weather, recommendation: recommendation, generatedAt: now(), provider: provider, location: selection, hourly: hourly, span: span, adviceBasis: recommendation.map { _ in freshSummary }),
-            replacing: savedSnapshot, selection: selection, provider: provider,
-            outcome: recommendation == nil ? .refreshedWeatherOnly : .refreshed
-        )
-    }
-
-    /// Publishes `plan` and returns `outcome`, unless the app changed things while this run was
-    /// fetching (`savedSnapshot` is the plan saved when it started).
-    private func publishUnlessSuperseded(_ plan: PlanSnapshot, replacing savedSnapshot: PlanSnapshot?, selection: LocationSelection, provider: WeatherProvider, outcome: Outcome) -> Outcome {
-        // The user may have opened the app and loaded a plan for another city or provider while
-        // we were fetching; publishing now would overwrite it with this older request's plan.
-        guard self.selection() == selection, self.provider() == provider else { return .supersededByApp }
+        // The user may have opened the app and loaded a plan for another city or provider, or
+        // changed the Settings window, while we were fetching; publishing now would overwrite
+        // the app's plan with this older request's.
+        guard self.selection() == selection, self.provider() == provider, planWindow() == window else { return .supersededByApp }
         // Likewise, don't replace a plan the app saved for today meanwhile with a less complete one.
         if let latest = loadSnapshot(),
            latest.generatedAt != savedSnapshot?.generatedAt,
            latest.isFromToday(now: now(), calendar: latest.locationCalendar(fallback: calendar)),
-           latest.recommendation != nil || plan.recommendation == nil {
+           latest.recommendation != nil || recommendation == nil {
             return .supersededByApp
         }
-        publish(plan)
+        publish(PlanSnapshot(weather: weather, recommendation: recommendation, generatedAt: now(), provider: provider, location: selection, hourly: hourly, span: span, adviceBasis: adviceBasis))
         return outcome
     }
 

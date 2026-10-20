@@ -45,7 +45,7 @@ struct WidgetPlanTimeline {
     /// that instead, so a city's day, midnight and window end match each other.
     init(saved: PlanSnapshot?, window: PlanWindow, now: Date, calendar deviceCalendar: Calendar) {
         let calendar = saved?.locationCalendar(fallback: deviceCalendar) ?? deviceCalendar
-        let nextMidnight = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: now)!)
+        let nextMidnight = calendar.dateInterval(of: .day, for: now)!.end
         reloadDate = min(now.addingTimeInterval(Self.reloadInterval), nextMidnight)
 
         guard let saved else {
@@ -58,7 +58,7 @@ struct WidgetPlanTimeline {
         }
         // Plans saved before Plan Windows have no span; they covered the rest of their day.
         let windowEnd = saved.span?.interval.end
-            ?? calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: saved.generatedAt)!)
+            ?? calendar.dateInterval(of: .day, for: saved.generatedAt)!.end
         guard saved.planWindow == window, now < windowEnd else {
             entries = [Entry(date: now, state: afterPlan(at: now))]
             return

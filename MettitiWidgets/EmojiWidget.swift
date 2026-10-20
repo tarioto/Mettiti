@@ -17,7 +17,7 @@ struct EmojiWidgetEntryView: View {
                     }
                     PlanWindowTimesLabel(span: snapshot.span)
                 }
-                // Cap growth so four emoji and the time range still fit a small widget.
+                // Cap growth so four emoji and the window's times still fit a small widget.
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .padding(4)
                 .containerBackground(.fill.tertiary, for: .widget)
