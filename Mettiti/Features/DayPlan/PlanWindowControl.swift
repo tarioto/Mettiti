@@ -9,7 +9,7 @@ struct PlanWindowControl: View {
 
     var body: some View {
         Menu {
-            Picker("Plan Window", selection: Binding(get: { window }, set: onSelect)) {
+            Picker("Plan Window", selection: Binding(get: { window }, set: { onSelect($0) })) {
                 ForEach(PlanWindow.allCases) { window in
                     Text(window.name()).tag(window)
                 }
