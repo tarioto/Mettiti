@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Sets the Window Override from the main screen (#100): the same Plan Window stops as Settings,
-/// lasting until the next launch or the next day. A menu rather than segments, so the full window
-/// names fit at every text size.
+/// lasting until the next launch or the next day. A circular header button beside Refresh, whose
+/// menu checks the active window.
 struct PlanWindowControl: View {
     let window: PlanWindow
     let onSelect: (PlanWindow) -> Void
@@ -15,18 +15,9 @@ struct PlanWindowControl: View {
                 }
             }
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "clock")
-                    .accessibilityHidden(true)
-                Text(window.name())
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption)
-                    .accessibilityHidden(true)
-            }
-            .font(.subheadline.weight(.semibold))
-            .padding(.horizontal, 4)
+            HeaderIcon(systemName: "clock")
         }
-        .buttonStyle(.glass)
+        .headerIconButtonStyle()
         .accessibilityLabel("Plan Window")
         .accessibilityValue(window.name())
         .accessibilityHint(Text("Changes how far ahead the outfit covers for now. Settings keeps the default.", comment: "VoiceOver hint for the main screen's Plan Window menu, which lasts until the next launch or the next day"))
