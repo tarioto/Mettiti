@@ -1508,6 +1508,396 @@ struct DayPlanViewModelTests {
         #expect(requested.count == 2)
     }
 
+    // MARK: Main-screen Plan Window control (#100)
+
+    @Test func switchingToAShorterWindowWithWeatherTooOldForItRefetchesFirst() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .twelveHours
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        // Two hours on, the weather is still fresh for 12h but too old for 1h.
+        clock.now = date("2026-10-19T10:00:00-07:00")
+        viewModel.selectPlanWindow(.oneHour)
+
+        try await waitUntil { await fetcher.recommendationRequestCount == 2 }
+        #expect(await fetcher.requestedCoordinates.count == 2)
+        #expect(await fetcher.requestedSpans.last == PlanSpan(window: .oneHour, startingAt: clock.now, timeZone: pacific))
+        #expect(viewModel.activePlanWindow == .oneHour)
+    }
+
+    @Test func switchingToALongerWindowWithWeatherStillFreshForItReusesTheWeather() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .oneHour
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        // 45 minutes on: too old for 1h, still fresh for 6h.
+        clock.now = date("2026-10-19T08:45:00-07:00")
+        viewModel.selectPlanWindow(.sixHours)
+
+        try await waitUntil { await fetcher.recommendationRequestCount == 2 }
+        try await waitUntil { viewModel.state.span?.window == .sixHours && viewModel.state.readySummary != nil }
+        #expect(await fetcher.requestedCoordinates.count == 1)
+        #expect(await fetcher.requestedSpans.last == PlanSpan(window: .sixHours, startingAt: clock.now, timeZone: pacific))
+    }
+
+    @Test func switchingBackToAWindowAlreadyMadeForThisWeatherShowsItWithoutAskingTheModel() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .threeHours
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+        let threeHourSpan = viewModel.state.span
+
+        await fetcher.setRecommendation(.success(OutfitRecommendation(summary: "Six-hour outfit", items: [])))
+        viewModel.selectPlanWindow(.sixHours)
+        try await waitUntil { viewModel.state.readySummary == "Six-hour outfit" }
+
+        viewModel.selectPlanWindow(.threeHours)
+
+        // Instant: no await needed for the three-hour outfit to be back.
+        #expect(viewModel.state.readySummary == OutfitRecommendation.placeholder.summary)
+        #expect(viewModel.state.span == threeHourSpan)
+        #expect(await fetcher.recommendationRequestCount == 2)
+    }
+
+    @Test func refetchingTheWeatherForgetsTheOutfitsMadeForOtherWindows() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .threeHours
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+        viewModel.selectPlanWindow(.sixHours)
+        try await waitUntil { await fetcher.recommendationRequestCount == 2 }
+        try await waitUntil { viewModel.state.span?.window == .sixHours && viewModel.state.readySummary != nil }
+
+        await viewModel.refresh()
+        #expect(await fetcher.recommendationRequestCount == 3)
+        viewModel.selectPlanWindow(.threeHours)
+
+        try await waitUntil { await fetcher.recommendationRequestCount == 4 }
+        try await waitUntil { viewModel.state.span?.window == .threeHours && viewModel.state.readySummary != nil }
+        #expect(await fetcher.requestedCoordinates.count == 2)
+    }
+
+    @Test func theOutfitOnScreenStaysWithUpdatingWhileTheNewWindowsOutfitIsMade() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = GatedRecommendationFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .threeHours
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
+        await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "Three-hour outfit", items: [])))
+        try await waitUntil { viewModel.state.readySummary == "Three-hour outfit" }
+
+        viewModel.selectPlanWindow(.sixHours)
+        try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
+
+        #expect(viewModel.state.readySummary == "Three-hour outfit")
+        #expect(viewModel.isUpdatingSavedPlan)
+
+        await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "Six-hour outfit", items: [])))
+        try await waitUntil { viewModel.state.readySummary == "Six-hour outfit" }
+        #expect(viewModel.state.span?.window == .sixHours)
+        #expect(!viewModel.isUpdatingSavedPlan)
+    }
+
+    @Test func theOutfitOnScreenStaysWithUpdatingWhileTheWeatherIsRefetchedForTheNewWindow() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = GatedRecommendationFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        let recorder = StateRecorder(viewModel, skippingCurrent: true)
+        viewModel.start()
+        try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
+        await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "Rest-of-day outfit", items: [])))
+        try await waitUntil { viewModel.state.readySummary == "Rest-of-day outfit" }
+
+        clock.now = date("2026-10-19T09:00:00-07:00")
+        let statesBeforeSwitch = recorder.states.count
+        viewModel.selectPlanWindow(.oneHour)
+        try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
+
+        #expect(viewModel.isUpdatingSavedPlan)
+        await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "One-hour outfit", items: [])))
+        try await waitUntil { viewModel.state.readySummary == "One-hour outfit" }
+        recorder.stop()
+
+        let duringSwitch = recorder.states.dropFirst(statesBeforeSwitch).dropLast()
+        #expect(duringSwitch.allSatisfy { $0.readySummary == "Rest-of-day outfit" })
+    }
+
+    @Test func switchingAgainWhileTheWeatherIsRefetchedKeepsThatRefetchAndUsesTheLatestWindow() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = GatedDayPlanFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .twelveHours
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 60)))
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        clock.now = date("2026-10-19T10:00:00-07:00")
+        viewModel.selectPlanWindow(.oneHour)
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        viewModel.selectPlanWindow(.threeHours)
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 70)))
+
+        try await waitUntil { viewModel.state.loadedHigh == 70 && viewModel.state.readySummary != nil }
+        #expect(viewModel.state.span?.window == .threeHours)
+    }
+
+    @Test func switchingBeforeTheFirstGPSFixKeepsTodaysPlanAndTheFixLoadsTheNewWindow() async throws {
+        let location = FakeLocationProvider()
+        let fetcher = GatedDayPlanFetcher()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
+            publishSnapshot: { _ in }
+        )
+        viewModel.start()
+
+        viewModel.selectPlanWindow(.oneHour)
+        try await waitUntil { location.locationRequestCount == 2 }
+        viewModel.selectPlanWindow(.threeHours)
+        try await waitUntil { location.locationRequestCount == 3 }
+        #expect(viewModel.state.readySummary == "Saved outfit")
+        #expect(viewModel.isUpdatingSavedPlan)
+
+        location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 47.6) }
+        await fetcher.complete(latitude: 47.6, with: .success(.forecast(high: 70)))
+
+        try await waitUntil { viewModel.state.loadedHigh == 70 && viewModel.state.readySummary != nil }
+        #expect(viewModel.state.span?.window == .threeHours)
+    }
+
+    @Test func aRefetchThatKeepsTheOutfitKeepsOtherWindowsOutfitsWithTheirOwnBasis() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)), recommendation: .success(OutfitRecommendation(summary: "Three-hour outfit", items: [])))
+        let store = FakeSnapshotStore()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .threeHours
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary == "Three-hour outfit" }
+        await fetcher.setRecommendation(.success(OutfitRecommendation(summary: "Six-hour outfit", items: [])))
+        viewModel.selectPlanWindow(.sixHours)
+        try await waitUntil { viewModel.state.readySummary == "Six-hour outfit" }
+
+        // Stale for 6h; the weather barely changed, so the six-hour outfit is kept.
+        await fetcher.setWeather(.forecast(high: 71))
+        clock.now = date("2026-10-19T10:05:00-07:00")
+        viewModel.refreshIfStale()
+        try await waitUntil { viewModel.state.loadedHigh == 71 }
+        #expect(viewModel.state.readySummary == "Six-hour outfit")
+        // The override's plan isn't saved for the widgets.
+        #expect(store.published.map(\.weather.highTemperatureF) == [70])
+
+        viewModel.selectPlanWindow(.threeHours)
+
+        #expect(viewModel.state.readySummary == "Three-hour outfit")
+        #expect(viewModel.state.span == PlanSpan(window: .threeHours, startingAt: clock.now, timeZone: pacific))
+        #expect(await fetcher.recommendationRequestCount == 2)
+        // Back on the Settings default, the fresh weather is saved with the outfit's own basis.
+        #expect(store.published.last?.weather.highTemperatureF == 71)
+        #expect(store.published.last?.recommendation?.summary == "Three-hour outfit")
+        #expect(store.published.last?.adviceBasis?.highF == 70)
+        #expect(store.published.last?.adviceBasis?.window == .threeHours)
+    }
+
+    @Test func switchingToAWindowWhoseWeatherIsTooOldRefetchesAndKeepsItsOutfitIfNothingMeaningfullyChanged() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)), recommendation: .success(OutfitRecommendation(summary: "One-hour outfit", items: [])))
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .oneHour
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary == "One-hour outfit" }
+        await fetcher.setRecommendation(.success(OutfitRecommendation(summary: "Six-hour outfit", items: [])))
+        viewModel.selectPlanWindow(.sixHours)
+        try await waitUntil { viewModel.state.readySummary == "Six-hour outfit" }
+
+        // 45 minutes on, too old for 1h: refetched, but barely changed, so the one-hour outfit is back.
+        await fetcher.setWeather(.forecast(high: 71))
+        clock.now = date("2026-10-19T08:45:00-07:00")
+        viewModel.selectPlanWindow(.oneHour)
+
+        try await waitUntil { viewModel.state.loadedHigh == 71 }
+        #expect(viewModel.state.readySummary == "One-hour outfit")
+        #expect(await fetcher.requestedCoordinates.count == 2)
+        #expect(await fetcher.recommendationRequestCount == 2)
+    }
+
+    @Test func switchingDuringAnAutomaticRefetchKeepsTheNewWindowsOutfitIfNothingMeaningfullyChanged() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = GatedDayPlanFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .threeHours
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 70)))
+        try await waitUntil { viewModel.state.readySummary != nil }
+        viewModel.selectPlanWindow(.sixHours)
+        try await waitUntil { await fetcher.recommendationRequestCount == 2 }
+        try await waitUntil { viewModel.state.span?.window == .sixHours && viewModel.state.readySummary != nil }
+
+        clock.now = date("2026-10-19T10:05:00-07:00")
+        viewModel.refreshIfStale()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        viewModel.selectPlanWindow(.threeHours)
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 71)))
+
+        try await waitUntil { viewModel.state.loadedHigh == 71 }
+        #expect(viewModel.state.span?.window == .threeHours)
+        #expect(viewModel.state.readySummary != nil)
+        #expect(await fetcher.recommendationRequestCount == 2)
+    }
+
+    @Test func aRefetchThatRemakesTheOutfitDropsOtherWindowsOutfits() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)))
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .threeHours
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+        viewModel.selectPlanWindow(.sixHours)
+        try await waitUntil { await fetcher.recommendationRequestCount == 2 }
+        try await waitUntil { viewModel.state.span?.window == .sixHours && viewModel.state.readySummary != nil }
+
+        // A meaningful change: the six-hour outfit is remade, and the three-hour one forgotten.
+        await fetcher.setWeather(.forecast(high: 78))
+        clock.now = date("2026-10-19T10:05:00-07:00")
+        viewModel.refreshIfStale()
+        try await waitUntil { await fetcher.recommendationRequestCount == 3 }
+        try await waitUntil { viewModel.state.loadedHigh == 78 && viewModel.state.readySummary != nil }
+
+        viewModel.selectPlanWindow(.threeHours)
+
+        try await waitUntil { await fetcher.recommendationRequestCount == 4 }
+        #expect(await fetcher.requestedSpans.last?.window == .threeHours)
+    }
+
+    @Test func theOverrideLeavesTheSettingsDefaultAndTheWidgetsPlanAlone() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher()
+        let defaults = isolatedDefaults()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: defaults)
+        let store = FakeSnapshotStore()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        viewModel.selectPlanWindow(.oneHour)
+        try await waitUntil { viewModel.state.span?.window == .oneHour && viewModel.state.readySummary != nil }
+
+        #expect(planWindowPreference.window == .restOfDay)
+        #expect(PlanWindowPreferenceStore(defaults: defaults).window == .restOfDay)
+        #expect(store.published.map(\.planWindow) == [.restOfDay])
+    }
+
+    @Test func makingTheOverrideTheSettingsDefaultSavesThePlanOnScreenForTheWidgets() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let store = FakeSnapshotStore()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+        viewModel.selectPlanWindow(.oneHour)
+        try await waitUntil { viewModel.state.span?.window == .oneHour && viewModel.state.readySummary != nil }
+
+        select(.oneHour, in: planWindowPreference, for: viewModel)
+
+        #expect(store.published.map(\.planWindow) == [.restOfDay, .oneHour])
+        #expect(await fetcher.recommendationRequestCount == 2)
+    }
+
+    @Test func theNextLaunchStartsFromTheSettingsDefault() {
+        let defaults = isolatedDefaults()
+        let fetcher = FakeDayPlanFetcher()
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: PlanWindowPreferenceStore(defaults: defaults))
+        viewModel.start()
+        viewModel.selectPlanWindow(.oneHour)
+        #expect(viewModel.activePlanWindow == .oneHour)
+
+        let relaunched = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: PlanWindowPreferenceStore(defaults: defaults))
+
+        #expect(relaunched.activePlanWindow == .restOfDay)
+    }
+
+    @Test func theOverrideEndsOnANewDay() async throws {
+        let clock = FakeClock(date("2026-10-19T20:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .sixHours
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+        viewModel.selectPlanWindow(.twelveHours)
+        try await waitUntil { await fetcher.recommendationRequestCount == 2 }
+
+        clock.now = date("2026-10-20T07:00:00-07:00")
+        viewModel.refreshIfStale()
+
+        #expect(viewModel.activePlanWindow == .sixHours)
+        try await waitUntil { await fetcher.recommendationRequestCount == 3 }
+        #expect(await fetcher.requestedSpans.last?.window == .sixHours)
+    }
+
+    @Test func pullToRefreshOnANewDayEndsTheOverride() async throws {
+        let clock = FakeClock(date("2026-10-19T23:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+        viewModel.selectPlanWindow(.oneHour)
+
+        clock.now = date("2026-10-20T00:10:00-07:00")
+        await viewModel.refresh()
+
+        #expect(viewModel.activePlanWindow == .restOfDay)
+        #expect(viewModel.state.span?.window == .restOfDay)
+    }
+
+    @Test func changingTheSettingsDefaultReplacesTheOverride() async throws {
+        let fetcher = FakeDayPlanFetcher()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let viewModel = makePlanWindowViewModel(fetcher: fetcher, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+        viewModel.selectPlanWindow(.oneHour)
+        try await waitUntil { viewModel.state.span?.window == .oneHour && viewModel.state.readySummary != nil }
+
+        select(.sixHours, in: planWindowPreference, for: viewModel)
+
+        #expect(viewModel.activePlanWindow == .sixHours)
+        try await waitUntil { viewModel.state.span?.window == .sixHours && viewModel.state.readySummary != nil }
+    }
+
     @Test func pullToRefreshMinutesAfterTheLastLoadStillRefetches() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
@@ -2130,12 +2520,16 @@ private actor GatedDayPlanFetcher: DayPlanFetching {
         availability
     }
 
+    private(set) var recommendationRequestCount = 0
+
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation {
-        try recommendationResult.get()
+        recommendationRequestCount += 1
+        return try recommendationResult.get()
     }
 
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
-        try recommendationResult.get()
+        recommendationRequestCount += 1
+        return try recommendationResult.get()
     }
 }
 

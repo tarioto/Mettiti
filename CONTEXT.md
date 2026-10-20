@@ -36,12 +36,16 @@ _Avoid_: Icon theme, icon setting
 How far ahead from now the outfit advice covers: 1h, 3h, 6h, 12h or Rest of day, chosen in Settings (default Rest of day). Every window starts at the time the plan is made. Fixed windows cross midnight freely; Rest of day runs until midnight in the forecast location's time zone, but covers at least 3 hours. The plan card's title, the weather card's numbers and the chart's shading all show the window.
 _Avoid_: Time range, horizon, span (outside code)
 
+**Window Override**:
+A **Plan Window** picked with the control on the main screen, e.g. "I'm only going out for an hour". It replaces the Settings default on the main screen until the next launch or the next day, and never changes the default. Switching keeps the weather on screen if it's still fresh for the new window (by the **Saved Plan** staleness rule) and refetches first otherwise; an outfit already made for a window comes back at once while that window's weather has had no **Meaningful Change** since it was made. Those outfits are dropped when a refetch remakes the outfit (a refetch that keeps it keeps them too) or the location or weather source changes. Plans for an overriding window are never saved as the **Saved Plan**, so widgets and background refresh keep following the Settings default.
+_Avoid_: Temporary window, quick window
+
 **Saved Plan**:
 The last day plan the app or the background refresh produced, shared with the widgets (`PlanSnapshot` in code). On launch, a Saved Plan from today for the same location and weather source is shown right away while a fresh one loads. Returning to the app on a later day, or once the plan is stale for the **Plan Window** (30 minutes after the last load for 1h, 1 hour for 3h, 2 hours for 6h, 3 hours for 12h and Rest of day), refetches the weather and remakes the outfit by the same rule. Apart from a new day, automatic refreshes never come closer together than 30 minutes; pull-to-refresh and the Refresh button always refetch.
 _Avoid_: Cached plan, snapshot (outside code)
 
 **Meaningful Change**:
-A change in the **Plan Window**'s weather that would change the outfit advice: the window now crosses a sunrise or sunset it didn't (or the other way round), day turned to night (or night to day), the UV band changed (low, moderate, high or above), the chance of rain crossed about 30% or 60%, the high or low moved by about 3°C (5°F), or the kind of weather changed. It's measured against the weather the outfit was made for (`WindowSummary` in code; the check is `differsMeaningfully`), and a different Plan Window or gaining or losing the hourly forecast counts too. An automatic refresh only remakes the outfit after a Meaningful Change; otherwise it keeps the outfit and updates only the weather card and the chart. Pull-to-refresh and changing the location, weather source or Plan Window always remake it.
+A change in the **Plan Window**'s weather that would change the outfit advice: the window now crosses a sunrise or sunset it didn't (or the other way round), day turned to night (or night to day), the UV band changed (low, moderate, high or above), the chance of rain crossed about 30% or 60%, the high or low moved by about 3°C (5°F), or the kind of weather changed. It's measured against the weather the outfit was made for (`WindowSummary` in code; the check is `differsMeaningfully`), and a different Plan Window or gaining or losing the hourly forecast counts too. An automatic refresh only remakes the outfit after a Meaningful Change; otherwise it keeps the outfit and updates only the weather card and the chart. Pull-to-refresh and changing the location or weather source always remake it. Changing the Plan Window remakes it too, unless an outfit already made for that window has had no Meaningful Change since (see **Window Override**).
 _Avoid_: Significant change, weather diff
 
 ## Relationships
@@ -49,7 +53,8 @@ _Avoid_: Significant change, weather diff
 - Each **Theme** except Default has exactly one **Theme Icon**
 - The **Icon Choice** is independent of the **Theme**: changing the Theme never changes the icon
 - With no **Icon Choice**, the shown icon is the **Build Icon** for the current **Install Source**
-- Each **Saved Plan** covers one **Plan Window**; on launch it's only shown when that's still the chosen one, and changing the Plan Window remakes the plan
+- Each **Saved Plan** covers one **Plan Window**; on launch it's only shown when that's still the chosen one, and changing the Plan Window remakes the plan (or brings back one already made for that window, if it has had no **Meaningful Change** since)
+- A **Window Override** never becomes the **Saved Plan**'s window; changing the Settings default ends it
 
 ## Flagged ambiguities
 
