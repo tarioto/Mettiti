@@ -20,6 +20,10 @@ struct ContentView: View {
                     .shadow(color: .black.opacity(themePreference.theme == .none ? 0 : 0.25), radius: 4, y: 1)
                     .environment(\.colorScheme, themePreference.theme.overlayColorScheme ?? colorScheme)
                 Spacer()
+                PlanWindowControl(window: viewModel.activePlanWindow, iconColor: headerIconColor) { window in
+                    viewModel.selectPlanWindow(window)
+                }
+
                 Button {
                     Task { await viewModel.refresh() }
                 } label: {
@@ -131,10 +135,6 @@ struct ContentView: View {
             }
         case .loaded(let weather, let hourly, let span, let provider, let recommendation):
             VStack(spacing: 12) {
-                PlanWindowControl(window: viewModel.activePlanWindow) { window in
-                    viewModel.selectPlanWindow(window)
-                }
-                .frame(maxWidth: .infinity, alignment: .trailing)
                 if let message = viewModel.refreshFailureMessage {
                     RefreshFailureNotice(message: message)
                 } else if viewModel.isUpdatingSavedPlan {
