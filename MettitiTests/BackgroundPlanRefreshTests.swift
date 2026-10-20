@@ -353,6 +353,24 @@ struct BackgroundPlanRefreshTests {
         #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:00:00-07:00"))
     }
 
+    @Test func nextRequestAfterAPlanMadeJustBeforeSixAMKeepsTheFloor() {
+        // e.g. the app made a plan for another window at 5:45 and then went to the background.
+        let harness = Harness(now: date("2026-10-09T05:50:00-07:00"))
+        harness.planWindow = .threeHours
+        harness.snapshot = .generated(at: date("2026-10-09T05:45:00-07:00"), window: .oneHour)
+
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:15:00-07:00"))
+    }
+
+    @Test(arguments: ["2026-10-08T22:59:00-07:00", "2026-10-09T06:00:00-07:00"])
+    func runJustOutsideQuietHoursMakesThePlan(now: String) async {
+        let harness = Harness(now: date(now))
+        harness.snapshot = .generated(at: date("2026-10-08T15:00:00-07:00"))
+        harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+    }
+
     @Test func runAtSixAMMakesThePlan() async {
         let harness = Harness(now: date("2026-10-09T06:00:00-07:00"))
         harness.snapshot = .generated(at: date("2026-10-08T15:00:00-07:00"))

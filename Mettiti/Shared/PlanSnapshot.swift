@@ -46,7 +46,8 @@ extension PlanSnapshot {
     }
 
     /// Whether this plan was generated on the same day as `now` in `calendar`'s time zone.
-    /// Production passes the device's current calendar, so "today" is the device's local day.
+    /// The app passes the device's current calendar, so "today" is the device's local day; the
+    /// background refresh passes `locationCalendar(fallback:)`, so it's the location's.
     func isFromToday(now: Date, calendar: Calendar) -> Bool {
         calendar.isDate(generatedAt, inSameDayAs: now)
     }

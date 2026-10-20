@@ -50,10 +50,10 @@ struct BackgroundPlanRefresher {
         let availability = await fetcher.recommendationAvailability()
         let savedSnapshot = loadSnapshot()
         let window = planWindow()
-        let calendar = locationCalendar(for: savedSnapshot)
-        guard !hasCurrentSnapshot(savedSnapshot, window: window, now: now(), calendar: calendar, availability: availability) else { return .alreadyCurrent }
+        let locationCalendar = self.locationCalendar(for: savedSnapshot)
+        guard !hasCurrentSnapshot(savedSnapshot, window: window, now: now(), calendar: locationCalendar, availability: availability) else { return .alreadyCurrent }
         // iOS can run a request late; `nextRequestDate` then asks for the morning.
-        guard !Self.isQuietHour(now(), in: calendar) else { return .skippedQuietHours }
+        guard !Self.isQuietHour(now(), in: locationCalendar) else { return .skippedQuietHours }
 
         let selection = selection()
         let coordinate: CLLocationCoordinate2D
@@ -67,7 +67,7 @@ struct BackgroundPlanRefresher {
 
         let provider = provider()
         guard let (weather, hourly) = try? await fetcher.fetchWeather(for: coordinate, from: provider) else { return .failed }
-        let span = PlanSpan(window: window, startingAt: now(), timeZone: hourly?.timeZone ?? calendar.timeZone)
+        let span = PlanSpan(window: window, startingAt: now(), timeZone: hourly?.timeZone ?? locationCalendar.timeZone)
         let recommendation: OutfitRecommendation? = if availability == .available {
             try? await fetcher.recommendation(for: weather, hourly: hourly, span: span)
         } else {
@@ -82,7 +82,7 @@ struct BackgroundPlanRefresher {
         // Likewise, don't replace a plan the app saved for today meanwhile with a less complete one.
         if let latest = loadSnapshot(),
            latest.generatedAt != savedSnapshot?.generatedAt,
-           latest.isFromToday(now: now(), calendar: latest.locationCalendar(fallback: self.calendar)),
+           latest.isFromToday(now: now(), calendar: latest.locationCalendar(fallback: calendar)),
            latest.recommendation != nil || recommendation == nil {
             return .supersededByApp
         }
@@ -96,8 +96,9 @@ struct BackgroundPlanRefresher {
     /// - otherwise (none, from an earlier day, for another window, stale, or still missing its
     ///   suggestions): retry within the hour, or sooner for a short window; during quiet hours,
     ///   at the coming `morningHour`.
-    /// Never sooner than `PlanWindow.minimumRefreshInterval` from now, and a time in quiet hours
-    /// moves to the next `morningHour`. Hours are the location's (see `locationCalendar(for:)`).
+    /// Never sooner than `PlanWindow.minimumRefreshInterval` after the last plan was made (or,
+    /// outside quiet hours, from now), and a time in quiet hours moves to the next `morningHour`.
+    /// Hours are the location's (see `locationCalendar(for:)`).
     ///
     /// Synchronous so the app can submit the request before it's suspended on `.background`;
     /// the caller passes the model's current availability.
@@ -109,21 +110,26 @@ struct BackgroundPlanRefresher {
         let now = now()
         let window = planWindow()
         let snapshot = loadSnapshot()
-        let calendar = locationCalendar(for: snapshot)
+        let locationCalendar = self.locationCalendar(for: snapshot)
         let floor = now.addingTimeInterval(PlanWindow.minimumRefreshInterval)
-        guard let snapshot, hasCurrentSnapshot(snapshot, window: window, now: now, calendar: calendar, availability: availability) else {
-            // A run skipped for quiet hours tries again first thing; it made no plan, so there's
-            // no refresh for the floor to space this one from.
-            if Self.isQuietHour(now, in: calendar) { return Self.morning(after: now, in: calendar) }
+        guard let snapshot, hasCurrentSnapshot(snapshot, window: window, now: now, calendar: locationCalendar, availability: availability) else {
+            if Self.isQuietHour(now, in: locationCalendar) {
+                // E.g. a run skipped for quiet hours: try again first thing, spaced only from the
+                // last plan made, since nothing has been refreshed since.
+                let lastPlanFloor = snapshot.map { $0.generatedAt.addingTimeInterval(PlanWindow.minimumRefreshInterval) } ?? .distantPast
+                return max(Self.morning(after: now, in: locationCalendar), lastPlanFloor)
+            }
             let retry = now.addingTimeInterval(min(Self.staleRetryInterval, window.staleAfter))
-            return Self.outsideQuietHours(max(retry, floor), in: calendar)
+            return Self.outsideQuietHours(max(retry, floor), in: locationCalendar)
         }
         let due = snapshot.generatedAt.addingTimeInterval(window.staleAfter)
-        return Self.outsideQuietHours(max(due, floor), in: calendar)
+        return Self.outsideQuietHours(max(due, floor), in: locationCalendar)
     }
 
     /// The calendar for the selected location: the saved plan's location's time zone when the
     /// plan is for that location, otherwise (or for a plan that didn't record it) the device's.
+    /// Unlike the widgets, which judge the plan they show, this is about the next plan to make,
+    /// so another location's zone would be wrong.
     private func locationCalendar(for snapshot: PlanSnapshot?) -> Calendar {
         guard let snapshot, snapshot.location == selection() else { return calendar }
         return snapshot.locationCalendar(fallback: calendar)
