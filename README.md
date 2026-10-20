@@ -11,9 +11,9 @@ An iOS app that checks today's weather and tells you what to wear and what to br
   - *Today's Emojis* (small) — a quick emoji glance
   - *Today's Summary* (small) — a short text summary
   - *Today's Full Plan* (medium / large / extra large) — weather, summary, and the full wear & bring list
-- **Customizable home screen** — reorder or hide the Weather, Today's plan, and Wear & bring cards.
+- **Customizable main screen** — reorder or hide the Weather, Today's plan, and Wear & bring cards.
 - **Settings** — current location or a searched custom location, Fahrenheit/Celsius, and background themes (Sunset, Ocean, Aurora, Midnight) with independent Light/Dark appearance.
-- Pull-to-refresh and a refresh button.
+- A Plan Window menu on the main screen for how far ahead the outfit covers, and pull-to-refresh.
 
 ## Requirements
 

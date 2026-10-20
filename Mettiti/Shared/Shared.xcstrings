@@ -12,17 +12,6 @@
         }
       }
     },
-    "%@ · %@" : {
-      "comment" : "Plan card title; the arguments are the Plan Window, e.g. Next 3 hours, and its time range, e.g. 2:20 – 5:20 PM",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ · %2$@"
-          }
-        }
-      }
-    },
     "%@, from %@ to %@" : {
       "comment" : "VoiceOver label for the plan card title; the arguments are the Plan Window, e.g. Next 3 hours, its start time and its end time",
       "localizations" : {
@@ -33,18 +22,6 @@
           }
         }
       }
-    },
-    "1h" : {
-      "comment" : "Plan Window stop in Settings: one hour"
-    },
-    "3h" : {
-      "comment" : "Plan Window stop in Settings: three hours"
-    },
-    "6h" : {
-      "comment" : "Plan Window stop in Settings: six hours"
-    },
-    "12h" : {
-      "comment" : "Plan Window stop in Settings: twelve hours"
     },
     "Apple Weather" : {
 

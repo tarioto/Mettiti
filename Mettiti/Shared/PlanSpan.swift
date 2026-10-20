@@ -13,17 +13,7 @@ struct PlanSpan: Codable, Sendable, Equatable {
         self.timeZone = timeZone
     }
 
-    /// The window and its local times, e.g. "Next 3 hours · 2:20 – 5:20 PM".
-    func title(locale: Locale = .autoupdatingCurrent) -> String {
-        String(
-            localized: "\(window.name(locale: locale)) · \(timeRange(locale: locale))",
-            table: "Shared",
-            locale: locale,
-            comment: "Plan card title; the arguments are the Plan Window, e.g. Next 3 hours, and its time range, e.g. 2:20 – 5:20 PM"
-        )
-    }
-
-    /// The title as VoiceOver should read it, e.g. "Next 3 hours, from 2:20 PM to 5:20 PM".
+    /// The window and its times as VoiceOver should read them, e.g. "Next 3 hours, from 2:20 PM to 5:20 PM".
     func accessibilityLabel(locale: Locale = .autoupdatingCurrent) -> String {
         String(
             localized: "\(window.name(locale: locale)), from \(time(interval.start, locale: locale)) to \(time(interval.end, locale: locale))",
@@ -33,6 +23,9 @@ struct PlanSpan: Codable, Sendable, Equatable {
         )
     }
 
+    /// The window's local times, e.g. "2:20 – 5:20 PM": the plan card's title, under the main
+    /// screen's Plan Window menu, which already names the window.
+    ///
     /// Within one day the interval format shares what it can ("2:20 – 5:20 PM"); across midnight
     /// it would add both dates, so the two times are written out instead.
     func timeRange(locale: Locale = .autoupdatingCurrent) -> String {

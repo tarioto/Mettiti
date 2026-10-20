@@ -9,42 +9,10 @@ struct ContentView: View {
     let providerPreference: WeatherProviderPreferenceStore
     let planWindowPreference: PlanWindowPreferenceStore
     @State private var showingSettings = false
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Mettiti")
-                    .font(.largeTitle.bold())
-                    .shadow(color: .black.opacity(themePreference.theme == .none ? 0 : 0.25), radius: 4, y: 1)
-                    .environment(\.colorScheme, themePreference.theme.overlayColorScheme ?? colorScheme)
-                Spacer()
-                PlanWindowControl(window: viewModel.activePlanWindow) { window in
-                    viewModel.selectPlanWindow(window)
-                }
-
-                Button {
-                    Task { await viewModel.refresh() }
-                } label: {
-                    HeaderIcon(systemName: "arrow.clockwise")
-                }
-                .headerIconButtonStyle()
-                .disabled(isRefreshing)
-                .accessibilityLabel("Refresh")
-
-                Button {
-                    showingSettings = true
-                } label: {
-                    HeaderIcon(systemName: "gearshape.fill")
-                }
-                .headerIconButtonStyle()
-                .accessibilityLabel("Settings")
-            }
-            .padding(.horizontal)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-
+        NavigationStack {
             ScrollView {
                 content
                     .padding()
@@ -52,8 +20,28 @@ struct ContentView: View {
             .refreshable {
                 await viewModel.refresh()
             }
+            .background(themeBackground)
+            .toolbarColorScheme(themePreference.theme.overlayColorScheme, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    PlanWindowControl(window: viewModel.activePlanWindow) { window in
+                        viewModel.selectPlanWindow(window)
+                    }
+                    // Plain black or white so the theme's accent doesn't color the bar's controls.
+                    .tint(.primary)
+                }
+                // Bare words like the Invites app's title menu, rather than a glass button.
+                .sharedBackgroundVisibility(.hidden)
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Label("Settings", systemImage: "gearshape.fill")
+                    }
+                    .tint(.primary)
+                }
+            }
         }
-        .background(themeBackground)
         .environment(temperaturePreference)
         .environment(cardPreference)
         .tint(themePreference.theme.accentColor)
@@ -98,17 +86,6 @@ struct ContentView: View {
             for window in windowScene.windows {
                 window.overrideUserInterfaceStyle = appearance.userInterfaceStyle
             }
-        }
-    }
-
-    private var isRefreshing: Bool {
-        switch viewModel.state {
-        case .loadingWeather:
-            return true
-        case .loaded(_, _, _, _, let recommendation):
-            return recommendation.isInProgress || viewModel.isUpdatingSavedPlan
-        case .idle, .failed:
-            return false
         }
     }
 
