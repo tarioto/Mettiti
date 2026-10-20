@@ -8,8 +8,10 @@ struct WindowSummary: Codable, Sendable, Equatable {
     static let meaningfulTemperatureChangeF: Double = 5.4
     /// Chances of rain at which the advice changes, e.g. from nothing to an umbrella.
     static let rainThresholds = [30, 60]
+    /// From this UV index on, it's high or above (the WHO's "high").
+    static let highUVIndex: Double = 6
     /// UV indices at which the advice changes: low below the first, moderate, high and above.
-    static let uvThresholds = [ForecastWindow.meaningfulUVIndex, 6]
+    static let uvThresholds = [ForecastWindow.meaningfulUVIndex, highUVIndex]
 
     var window: PlanWindow
     /// Whether this sums up an hourly forecast for the span, or the whole day without one.
@@ -68,7 +70,8 @@ struct WindowSummary: Codable, Sendable, Equatable {
     /// Whether advice based on `other` would be out of date for this weather: the window now
     /// crosses a sunrise or sunset it didn't (or the other way round), day turned to night (or
     /// night to day), the UV band changed, the chance of rain crossed about 30% or 60%, the high
-    /// or low moved by about 3°C, or the kind of weather changed.
+    /// or low moved by about 3°C, or the kind of weather changed. Advice for another Plan Window,
+    /// or written with (or without) an hourly forecast when this isn't, is out of date too.
     func differsMeaningfully(from other: WindowSummary) -> Bool {
         window != other.window
             || coversHours != other.coversHours
