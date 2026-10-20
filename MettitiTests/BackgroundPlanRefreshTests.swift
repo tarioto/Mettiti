@@ -323,6 +323,74 @@ struct BackgroundPlanRefreshTests {
         #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:00:00-07:00"))
     }
 
+    // MARK: - Meaningful Change
+
+    /// Today's stale plan for Seattle, made at 9 AM for the rest of the day from the weather the
+    /// fetcher returns, with its basis nudged by `adjustingHighBy`°F.
+    private func staleSeattlePlan(in harness: Harness, adjustingHighBy deltaF: Double?) {
+        let seattle = LocationSelection.custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
+        harness.selection = seattle
+        var snapshot = PlanSnapshot.generated(at: date("2026-10-08T09:00:00-07:00"), window: .restOfDay, location: seattle)
+        if let deltaF {
+            var basis = WindowSummary(weather: .placeholder, hourly: nil, span: snapshot.span!)
+            basis.highF += deltaF
+            snapshot.adviceBasis = basis
+        }
+        harness.snapshot = snapshot
+    }
+
+    @Test func staleTodaysPlanWithNoMeaningfulChangeKeepsItsOutfitAndBasis() async {
+        let now = date("2026-10-08T12:30:00-07:00")
+        let harness = Harness(now: now)
+        staleSeattlePlan(in: harness, adjustingHighBy: 1)
+
+        let outcome = await harness.refresher.refreshIfStale()
+
+        #expect(outcome == .refreshedKeepingOutfit)
+        #expect(await harness.fetcher.weatherRequests.count == 1)
+        #expect(await harness.fetcher.recommendationRequestCount == 0)
+        #expect(harness.published.map(\.generatedAt) == [now])
+        #expect(harness.published.first?.recommendation?.summary == OutfitRecommendation.placeholder.summary)
+        #expect(harness.published.first?.adviceBasis?.highF == DailyWeather.placeholder.highTemperatureF + 1)
+        #expect(harness.published.first?.span?.interval.start == now)
+    }
+
+    @Test func staleTodaysPlanWithAMeaningfulChangeIsRemade() async {
+        let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
+        staleSeattlePlan(in: harness, adjustingHighBy: 10)
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+        #expect(await harness.fetcher.recommendationRequestCount == 1)
+        #expect(harness.published.first?.adviceBasis?.highF == DailyWeather.placeholder.highTemperatureF)
+    }
+
+    @Test func staleTodaysPlanWithoutABasisIsAlwaysRemade() async {
+        let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
+        staleSeattlePlan(in: harness, adjustingHighBy: nil)
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+        #expect(await harness.fetcher.recommendationRequestCount == 1)
+        #expect(harness.published.first?.adviceBasis != nil)
+    }
+
+    @Test func planForAnotherLocationIsRemadeEvenWithoutAMeaningfulChange() async {
+        // The outfit was written for Seattle; Portland's weather may look the same but isn't.
+        let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
+        staleSeattlePlan(in: harness, adjustingHighBy: 0)
+        harness.selection = .custom(name: "Portland", latitude: 45.5, longitude: -122.7)
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+        #expect(await harness.fetcher.recommendationRequestCount == 1)
+    }
+
+    @Test func planFromAnEarlierDayIsRemadeEvenWithoutAMeaningfulChange() async {
+        let harness = Harness(now: date("2026-10-09T09:30:00-07:00"))
+        staleSeattlePlan(in: harness, adjustingHighBy: 0)
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+        #expect(await harness.fetcher.recommendationRequestCount == 1)
+    }
+
     // MARK: - Quiet hours
 
     @Test(arguments: [
