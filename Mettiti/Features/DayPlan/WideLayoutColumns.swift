@@ -19,14 +19,18 @@ struct WideLayoutColumns<Card: View>: View {
                 .readableColumn()
         case .columns(let left, let right):
             ColumnsLayout(fold: fold, spacing: spacing) {
-                card(left)
-                VStack(spacing: spacing) {
-                    ForEach(right) { type in
-                        card(type)
-                    }
-                }
+                column(left)
+                column(right)
             }
             .onGeometryChange(for: ClosedRange<CGFloat>?.self, of: Self.fold(in:)) { fold = $1 }
+        }
+    }
+
+    private func column(_ types: [CardType]) -> some View {
+        VStack(spacing: spacing) {
+            ForEach(types) { type in
+                card(type)
+            }
         }
     }
 

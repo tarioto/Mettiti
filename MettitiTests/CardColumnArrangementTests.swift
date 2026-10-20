@@ -11,15 +11,15 @@ struct CardColumnArrangementTests {
     }
 
     @Test func twoCardsTakeOneColumnEach() {
-        #expect(CardColumnArrangement(cards: [.plan, .weather]) == .columns(left: .plan, right: [.weather]))
+        #expect(CardColumnArrangement(cards: [.plan, .weather]) == .columns(left: [.plan], right: [.weather]))
     }
 
-    @Test func threeCardsPutTheFirstOnTheLeftAndStackTheRestOnTheRight() {
-        #expect(CardColumnArrangement(cards: [.plan, .weather, .wearAndBring]) == .columns(left: .plan, right: [.weather, .wearAndBring]))
+    @Test func threeCardsStackTheFirstTwoOnTheLeftAndPutTheLastOnTheRight() {
+        #expect(CardColumnArrangement(cards: [.plan, .weather, .wearAndBring]) == .columns(left: [.plan, .weather], right: [.wearAndBring]))
     }
 
     @Test func aCustomOrderIsRespected() {
-        #expect(CardColumnArrangement(cards: [.wearAndBring, .weather, .plan]) == .columns(left: .wearAndBring, right: [.weather, .plan]))
+        #expect(CardColumnArrangement(cards: [.wearAndBring, .weather, .plan]) == .columns(left: [.wearAndBring, .weather], right: [.plan]))
     }
 
     @MainActor
@@ -31,6 +31,6 @@ struct CardColumnArrangementTests {
             CardConfig(type: .wearAndBring, isVisible: true),
         ]
 
-        #expect(CardColumnArrangement(cards: store.visibleOrderedTypes) == .columns(left: .plan, right: [.wearAndBring]))
+        #expect(CardColumnArrangement(cards: store.visibleOrderedTypes) == .columns(left: [.plan], right: [.wearAndBring]))
     }
 }

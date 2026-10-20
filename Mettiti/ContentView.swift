@@ -10,6 +10,7 @@ struct ContentView: View {
     let planWindowPreference: PlanWindowPreferenceStore
     @State private var showingSettings = false
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         NavigationStack {
@@ -32,13 +33,17 @@ struct ContentView: View {
                 }
                 // Bare words like the Invites app's title menu, rather than a glass button.
                 .sharedBackgroundVisibility(.hidden)
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingSettings = true
-                    } label: {
-                        Label("Settings", systemImage: "gearshape.fill")
+                // In the Wide layout, Settings moves to the bottom-right corner, away from the
+                // header's Plan Window control.
+                if horizontalSizeClass == .regular {
+                    ToolbarSpacer(.flexible, placement: .bottomBar)
+                    ToolbarItem(placement: .bottomBar) {
+                        settingsButton
                     }
-                    .tint(.primary)
+                } else {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        settingsButton
+                    }
                 }
             }
         }
@@ -71,6 +76,15 @@ struct ContentView: View {
                 planWindowPreference: planWindowPreference
             )
         }
+    }
+
+    private var settingsButton: some View {
+        Button {
+            showingSettings = true
+        } label: {
+            Label("Settings", systemImage: "gearshape.fill")
+        }
+        .tint(.primary)
     }
 
     private var themeBackground: some View {

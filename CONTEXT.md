@@ -33,7 +33,7 @@ _Avoid_: Icon theme, icon setting
 ### Main screen
 
 **Wide layout**:
-The arrangement of the main screen when it's wide enough to show the cards side by side instead of in one column, such as on the iPhone Duo's open display, a large iPhone turned sideways, or an iPad. Only the width of the app's window decides, never the device: an iPad window made narrow by multitasking gets one column. The first card in the user's order takes the left column and the rest stack in order on the right; with only one card shown it sits alone in a centred column. Anywhere narrower, the cards stay in one column.
+The arrangement of the main screen when it's wide enough to show the cards side by side instead of in one column, such as on the iPhone Duo's open display, a large iPhone turned sideways, or an iPad. Only the width of the app's window decides, never the device: an iPad window made narrow by multitasking gets one column. The last card in the user's order takes the right column and the ones before it stack in order on the left; with only one card shown it sits alone in a centred column. Settings sits in the bottom-right corner instead of the header. Anywhere narrower, the cards stay in one column.
 _Avoid_: Duo layout, tablet layout, landscape layout
 
 ### Day plan
