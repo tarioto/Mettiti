@@ -43,6 +43,44 @@ struct PlanWindowTests {
         #expect(span.end == date("2026-10-10T00:20:00Z")) // 3 hours on, at 2:20 AM CEST
     }
 
+    // MARK: Staleness (#98)
+
+    @Test(arguments: [
+        (PlanWindow.oneHour, 30),
+        (PlanWindow.threeHours, 60),
+        (PlanWindow.sixHours, 120),
+        (PlanWindow.twelveHours, 180),
+        (PlanWindow.restOfDay, 180),
+    ])
+    func aPlanGoesStaleItsWindowsThresholdAfterItsLastLoad(window: PlanWindow, minutes: Int) {
+        let loadedAt = date("2026-10-19T15:00:00Z") // 8 AM PDT
+        let calendar = gregorianCalendar(in: pacific)
+
+        let justBefore = loadedAt.addingTimeInterval(TimeInterval(minutes * 60 - 1))
+        let atThreshold = loadedAt.addingTimeInterval(TimeInterval(minutes * 60))
+
+        #expect(!window.isPlanStale(lastLoadedAt: loadedAt, now: justBefore, calendar: calendar))
+        #expect(window.isPlanStale(lastLoadedAt: loadedAt, now: atThreshold, calendar: calendar))
+    }
+
+    @Test func noWindowRefreshesMoreOftenThanEveryThirtyMinutes() {
+        let loadedAt = date("2026-10-19T15:00:00Z")
+        let calendar = gregorianCalendar(in: pacific)
+
+        for window in PlanWindow.allCases {
+            #expect(!window.isPlanStale(lastLoadedAt: loadedAt, now: loadedAt.addingTimeInterval(29 * 60 + 59), calendar: calendar))
+        }
+    }
+
+    @Test func aPlanFromAnEarlierDayIsStaleEvenMinutesLater() {
+        let loadedAt = date("2026-10-20T06:55:00Z") // 11:55 PM PDT
+        let afterMidnight = date("2026-10-20T07:05:00Z") // 12:05 AM PDT
+
+        for window in PlanWindow.allCases {
+            #expect(window.isPlanStale(lastLoadedAt: loadedAt, now: afterMidnight, calendar: gregorianCalendar(in: pacific)))
+        }
+    }
+
     @Test func settingsListTheStopsInOrder() {
         #expect(PlanWindow.allCases == [.oneHour, .threeHours, .sixHours, .twelveHours, .restOfDay])
     }

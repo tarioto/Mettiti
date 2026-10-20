@@ -53,4 +53,27 @@ enum PlanWindow: String, Codable, CaseIterable, Identifiable, Sendable {
         }
         return DateInterval(start: now, duration: hours * 60 * 60)
     }
+
+    /// Automatic refreshes never come closer together than this, whatever the window. Each one
+    /// reruns the on-device model.
+    static let minimumRefreshInterval: TimeInterval = 30 * 60
+
+    /// How long after its last load a plan for this window goes stale. Short windows run out
+    /// quickly and their weather is the next hour or two, so they keep up with the time.
+    var staleAfter: TimeInterval {
+        let minutes: Double
+        switch self {
+        case .oneHour: minutes = 30
+        case .threeHours: minutes = 60
+        case .sixHours: minutes = 120
+        case .twelveHours, .restOfDay: minutes = 180
+        }
+        return max(minutes * 60, Self.minimumRefreshInterval)
+    }
+
+    /// Whether a plan last loaded at `lastLoadedAt` should be refreshed at `now`: once it's from
+    /// an earlier day in `calendar`, or `staleAfter` has passed.
+    func isPlanStale(lastLoadedAt: Date, now: Date, calendar: Calendar) -> Bool {
+        !calendar.isDate(lastLoadedAt, inSameDayAs: now) || now.timeIntervalSince(lastLoadedAt) >= staleAfter
+    }
 }

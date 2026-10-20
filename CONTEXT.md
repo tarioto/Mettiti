@@ -37,7 +37,7 @@ How far ahead from now the outfit advice covers: 1h, 3h, 6h, 12h or Rest of day,
 _Avoid_: Time range, horizon, span (outside code)
 
 **Saved Plan**:
-The last day plan the app or the background refresh produced, shared with the widgets (`PlanSnapshot` in code). On launch, a Saved Plan from today for the same location and weather source is shown right away while a fresh one loads. Returning to the app on a later day, or 3 hours after the last load, follows the same rule.
+The last day plan the app or the background refresh produced, shared with the widgets (`PlanSnapshot` in code). On launch, a Saved Plan from today for the same location and weather source is shown right away while a fresh one loads. Returning to the app on a later day, or once the plan is stale for the **Plan Window** (30 minutes after the last load for 1h, 1 hour for 3h, 2 hours for 6h, 3 hours for 12h and Rest of day), refetches the weather and remakes the outfit by the same rule. Apart from a new day, automatic refreshes never come closer together than 30 minutes; pull-to-refresh and the Refresh button always refetch.
 _Avoid_: Cached plan, snapshot (outside code)
 
 ## Relationships
