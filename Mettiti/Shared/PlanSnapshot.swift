@@ -27,7 +27,8 @@ extension PlanSnapshot {
         weather: .placeholder,
         recommendation: .placeholder,
         generatedAt: .now,
-        provider: .apple
+        provider: .apple,
+        span: PlanSpan(window: .threeHours, startingAt: .now, timeZone: .current)
     )
 
     /// The plan's Plan Window; plans saved before there was a choice covered the rest of the day.
@@ -35,8 +36,18 @@ extension PlanSnapshot {
         span?.window ?? .restOfDay
     }
 
+    /// `calendar` in the forecast location's time zone, so "today", midnight and the hour read as
+    /// they do there. Plans that didn't record the time zone keep `calendar`'s.
+    func locationCalendar(fallback calendar: Calendar) -> Calendar {
+        guard let timeZone = span?.timeZone ?? hourly?.timeZone else { return calendar }
+        var locationCalendar = calendar
+        locationCalendar.timeZone = timeZone
+        return locationCalendar
+    }
+
     /// Whether this plan was generated on the same day as `now` in `calendar`'s time zone.
-    /// Production passes the device's current calendar, so "today" is the device's local day.
+    /// The app passes the device's current calendar, so "today" is the device's local day; the
+    /// background refresh passes `locationCalendar(fallback:)`, so it's the location's.
     func isFromToday(now: Date, calendar: Calendar) -> Bool {
         calendar.isDate(generatedAt, inSameDayAs: now)
     }
@@ -76,5 +87,15 @@ enum SharedStore {
 
     private static var storedTemperatureUnit: StoredPreference<TemperatureUnit>? {
         UserDefaults(suiteName: appGroupID).map { .rawValue("temperatureUnit", in: $0) }
+    }
+
+    /// The Plan Window chosen in Settings, stored in `defaults` (the App Group's in production).
+    static func storedPlanWindow(in defaults: UserDefaults) -> StoredPreference<PlanWindow> {
+        .rawValue("planWindow", in: defaults)
+    }
+
+    /// The Settings default Plan Window, which the widgets and background refresh follow.
+    static func loadPlanWindow(from defaults: UserDefaults = appGroupDefaults) -> PlanWindow {
+        storedPlanWindow(in: defaults).load() ?? .settingsDefault
     }
 }

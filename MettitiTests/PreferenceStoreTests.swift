@@ -36,6 +36,25 @@ struct PreferenceStoreTests {
         #expect(PlanWindowPreferenceStore(defaults: defaults).window == .threeHours)
     }
 
+    @Test func widgetsReadThePlanWindowChosenInSettings() {
+        let defaults = isolatedDefaults()
+        #expect(SharedStore.loadPlanWindow(from: defaults) == .restOfDay)
+
+        PlanWindowPreferenceStore(defaults: defaults, reloadWidgets: {}).window = .sixHours
+
+        #expect(SharedStore.loadPlanWindow(from: defaults) == .sixHours)
+    }
+
+    @Test func changingThePlanWindowReloadsTheWidgets() {
+        var reloads = 0
+        let store = PlanWindowPreferenceStore(defaults: isolatedDefaults(), reloadWidgets: { reloads += 1 })
+
+        store.window = .oneHour
+        store.window = .oneHour
+
+        #expect(reloads == 1)
+    }
+
     @Test func customLocationIsRememberedAcrossLaunches() {
         let defaults = isolatedDefaults()
         let store = LocationPreferenceStore(defaults: defaults)

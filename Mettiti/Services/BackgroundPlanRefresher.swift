@@ -6,17 +6,22 @@ import Foundation
 @MainActor
 struct BackgroundPlanRefresher {
     enum Outcome: Equatable {
-        /// The saved plan is final for today (see `hasCurrentSnapshot`); nothing fetched.
+        /// The saved plan doesn't need refreshing yet (see `hasCurrentSnapshot`); nothing fetched.
         case alreadyCurrent
         /// A new plan was fetched and published.
         case refreshed
+        /// Fresh weather was published with today's outfit, since there was no Meaningful Change
+        /// from the weather it was made for; the model wasn't asked.
+        case refreshedKeepingOutfit
         /// Today's weather was published without outfit suggestions (model unavailable or failed).
         case refreshedWeatherOnly
+        /// It's quiet hours where the plan is for (see `quietHoursStart`); nothing fetched.
+        case skippedQuietHours
         /// Current Location is selected but there's no known fix; nothing fetched.
         case skippedNoCoordinate
         /// The weather fetch failed; the saved plan was left as is.
         case failed
-        /// While this run was fetching, the app changed the city or provider, or saved a plan
+        /// While this run was fetching, the app changed the city, provider or Settings window, or saved a plan
         /// for today that is at least as complete; nothing published so the app's plan stays.
         case supersededByApp
         /// The task was cancelled (e.g. the system's background time expired); nothing published.
@@ -24,7 +29,8 @@ struct BackgroundPlanRefresher {
     }
 
     let fetcher: DayPlanFetching
-    /// Defines "today"; production passes the device's current calendar and time zone.
+    /// Defines "today" and the hour where the saved plan doesn't say (see `locationCalendar(for:)`);
+    /// production passes the device's current calendar and time zone.
     let calendar: Calendar
     let now: () -> Date
     let loadSnapshot: () -> PlanSnapshot?
@@ -32,16 +38,25 @@ struct BackgroundPlanRefresher {
     let selection: () -> LocationSelection
     let lastKnownGPSCoordinate: () -> CLLocationCoordinate2D?
     let provider: () -> WeatherProvider
+    /// The Settings default Plan Window; background refresh never follows the main screen's override.
+    let planWindow: () -> PlanWindow
 
-    /// How long to wait before trying again while the saved plan is still from an earlier day.
+    /// How long to wait before trying again while the saved plan still needs a refresh, e.g.
+    /// because this run failed. Shorter windows' own staleness comes first.
     static let staleRetryInterval: TimeInterval = 60 * 60
-    /// Run a little after midnight so "today" has clearly rolled over.
-    static let minutesAfterMidnight = 5
+    /// Quiet hours run from this hour to `morningHour`, in the location's time zone. A plan made
+    /// then would be about the night, so no background refresh makes one; they wait until morning.
+    static let quietHoursStart = 23
+    static let morningHour = 6
 
     func refreshIfStale() async -> Outcome {
         let availability = await fetcher.recommendationAvailability()
         let savedSnapshot = loadSnapshot()
-        guard !hasCurrentSnapshot(savedSnapshot, availability: availability) else { return .alreadyCurrent }
+        let window = planWindow()
+        let locationCalendar = self.locationCalendar(for: savedSnapshot)
+        guard !hasCurrentSnapshot(savedSnapshot, window: window, now: now(), calendar: locationCalendar, availability: availability) else { return .alreadyCurrent }
+        // iOS can run a request late; `nextRequestDate` then asks for the morning.
+        guard !Self.isQuietHour(now(), in: locationCalendar) else { return .skippedQuietHours }
 
         let selection = selection()
         let coordinate: CLLocationCoordinate2D
@@ -55,57 +70,122 @@ struct BackgroundPlanRefresher {
 
         let provider = provider()
         guard let (weather, hourly) = try? await fetcher.fetchWeather(for: coordinate, from: provider) else { return .failed }
-        // Always the rest of the day for now; the widgets follow the Plan Window in #101.
-        let span = PlanSpan(window: .restOfDay, startingAt: now(), timeZone: hourly?.timeZone ?? calendar.timeZone)
-        let recommendation: OutfitRecommendation? = if availability == .available {
-            try? await fetcher.recommendation(for: weather, hourly: hourly, span: span)
+        let span = PlanSpan(window: window, startingAt: now(), timeZone: hourly?.timeZone ?? locationCalendar.timeZone)
+        let freshSummary = WindowSummary(weather: weather, hourly: hourly, span: span)
+        let recommendation: OutfitRecommendation?
+        let adviceBasis: WindowSummary?
+        let outcome: Outcome
+        // Today's outfit for this place, source and Settings window still fits unless the weather
+        // it was made for has had a Meaningful Change (#99); then only the weather is updated,
+        // and the basis stays so small changes still add up.
+        if let saved = savedSnapshot,
+           let outfit = saved.recommendation,
+           let basis = saved.adviceBasis,
+           saved.location == selection,
+           saved.provider == provider,
+           saved.planWindow == window,
+           saved.isFromToday(now: now(), calendar: locationCalendar),
+           !freshSummary.differsMeaningfully(from: basis) {
+            recommendation = outfit
+            adviceBasis = basis
+            outcome = .refreshedKeepingOutfit
         } else {
-            nil
+            recommendation = if availability == .available {
+                try? await fetcher.recommendation(for: weather, hourly: hourly, span: span)
+            } else {
+                nil
+            }
+            adviceBasis = recommendation.map { _ in freshSummary }
+            outcome = recommendation == nil ? .refreshedWeatherOnly : .refreshed
         }
         // `try?` above also swallows `CancellationError`: if the system expired the task mid-generation,
         // don't replace the saved plan (maybe yesterday's full plan) with a weather-only one.
         guard !Task.isCancelled else { return .cancelled }
-        // The user may have opened the app and loaded a plan for another city or provider while
-        // we were fetching; publishing now would overwrite it with this older request's plan.
-        guard self.selection() == selection, self.provider() == provider else { return .supersededByApp }
+        // The user may have opened the app and loaded a plan for another city or provider, or
+        // changed the Settings window, while we were fetching; publishing now would overwrite
+        // the app's plan with this older request's.
+        guard self.selection() == selection, self.provider() == provider, planWindow() == window else { return .supersededByApp }
         // Likewise, don't replace a plan the app saved for today meanwhile with a less complete one.
         if let latest = loadSnapshot(),
            latest.generatedAt != savedSnapshot?.generatedAt,
-           latest.isFromToday(now: now(), calendar: calendar),
+           latest.isFromToday(now: now(), calendar: latest.locationCalendar(fallback: calendar)),
            latest.recommendation != nil || recommendation == nil {
             return .supersededByApp
         }
-        let adviceBasis = recommendation.map { _ in WindowSummary(weather: weather, hourly: hourly, span: span) }
         publish(PlanSnapshot(weather: weather, recommendation: recommendation, generatedAt: now(), provider: provider, location: selection, hourly: hourly, span: span, adviceBasis: adviceBasis))
-        return recommendation == nil ? .refreshedWeatherOnly : .refreshed
+        return outcome
     }
 
-    /// When the next background refresh should run: just after the next local midnight, or
-    /// within the hour while the saved plan still needs a refresh (see `hasCurrentSnapshot`),
-    /// e.g. because this run failed or today's suggestions are still missing.
+    /// When the next background refresh should run, by the same staleness rule as the app:
+    /// - a current plan (see `hasCurrentSnapshot`): once it goes stale for its Plan Window;
+    /// - otherwise (none, from an earlier day, for another window, stale, or still missing its
+    ///   suggestions): retry within the hour, or sooner for a short window; during quiet hours,
+    ///   at the coming `morningHour`.
+    /// Never sooner than `PlanWindow.minimumRefreshInterval` after the last plan was made (or,
+    /// outside quiet hours, from now), and a time in quiet hours moves to the next `morningHour`.
+    /// Hours are the location's (see `locationCalendar(for:)`).
     ///
     /// Synchronous so the app can submit the request before it's suspended on `.background`;
     /// the caller passes the model's current availability.
     ///
     /// Policy: a weather-only plan from today with the model `.available` (generation keeps
-    /// failing, e.g. rate limited) retries hourly until midnight. That's bounded to one day and
-    /// iOS throttles background refresh anyway; at midnight the plan goes stale and the cycle restarts.
+    /// failing, e.g. rate limited) keeps retrying through the day. iOS throttles background
+    /// refresh anyway, and quiet hours bound it.
     func nextRequestDate(availability: RecommendationAvailability) -> Date {
         let now = now()
-        guard hasCurrentSnapshot(loadSnapshot(), availability: availability) else { return now.addingTimeInterval(Self.staleRetryInterval) }
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: now)!
-        return calendar.date(byAdding: .minute, value: Self.minutesAfterMidnight, to: calendar.startOfDay(for: tomorrow))!
+        let window = planWindow()
+        let snapshot = loadSnapshot()
+        let locationCalendar = self.locationCalendar(for: snapshot)
+        let floor = now.addingTimeInterval(PlanWindow.minimumRefreshInterval)
+        guard let snapshot, hasCurrentSnapshot(snapshot, window: window, now: now, calendar: locationCalendar, availability: availability) else {
+            if Self.isQuietHour(now, in: locationCalendar) {
+                // E.g. a run skipped for quiet hours: try again first thing, spaced only from the
+                // last plan made, since nothing has been refreshed since.
+                let lastPlanFloor = snapshot.map { $0.generatedAt.addingTimeInterval(PlanWindow.minimumRefreshInterval) } ?? .distantPast
+                return max(Self.morning(after: now, in: locationCalendar), lastPlanFloor)
+            }
+            let retry = now.addingTimeInterval(min(Self.staleRetryInterval, window.staleAfter))
+            return Self.outsideQuietHours(max(retry, floor), in: locationCalendar)
+        }
+        let due = snapshot.generatedAt.addingTimeInterval(window.staleAfter)
+        return Self.outsideQuietHours(max(due, floor), in: locationCalendar)
     }
 
-    /// Whether the saved plan is final for today, so no refresh is needed before midnight:
-    /// - none saved, or generated on an earlier day (device time zone): not current;
-    /// - from today with outfit suggestions: current;
-    /// - from today, weather only: current only when the model can't make suggestions on this
+    /// The calendar for the selected location: the saved plan's location's time zone when the
+    /// plan is for that location, otherwise (or for a plan that didn't record it) the device's.
+    /// Unlike the widgets, which judge the plan they show, this is about the next plan to make,
+    /// so another location's zone would be wrong.
+    private func locationCalendar(for snapshot: PlanSnapshot?) -> Calendar {
+        guard let snapshot, snapshot.location == selection() else { return calendar }
+        return snapshot.locationCalendar(fallback: calendar)
+    }
+
+    private static func isQuietHour(_ date: Date, in calendar: Calendar) -> Bool {
+        let hour = calendar.component(.hour, from: date)
+        return hour >= quietHoursStart || hour < morningHour
+    }
+
+    /// `date`, or the next `morningHour` when `date` is in quiet hours.
+    private static func outsideQuietHours(_ date: Date, in calendar: Calendar) -> Date {
+        isQuietHour(date, in: calendar) ? morning(after: date, in: calendar) : date
+    }
+
+    /// The first `morningHour` after `date`.
+    private static func morning(after date: Date, in calendar: Calendar) -> Date {
+        calendar.nextDate(after: date, matching: DateComponents(hour: morningHour, minute: 0, second: 0), matchingPolicy: .nextTime)!
+    }
+
+    /// Whether the saved plan needs no refresh yet:
+    /// - none saved, from an earlier day (the location's), for another Plan Window than the
+    ///   Settings default, or stale for that window: not current;
+    /// - otherwise with outfit suggestions: current;
+    /// - otherwise weather only: current only when the model can't make suggestions on this
     ///   device today (not eligible, Apple Intelligence off). If it's available again (an earlier
     ///   generation failed) or still getting ready, refresh so the suggestions can be retried.
-    private func hasCurrentSnapshot(_ snapshot: PlanSnapshot?, availability: RecommendationAvailability) -> Bool {
+    private func hasCurrentSnapshot(_ snapshot: PlanSnapshot?, window: PlanWindow, now: Date, calendar: Calendar, availability: RecommendationAvailability) -> Bool {
         guard let snapshot,
-              snapshot.isFromToday(now: now(), calendar: calendar) else { return false }
+              snapshot.planWindow == window,
+              !window.isPlanStale(lastLoadedAt: snapshot.generatedAt, now: now, calendar: calendar) else { return false }
         if snapshot.recommendation != nil { return true }
         switch availability {
         case .unavailable(.deviceNotEligible), .unavailable(.appleIntelligenceNotEnabled):

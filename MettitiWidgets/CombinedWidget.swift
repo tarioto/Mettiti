@@ -14,7 +14,7 @@ struct CombinedWidgetEntryView: View {
     }
 
     var body: some View {
-        if let snapshot = entry.snapshot {
+        PlanStateView(state: entry.state) { snapshot in
             VStack(alignment: .leading, spacing: 10) {
                 header(for: snapshot)
 
@@ -49,8 +49,6 @@ struct CombinedWidgetEntryView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .containerBackground(.fill.tertiary, for: .widget)
-        } else {
-            EmptyPlanView()
         }
     }
 
@@ -63,6 +61,7 @@ struct CombinedWidgetEntryView: View {
                 Text(unit.formattedHighLow(highFahrenheit: snapshot.weather.highTemperatureF, lowFahrenheit: snapshot.weather.lowTemperatureF))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                PlanWindowTimesLabel(span: snapshot.span)
             }
             Spacer()
             Image(systemName: WMOWeatherCode.symbolName(for: snapshot.weather.conditionCode))
@@ -91,4 +90,5 @@ struct CombinedWidget: Widget {
 } timeline: {
     PlanEntry(date: .now, snapshot: .placeholder)
     PlanEntry(date: .now, snapshot: .weatherOnlyPlaceholder)
+    PlanEntry(date: .now, state: .needsUpdate)
 }

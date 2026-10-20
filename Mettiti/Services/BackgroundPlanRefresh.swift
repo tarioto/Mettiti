@@ -47,7 +47,8 @@ enum BackgroundPlanRefresh {
             publish: { DayPlanViewModel.saveAndReloadWidgets($0) },
             selection: { LocationPreferenceStore().selection },
             lastKnownGPSCoordinate: { lastKnownGPSCoordinate() },
-            provider: { WeatherProviderPreferenceStore().provider }
+            provider: { WeatherProviderPreferenceStore().provider },
+            planWindow: { SharedStore.loadPlanWindow() }
         )
     }
 

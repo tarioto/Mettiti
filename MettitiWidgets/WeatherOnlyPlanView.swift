@@ -4,6 +4,7 @@ import WidgetKit
 /// Shown when the app saved today's weather but Apple Intelligence couldn't suggest an outfit.
 struct WeatherOnlyPlanView: View {
     let weather: DailyWeather
+    let span: PlanSpan?
     let provider: WeatherProvider?
 
     var body: some View {
@@ -20,6 +21,7 @@ struct WeatherOnlyPlanView: View {
             Text(unit.formattedHighLow(highFahrenheit: weather.highTemperatureF, lowFahrenheit: weather.lowTemperatureF))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            PlanWindowTimesLabel(span: span)
             Spacer(minLength: 0)
             NoSuggestionsNote()
             if let provider {
@@ -43,9 +45,10 @@ struct NoSuggestionsNote: View {
 
 extension PlanSnapshot {
     static let weatherOnlyPlaceholder = PlanSnapshot(
-        weather: .placeholder,
+        weather: placeholder.weather,
         recommendation: nil,
-        generatedAt: .now,
-        provider: .apple
+        generatedAt: placeholder.generatedAt,
+        provider: placeholder.provider,
+        span: placeholder.span
     )
 }
