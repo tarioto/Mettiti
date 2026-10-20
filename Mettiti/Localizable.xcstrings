@@ -56,6 +56,9 @@
     "Chance of rain at %@" : {
       "comment" : "VoiceOver label for an hour's rain bar in the hourly chart; the argument is the hour, e.g. 3 PM"
     },
+    "Changes how far ahead the outfit covers for now. Settings keeps the default." : {
+      "comment" : "VoiceOver hint for the main screen's Plan Window menu, which lasts until the next launch or the next day"
+    },
     "Checking today's weather…" : {
 
     },

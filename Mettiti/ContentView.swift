@@ -131,6 +131,10 @@ struct ContentView: View {
             }
         case .loaded(let weather, let hourly, let span, let provider, let recommendation):
             VStack(spacing: 12) {
+                PlanWindowControl(window: viewModel.activePlanWindow) { window in
+                    viewModel.selectPlanWindow(window)
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
                 if let message = viewModel.refreshFailureMessage {
                     RefreshFailureNotice(message: message)
                 } else if viewModel.isUpdatingSavedPlan {
