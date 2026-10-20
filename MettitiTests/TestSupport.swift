@@ -3,6 +3,7 @@ import Testing
 @testable import Mettiti
 
 let pacific = TimeZone(identifier: "America/Los_Angeles")!
+let tokyo = TimeZone(identifier: "Asia/Tokyo")!
 
 func date(_ iso: String) -> Date {
     try! Date(iso, strategy: .iso8601)
@@ -23,18 +24,18 @@ extension PlanSnapshot {
         PlanSnapshot(weather: .placeholder, recommendation: nil, generatedAt: date, provider: .apple)
     }
 
-    /// A full plan covering `window` from `date`, in Pacific time.
-    static func generated(at date: Date, window: PlanWindow) -> PlanSnapshot {
-        covering(window, from: date, recommendation: .placeholder)
+    /// A full plan covering `window` from `date`, for a location in `timeZone`.
+    static func generated(at date: Date, window: PlanWindow, in timeZone: TimeZone = pacific, location: LocationSelection? = nil) -> PlanSnapshot {
+        covering(window, from: date, in: timeZone, location: location, recommendation: .placeholder)
     }
 
-    /// A weather-only plan covering `window` from `date`, in Pacific time.
-    static func weatherOnly(at date: Date, window: PlanWindow) -> PlanSnapshot {
-        covering(window, from: date, recommendation: nil)
+    /// A weather-only plan covering `window` from `date`, for a location in `timeZone`.
+    static func weatherOnly(at date: Date, window: PlanWindow, in timeZone: TimeZone = pacific, location: LocationSelection? = nil) -> PlanSnapshot {
+        covering(window, from: date, in: timeZone, location: location, recommendation: nil)
     }
 
-    private static func covering(_ window: PlanWindow, from date: Date, recommendation: OutfitRecommendation?) -> PlanSnapshot {
-        PlanSnapshot(weather: .placeholder, recommendation: recommendation, generatedAt: date, provider: .apple, span: PlanSpan(window: window, startingAt: date, timeZone: pacific))
+    private static func covering(_ window: PlanWindow, from date: Date, in timeZone: TimeZone, location: LocationSelection?, recommendation: OutfitRecommendation?) -> PlanSnapshot {
+        PlanSnapshot(weather: .placeholder, recommendation: recommendation, generatedAt: date, provider: .apple, location: location, span: PlanSpan(window: window, startingAt: date, timeZone: timeZone))
     }
 }
 

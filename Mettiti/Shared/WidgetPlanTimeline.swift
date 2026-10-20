@@ -34,13 +34,17 @@ struct WidgetPlanTimeline {
 
     /// In date order; the first is for `now`.
     let entries: [Entry]
-    /// An hour from now, or the next local midnight if sooner, so today's plan flips to the empty state on time.
+    /// An hour from now, or the next midnight (the plan's location's, else the device's) if sooner,
+    /// so a new day is picked up on time.
     let reloadDate: Date
 
     /// What to show now.
     var current: Entry { entries[0] }
 
-    init(saved: PlanSnapshot?, window: PlanWindow, now: Date, calendar: Calendar) {
+    /// `calendar` is the device's; a plan that recorded its location's time zone is judged in
+    /// that instead, so a city's day, midnight and window end match each other.
+    init(saved: PlanSnapshot?, window: PlanWindow, now: Date, calendar deviceCalendar: Calendar) {
+        let calendar = saved?.locationCalendar(fallback: deviceCalendar) ?? deviceCalendar
         let nextMidnight = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: now)!)
         reloadDate = min(now.addingTimeInterval(Self.reloadInterval), nextMidnight)
 

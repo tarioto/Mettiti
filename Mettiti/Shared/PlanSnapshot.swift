@@ -36,6 +36,15 @@ extension PlanSnapshot {
         span?.window ?? .restOfDay
     }
 
+    /// `calendar` in the forecast location's time zone, so "today", midnight and the hour read as
+    /// they do there. Plans that didn't record the time zone keep `calendar`'s.
+    func locationCalendar(fallback calendar: Calendar) -> Calendar {
+        guard let timeZone = span?.timeZone ?? hourly?.timeZone else { return calendar }
+        var locationCalendar = calendar
+        locationCalendar.timeZone = timeZone
+        return locationCalendar
+    }
+
     /// Whether this plan was generated on the same day as `now` in `calendar`'s time zone.
     /// Production passes the device's current calendar, so "today" is the device's local day.
     func isFromToday(now: Date, calendar: Calendar) -> Bool {

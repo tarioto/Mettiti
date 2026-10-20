@@ -185,6 +185,60 @@ struct WidgetPlanTimelineTests {
         #expect(timeline.entries.map(\.content) == [.empty])
     }
 
+    // MARK: - A city in another time zone than the device's
+
+    @Test func cityPlanAsksToUpdateAtItsWindowsEndEvenAfterTheDevicesMidnight() {
+        // 2–5 PM in Tokyo is 10 PM – 1 AM on a Pacific device.
+        let generatedAt = date("2026-10-08T14:00:00+09:00")
+        let now = date("2026-10-08T16:30:00+09:00")
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: generatedAt, window: .threeHours, in: tokyo),
+            window: .threeHours,
+            now: now,
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.entries.map(\.date) == [now, date("2026-10-08T17:00:00+09:00")])
+        #expect(timeline.entries.map(\.content) == [.plan(generatedAt), .needsUpdate])
+    }
+
+    @Test func cityRestOfDayPlanEndsAtTheCitysMidnightWithTheEmptyState() {
+        // Tokyo's midnight is 8 AM on a Pacific device, the same day there as the plan.
+        let generatedAt = date("2026-10-08T18:00:00+09:00")
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: generatedAt, window: .restOfDay, in: tokyo),
+            window: .restOfDay,
+            now: date("2026-10-08T19:00:00+09:00"),
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.entries.map(\.date).last == date("2026-10-09T00:00:00+09:00"))
+        #expect(timeline.entries.map(\.content) == [.plan(generatedAt), .empty])
+    }
+
+    @Test func cityPlanFromAnEarlierDayThereShowsTheEmptyState() {
+        // Oct 7, 8 PM and Oct 8, 9 AM in Tokyo are both Oct 7 on a Pacific device.
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: date("2026-10-07T20:00:00+09:00"), window: .threeHours, in: tokyo),
+            window: .threeHours,
+            now: date("2026-10-08T09:00:00+09:00"),
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.entries.map(\.content) == [.empty])
+    }
+
+    @Test func cityPlanReloadsAtTheCitysMidnight() {
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: date("2026-10-08T22:00:00+09:00"), window: .restOfDay, in: tokyo),
+            window: .restOfDay,
+            now: date("2026-10-08T23:30:00+09:00"),
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.reloadDate == date("2026-10-09T00:00:00+09:00"))
+    }
+
     @Test func planSavedBeforePlanWindowsCountsAsRestOfDay() {
         let generatedAt = date("2026-10-08T09:00:00-07:00")
         let timeline = WidgetPlanTimeline(saved: .generated(at: generatedAt), window: .restOfDay, now: date("2026-10-08T15:00:00-07:00"), calendar: gregorianCalendar(in: pacific))
