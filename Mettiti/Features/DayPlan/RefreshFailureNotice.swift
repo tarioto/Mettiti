@@ -18,7 +18,7 @@ struct RefreshFailureNotice: View {
             Spacer(minLength: 0)
         }
         .padding(12)
-        .background(.regularMaterial, in: .rect(cornerRadius: 16))
+        .cardBackground()
         .accessibilityElement(children: .combine)
     }
 }

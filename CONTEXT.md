@@ -12,7 +12,7 @@ _Avoid_: Skin, colour scheme
 
 **Light/Dark**:
 Whether the app runs in Light mode, Dark mode or follows the System setting. Separate from the **Theme**. Settings shows it in its Appearance group, alongside the Theme, the App Icon and the cards.
-_Avoid_: Appearance (the Settings group, not this choice), Mode, Automatic
+_Avoid_: Appearance (outside code; in Settings it names the group), Mode, Automatic
 
 ### App icons
 

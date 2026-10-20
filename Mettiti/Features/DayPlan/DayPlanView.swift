@@ -303,7 +303,7 @@ private struct ItemRow: View {
     }
 }
 
-private extension View {
+extension View {
     /// Cards are content, so they sit on a material rather than Liquid Glass, which the HIG keeps
     /// for the controls floating above content.
     func cardBackground() -> some View {

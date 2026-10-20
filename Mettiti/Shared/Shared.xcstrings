@@ -23,18 +23,6 @@
         }
       }
     },
-    "1h" : {
-      "comment" : "Plan Window stop in Settings: one hour"
-    },
-    "3h" : {
-      "comment" : "Plan Window stop in Settings: three hours"
-    },
-    "6h" : {
-      "comment" : "Plan Window stop in Settings: six hours"
-    },
-    "12h" : {
-      "comment" : "Plan Window stop in Settings: twelve hours"
-    },
     "Apple Weather" : {
 
     },

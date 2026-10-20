@@ -51,44 +51,38 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Theme")
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 18) {
-                                ForEach(AppTheme.allCases) { theme in
-                                    let isSelected = themePreference.theme == theme
-                                    Button {
-                                        themePreference.theme = theme
-                                    } label: {
-                                        VStack(spacing: 6) {
+                    ChoiceRow("Theme") {
+                        ForEach(AppTheme.allCases) { theme in
+                            let isSelected = themePreference.theme == theme
+                            Button {
+                                themePreference.theme = theme
+                            } label: {
+                                VStack(spacing: 6) {
+                                    Circle()
+                                        .fill(theme.swatchGradient)
+                                        .frame(width: 46, height: 46)
+                                        .overlay(
                                             Circle()
-                                                .fill(theme.swatchGradient)
-                                                .frame(width: 46, height: 46)
-                                                .overlay(
-                                                    Circle()
-                                                        .strokeBorder(
-                                                            Color.primary,
-                                                            lineWidth: isSelected ? 3 : 0
-                                                        )
+                                                .strokeBorder(
+                                                    Color.primary,
+                                                    lineWidth: isSelected ? 3 : 0
                                                 )
-                                                .overlay {
-                                                    if isSelected {
-                                                        Image(systemName: "checkmark")
-                                                            .font(.caption.bold())
-                                                            .foregroundStyle(.white)
-                                                    }
-                                                }
-                                            Text(theme.label)
-                                                .font(.caption2)
-                                                .foregroundStyle(.secondary)
+                                        )
+                                        .overlay {
+                                            if isSelected {
+                                                Image(systemName: "checkmark")
+                                                    .font(.caption.bold())
+                                                    .foregroundStyle(.white)
+                                            }
                                         }
-                                    }
-                                    .buttonStyle(.plain)
-                                    .accessibilityLabel(theme.label)
-                                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                                    Text(theme.label)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
-                            .padding(.vertical, 6)
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(theme.label)
+                            .accessibilityAddTraits(isSelected ? .isSelected : [])
                         }
                     }
 
@@ -99,16 +93,10 @@ struct SettingsView: View {
                     }
 
                     if appIconPreference.supportsAlternateIcons {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("App Icon")
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 18) {
-                                    appIconOption(.default, label: String(localized: "Default"), thumbnailName: appIconPreference.buildIcon.thumbnailName)
-                                    ForEach(ThemeIcon.allCases) { icon in
-                                        appIconOption(.theme(icon), label: icon.label, thumbnailName: icon.thumbnailName)
-                                    }
-                                }
-                                .padding(.vertical, 6)
+                        ChoiceRow("App Icon") {
+                            appIconOption(.default, label: String(localized: "Default"), thumbnailName: appIconPreference.buildIcon.thumbnailName)
+                            ForEach(ThemeIcon.allCases) { icon in
+                                appIconOption(.theme(icon), label: icon.label, thumbnailName: icon.thumbnailName)
                             }
                         }
                     }
@@ -180,6 +168,29 @@ struct SettingsView: View {
     }
 }
 
+/// A titled, horizontally scrolling row of visual choices, such as the theme swatches.
+private struct ChoiceRow<Options: View>: View {
+    let title: LocalizedStringKey
+    let options: Options
+
+    init(_ title: LocalizedStringKey, @ViewBuilder options: () -> Options) {
+        self.title = title
+        self.options = options()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 18) {
+                    options
+                }
+                .padding(.vertical, 6)
+            }
+        }
+    }
+}
+
 /// Picks the weather location: the current location, or a city found by searching. Picking one
 /// goes back to Settings.
 private struct LocationSettingsView: View {
@@ -197,24 +208,12 @@ private struct LocationSettingsView: View {
                     preference.selection = .currentLocation
                     dismiss()
                 } label: {
-                    HStack {
-                        Label("Current Location", systemImage: "location.fill")
-                        Spacer()
-                        if case .currentLocation = preference.selection {
-                            Image(systemName: "checkmark")
-                                .foregroundStyle(.tint)
-                        }
-                    }
+                    locationRow(Label("Current Location", systemImage: "location.fill"), isSelected: preference.selection == .currentLocation)
                 }
                 .foregroundStyle(.primary)
 
                 if case .custom(let name, _, _) = preference.selection {
-                    HStack {
-                        Label(name, systemImage: "mappin.and.ellipse")
-                        Spacer()
-                        Image(systemName: "checkmark")
-                            .foregroundStyle(.tint)
-                    }
+                    locationRow(Label(name, systemImage: "mappin.and.ellipse"), isSelected: true)
                 }
             } footer: {
                 Text("Search for a city to see its weather instead of your current location.")
@@ -237,6 +236,17 @@ private struct LocationSettingsView: View {
         .textInputAutocapitalization(.words)
         .autocorrectionDisabled()
         .onSubmit(of: .search) { search() }
+    }
+
+    private func locationRow(_ label: some View, isSelected: Bool) -> some View {
+        HStack {
+            label
+            Spacer()
+            if isSelected {
+                Image(systemName: "checkmark")
+                    .foregroundStyle(.tint)
+            }
+        }
     }
 
     private func search() {

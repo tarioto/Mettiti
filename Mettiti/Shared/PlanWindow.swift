@@ -13,17 +13,6 @@ enum PlanWindow: String, Codable, CaseIterable, Identifiable, Sendable {
     /// The Settings default until the user picks one.
     static let settingsDefault: PlanWindow = .restOfDay
 
-    /// The stop's short label in Settings.
-    var label: String {
-        switch self {
-        case .oneHour: return String(localized: "1h", table: "Shared", comment: "Plan Window stop in Settings: one hour")
-        case .threeHours: return String(localized: "3h", table: "Shared", comment: "Plan Window stop in Settings: three hours")
-        case .sixHours: return String(localized: "6h", table: "Shared", comment: "Plan Window stop in Settings: six hours")
-        case .twelveHours: return String(localized: "12h", table: "Shared", comment: "Plan Window stop in Settings: twelve hours")
-        case .restOfDay: return String(localized: "Rest of day", table: "Shared", comment: "Plan Window stop: from now until midnight")
-        }
-    }
-
     /// The window as a heading, e.g. "Next 3 hours".
     func name(locale: Locale = .autoupdatingCurrent) -> String {
         switch self {
