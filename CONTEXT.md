@@ -40,6 +40,10 @@ _Avoid_: Time range, horizon, span (outside code)
 The last day plan the app or the background refresh produced, shared with the widgets (`PlanSnapshot` in code). On launch, a Saved Plan from today for the same location and weather source is shown right away while a fresh one loads. Returning to the app on a later day, or once the plan is stale for the **Plan Window** (30 minutes after the last load for 1h, 1 hour for 3h, 2 hours for 6h, 3 hours for 12h and Rest of day), refetches the weather and remakes the outfit by the same rule. Apart from a new day, automatic refreshes never come closer together than 30 minutes; pull-to-refresh and the Refresh button always refetch.
 _Avoid_: Cached plan, snapshot (outside code)
 
+**Meaningful Change**:
+A change in the **Plan Window**'s weather that would change the outfit advice: the window now crosses a sunrise or sunset it didn't (or the other way round), day turned to night (or night to day), the UV band changed (low, moderate, high or above), the chance of rain crossed about 30% or 60%, the high or low moved by about 3°C (5°F), or the kind of weather changed. It's measured against the weather the outfit was made for (`WindowSummary` in code; the check is `differsMeaningfully`), and a different Plan Window or gaining or losing the hourly forecast counts too. An automatic refresh only remakes the outfit after a Meaningful Change; otherwise it keeps the outfit and updates only the weather card and the chart. Pull-to-refresh and changing the location, weather source or Plan Window always remake it.
+_Avoid_: Significant change, weather diff
+
 ## Relationships
 
 - Each **Theme** except Default has exactly one **Theme Icon**

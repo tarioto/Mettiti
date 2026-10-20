@@ -96,7 +96,18 @@ struct BackgroundPlanRefreshTests {
         #expect(outcome == .refreshedWeatherOnly)
         #expect(harness.published.count == 1)
         #expect(harness.published.first?.recommendation == nil)
+        #expect(harness.published.first?.adviceBasis == nil)
         #expect(harness.published.first?.generatedAt == now)
+    }
+
+    @Test func publishedPlanRecordsTheWeatherItsOutfitWasBasedOnSoTheAppCanTellWhenItChanges() async {
+        let harness = Harness(now: date("2026-10-08T06:00:00-07:00"))
+        harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
+
+        _ = await harness.refresher.refreshIfStale()
+
+        #expect(harness.published.first?.adviceBasis?.highF == DailyWeather.placeholder.highTemperatureF)
+        #expect(harness.published.first?.adviceBasis?.window == harness.published.first?.span?.window)
     }
 
     @Test(arguments: [

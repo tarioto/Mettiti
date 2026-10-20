@@ -110,4 +110,20 @@ struct PlanSnapshotTests {
         #expect(decoded.hourly?.points.map(\.precipitationProbability) == [10, 30])
         #expect(decoded.hourly?.points.map(\.date) == [date("2026-10-08T09:00:00-07:00"), date("2026-10-08T10:00:00-07:00")])
     }
+
+    @Test func adviceBasisRoundTrips() throws {
+        let basis = WindowSummary(window: .sixHours, coversHours: true, highF: 70, lowF: 60, precipitationProbability: 40, uvIndex: 4, conditionCode: 61, isDaylightAtStart: true, sunEvents: [.sunset])
+        var snapshot = PlanSnapshot.generated(at: date("2026-10-08T09:00:00-07:00"))
+        snapshot.adviceBasis = basis
+
+        let decoded = try JSONDecoder().decode(PlanSnapshot.self, from: JSONEncoder().encode(snapshot))
+
+        #expect(decoded.adviceBasis == basis)
+    }
+
+    @Test func snapshotSavedByEarlierVersionHasNoAdviceBasis() throws {
+        let snapshot = try JSONDecoder().decode(PlanSnapshot.self, from: Data(savedBeforeWeatherOnlySnapshots.utf8))
+
+        #expect(snapshot.adviceBasis == nil)
+    }
 }

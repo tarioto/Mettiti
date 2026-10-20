@@ -117,10 +117,7 @@ struct OutfitAdvisor: Sendable {
         let window = hourly.map { ForecastWindow(forecast: $0, span: span.interval) }
         guard let window, let high = window.high, let low = window.low else {
             // No sunset to go by, so assume it's dark late in the evening and at night.
-            var calendar = Calendar(identifier: .gregorian)
-            calendar.timeZone = timeZone
-            let localHour = calendar.component(.hour, from: now)
-            let isDark = localHour >= 20 || localHour < 6
+            let isDark = ForecastWindow.assumesDark(at: now, in: timeZone)
             if isDark {
                 currentTime += " It's dark outside, so sun protection isn't needed."
             }
