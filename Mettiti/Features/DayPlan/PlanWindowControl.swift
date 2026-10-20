@@ -5,7 +5,6 @@ import SwiftUI
 /// menu checks the active window.
 struct PlanWindowControl: View {
     let window: PlanWindow
-    let iconColor: Color
     let onSelect: (PlanWindow) -> Void
 
     var body: some View {
@@ -16,13 +15,9 @@ struct PlanWindowControl: View {
                 }
             }
         } label: {
-            Image(systemName: "clock")
-                .font(.title2)
-                .foregroundStyle(iconColor)
-                .frame(width: 32, height: 32)
+            HeaderIcon(systemName: "clock")
         }
-        .buttonStyle(.glass)
-        .buttonBorderShape(.circle)
+        .headerIconButtonStyle()
         .accessibilityLabel("Plan Window")
         .accessibilityValue(window.name())
         .accessibilityHint(Text("Changes how far ahead the outfit covers for now. Settings keeps the default.", comment: "VoiceOver hint for the main screen's Plan Window menu, which lasts until the next launch or the next day"))
@@ -30,6 +25,6 @@ struct PlanWindowControl: View {
 }
 
 #Preview {
-    PlanWindowControl(window: .threeHours, iconColor: .primary) { _ in }
+    PlanWindowControl(window: .threeHours) { _ in }
         .padding()
 }
