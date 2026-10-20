@@ -12,6 +12,9 @@ struct PlanSnapshot: Codable, Sendable {
     var location: LocationSelection?
     /// Nil when saved before it was stored, or when the hourly fetch failed.
     var hourly: HourlyForecast?
+    /// What the plan covers. Nil for plans saved before Plan Windows, which all cover the rest
+    /// of the day.
+    var span: PlanSpan?
 }
 
 extension PlanSnapshot {
@@ -21,6 +24,11 @@ extension PlanSnapshot {
         generatedAt: .now,
         provider: .apple
     )
+
+    /// The plan's Plan Window; plans saved before there was a choice covered the rest of the day.
+    var planWindow: PlanWindow {
+        span?.window ?? .restOfDay
+    }
 
     /// Whether this plan was generated on the same day as `now` in `calendar`'s time zone.
     /// Production passes the device's current calendar, so "today" is the device's local day.
@@ -34,6 +42,12 @@ enum SharedStore {
     static let appGroupID = Bundle.main.object(forInfoDictionaryKey: "AppGroupID") as? String
         ?? "group.com.timarioto.Mettiti"
     private static let snapshotKey = "latestPlanSnapshot"
+
+    /// The App Group's defaults, shared with the widgets. Falls back to the app's own defaults
+    /// if the group isn't available.
+    static var appGroupDefaults: UserDefaults {
+        UserDefaults(suiteName: appGroupID) ?? .standard
+    }
 
     static func save(_ snapshot: PlanSnapshot) {
         guard let defaults = UserDefaults(suiteName: appGroupID) else { return }

@@ -1,6 +1,51 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ – %@" : {
+      "comment" : "A time range that crosses midnight, e.g. 2:20 PM – 2:20 AM",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ – %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@" : {
+      "comment" : "Plan card title; the arguments are the Plan Window, e.g. Next 3 hours, and its time range, e.g. 2:20 – 5:20 PM",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@, from %@ to %@" : {
+      "comment" : "VoiceOver label for the plan card title; the arguments are the Plan Window, e.g. Next 3 hours, its start time and its end time",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, from %2$@ to %3$@"
+          }
+        }
+      }
+    },
+    "1h" : {
+      "comment" : "Plan Window stop in Settings: one hour"
+    },
+    "3h" : {
+      "comment" : "Plan Window stop in Settings: three hours"
+    },
+    "6h" : {
+      "comment" : "Plan Window stop in Settings: six hours"
+    },
+    "12h" : {
+      "comment" : "Plan Window stop in Settings: twelve hours"
+    },
     "Apple Weather" : {
 
     },
@@ -39,6 +84,18 @@
     "Mainly clear" : {
 
     },
+    "Next 3 hours" : {
+      "comment" : "Plan Window heading for a three-hour window"
+    },
+    "Next 6 hours" : {
+      "comment" : "Plan Window heading for a six-hour window"
+    },
+    "Next 12 hours" : {
+      "comment" : "Plan Window heading for a twelve-hour window"
+    },
+    "Next hour" : {
+      "comment" : "Plan Window heading for a one-hour window"
+    },
     "Overcast" : {
 
     },
@@ -50,6 +107,9 @@
     },
     "Rain showers" : {
 
+    },
+    "Rest of day" : {
+      "comment" : "Plan Window stop: from now until midnight"
     },
     "Snow" : {
 

@@ -4,6 +4,8 @@ import Accessibility
 
 struct HourlyTemperatureChart: View {
     let hourly: HourlyForecast
+    /// The plan's span, shaded on the chart.
+    var span: PlanSpan? = nil
     @Environment(TemperaturePreferenceStore.self) private var temperaturePreference
     @Environment(\.colorScheme) private var colorScheme
     /// Grows with Dynamic Type from the 9pt the axis labels have at the default size.
@@ -27,12 +29,29 @@ struct HourlyTemperatureChart: View {
         LinearGradient(colors: HeatPalette.stops, startPoint: .bottom, endPoint: .top)
     }
 
-    /// The first and last hours padded by half an hour, so their bars aren't clipped.
     private var timeDomain: ClosedRange<Date> {
-        guard let first = hourly.points.first?.date, let last = hourly.points.last?.date else {
-            return Date.now...Date.now.addingTimeInterval(Self.hour)
+        Self.timeDomain(for: hourly.points)
+    }
+
+    private var shadedSpan: ClosedRange<Date>? {
+        Self.shadedRange(of: span, over: hourly.points)
+    }
+
+    /// The first and last hours padded by half an hour, so their bars aren't clipped.
+    static func timeDomain(for points: [HourlyTemperaturePoint]) -> ClosedRange<Date> {
+        guard let first = points.first?.date, let last = points.last?.date else {
+            return Date.now...Date.now.addingTimeInterval(hour)
         }
-        return first.addingTimeInterval(-Self.halfHour)...last.addingTimeInterval(Self.halfHour)
+        return first.addingTimeInterval(-halfHour)...last.addingTimeInterval(halfHour)
+    }
+
+    /// The part of the plan's span a chart of `points` shows, or nil when they don't overlap.
+    static func shadedRange(of span: PlanSpan?, over points: [HourlyTemperaturePoint]) -> ClosedRange<Date>? {
+        guard let span, !points.isEmpty else { return nil }
+        let domain = timeDomain(for: points)
+        let start = max(span.interval.start, domain.lowerBound)
+        let end = min(span.interval.end, domain.upperBound)
+        return start < end ? start...end : nil
     }
 
     var body: some View {
@@ -46,6 +65,18 @@ struct HourlyTemperatureChart: View {
 
         VStack(alignment: .leading, spacing: 4) {
             Chart {
+                if let shadedSpan {
+                    // Behind everything else; the descriptor's summary names it for VoiceOver.
+                    RectangleMark(
+                        xStart: .value("Time", shadedSpan.lowerBound),
+                        xEnd: .value("Time", shadedSpan.upperBound),
+                        yStart: .value("Low", scale.range.lowerBound),
+                        yEnd: .value("High", scale.range.upperBound)
+                    )
+                    .foregroundStyle(.primary.opacity(0.07))
+                    .accessibilityHidden(true)
+                }
+
                 ForEach(hourly.points) { point in
                     hourMarks(for: point, scale: scale, hourFormat: hourFormat)
                 }
@@ -91,7 +122,7 @@ struct HourlyTemperatureChart: View {
                 }
             }
             .frame(height: 124)
-            .accessibilityChartDescriptor(HourlyChartDescriptor(points: hourly.points, hourFormat: hourFormat, scale: scale))
+            .accessibilityChartDescriptor(HourlyChartDescriptor(points: hourly.points, hourFormat: hourFormat, scale: scale, span: span))
 
             Text(hasSpread ? "Shaded band shows model spread · bars show chance of rain" : "Bars show chance of rain")
                 .font(.caption2)
@@ -237,12 +268,12 @@ struct HourlyChartDescriptor: AXChartDescriptorRepresentable {
     let hours: [Hour]
     /// The plotted temperature range, in the displayed unit.
     let temperatureRange: ClosedRange<Double>
-    /// The day's high and low and when they happen, or nil with no hours.
+    /// The day's high and low and when they happen, and the shaded Plan Window, or nil with no hours.
     let summary: String?
     private let unit: TemperatureUnit
     private let locale: Locale
 
-    init(points: [HourlyTemperaturePoint], hourFormat: Date.FormatStyle, scale: HourlyChartScale, locale: Locale = .autoupdatingCurrent) {
+    init(points: [HourlyTemperaturePoint], hourFormat: Date.FormatStyle, scale: HourlyChartScale, span: PlanSpan? = nil, locale: Locale = .autoupdatingCurrent) {
         unit = scale.unit
         self.locale = locale
         temperatureRange = scale.range
@@ -258,11 +289,20 @@ struct HourlyChartDescriptor: AXChartDescriptorRepresentable {
         // The first hour to reach the high or the low, as the chart reads left to right.
         if let high = zip(points, hours).max(by: { $0.0.meanF < $1.0.meanF })?.1,
            let low = zip(points, hours).min(by: { $0.0.meanF < $1.0.meanF })?.1 {
-            summary = String(
+            let highAndLow = String(
                 localized: "High \(high.formattedTemperature) at \(high.label), low \(low.formattedTemperature) at \(low.label)",
                 locale: locale,
                 comment: "VoiceOver summary of the hourly chart; the arguments are the high temperature, its hour, the low temperature and its hour, e.g. High 72° at 3 PM, low 55° at 6 AM"
             )
+            // Only a window the chart actually shades is mentioned.
+            let shadedSpan = HourlyTemperatureChart.shadedRange(of: span, over: points) == nil ? nil : span
+            summary = shadedSpan.map { span in
+                String(
+                    localized: "\(highAndLow). Shaded: \(span.accessibilityLabel(locale: locale))",
+                    locale: locale,
+                    comment: "VoiceOver summary of the hourly chart with the plan's window shaded; the arguments are the high and low summary and the window, e.g. Next 3 hours, from 2:20 PM to 5:20 PM"
+                )
+            } ?? highAndLow
         } else {
             summary = nil
         }

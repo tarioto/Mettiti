@@ -11,14 +11,17 @@ struct MettitiApp: App {
     @State private var themePreference = ThemePreferenceStore()
     @State private var locationPreference: LocationPreferenceStore
     @State private var providerPreference: WeatherProviderPreferenceStore
+    @State private var planWindowPreference: PlanWindowPreferenceStore
     @State private var viewModel: DayPlanViewModel
 
     init() {
         let locationPreference = LocationPreferenceStore()
         let providerPreference = WeatherProviderPreferenceStore()
+        let planWindowPreference = PlanWindowPreferenceStore()
         _locationPreference = State(initialValue: locationPreference)
         _providerPreference = State(initialValue: providerPreference)
-        _viewModel = State(initialValue: DayPlanViewModel(locationManager: LocationManager(), locationPreference: locationPreference, providerPreference: providerPreference))
+        _planWindowPreference = State(initialValue: planWindowPreference)
+        _viewModel = State(initialValue: DayPlanViewModel(locationManager: LocationManager(), locationPreference: locationPreference, providerPreference: providerPreference, planWindowPreference: planWindowPreference))
     }
 
     var body: some Scene {
@@ -29,7 +32,8 @@ struct MettitiApp: App {
                 temperaturePreference: temperaturePreference,
                 cardPreference: cardPreference,
                 themePreference: themePreference,
-                providerPreference: providerPreference
+                providerPreference: providerPreference,
+                planWindowPreference: planWindowPreference
             )
             .environment(appIconPreference)
             .task { await appIconPreference.applyAtLaunch() }

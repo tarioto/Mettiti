@@ -12,6 +12,17 @@
         }
       }
     },
+    "%@. Shaded: %@" : {
+      "comment" : "VoiceOver summary of the hourly chart with the plan's window shaded; the arguments are the high and low summary and the window, e.g. Next 3 hours, from 2:20 PM to 5:20 PM",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@. Shaded: %2$@"
+          }
+        }
+      }
+    },
     "AI recommendations aren't available right now." : {
 
     },
@@ -38,6 +49,9 @@
     },
     "Bars show chance of rain" : {
 
+    },
+    "Chance of rain" : {
+      "comment" : "VoiceOver title for the hourly chart's chance of rain values"
     },
     "Chance of rain at %@" : {
       "comment" : "VoiceOver label for an hour's rain bar in the hourly chart; the argument is the hour, e.g. 3 PM"
@@ -90,7 +104,24 @@
     "High" : {
 
     },
+    "High %@ at %@, low %@ at %@" : {
+      "comment" : "VoiceOver summary of the hourly chart; the arguments are the high temperature, its hour, the low temperature and its hour, e.g. High 72° at 3 PM, low 55° at 6 AM",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "High %1$@ at %2$@, low %3$@ at %4$@"
+          }
+        }
+      }
+    },
     "Home Screen Cards" : {
+
+    },
+    "Hourly forecast" : {
+      "comment" : "VoiceOver title for the hourly temperature chart"
+    },
+    "How far ahead from now the outfit advice covers. Rest of day runs until midnight, but at least 3 hours." : {
 
     },
     "Light" : {
@@ -124,6 +155,9 @@
 
     },
     "Outfit suggestions need a device that supports Apple Intelligence." : {
+
+    },
+    "Plan Window" : {
 
     },
     "Putting together today's outfit…" : {
@@ -164,7 +198,7 @@
 
     },
     "Temperature" : {
-
+      "comment" : "VoiceOver name for the hourly chart's temperature axis and line"
     },
     "Temperature Unit" : {
 
@@ -185,7 +219,7 @@
 
     },
     "Time" : {
-
+      "comment" : "VoiceOver title for the hourly chart's time axis"
     },
     "Today's plan" : {
 

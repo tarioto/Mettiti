@@ -3,23 +3,6 @@ import Testing
 @testable import Mettiti
 
 struct ForecastWindowTests {
-    @Test func spanRunsFromNowUntilMidnight() {
-        let now = date("2026-10-09T16:20:00Z") // 9:20 AM PDT
-
-        let span = ForecastWindow.span(startingAt: now, in: pacific)
-
-        #expect(span.start == now)
-        #expect(span.end == date("2026-10-10T07:00:00Z")) // midnight PDT
-    }
-
-    @Test func spanLateInTheEveningLastsThreeHoursAndCrossesMidnight() {
-        let now = date("2026-10-10T05:30:00Z") // 10:30 PM PDT
-
-        let span = ForecastWindow.span(startingAt: now, in: pacific)
-
-        #expect(span.end == date("2026-10-10T08:30:00Z")) // 1:30 AM PDT
-    }
-
     @Test func windowAcrossMidnightCoversTheHoursInProgressThroughTheSpansEnd() {
         let forecast = HourlyForecast(timeZone: pacific, points: [
             hour("2026-10-10T04:00:00Z", temperature: 60, rain: 10), // 9 PM, before the span
@@ -31,7 +14,7 @@ struct ForecastWindowTests {
         ])
         let now = date("2026-10-10T05:30:00Z") // 10:30 PM PDT
 
-        let window = ForecastWindow(forecast: forecast, span: ForecastWindow.span(startingAt: now, in: pacific))
+        let window = ForecastWindow(forecast: forecast, span: PlanWindow.restOfDay.span(startingAt: now, in: pacific))
 
         #expect(window.hours.map(\.meanF) == [58, 55, 52, 50])
         #expect(window.high?.date == date("2026-10-10T05:00:00Z"))
@@ -91,7 +74,7 @@ struct ForecastWindowTests {
                 SunEvent(kind: .sunset, date: date("2026-10-10T01:30:00Z")),
             ]
         )
-        let span = DateInterval(start: date(start), duration: ForecastWindow.minimumLength)
+        let span = DateInterval(start: date(start), duration: 3 * 60 * 60)
 
         let window = ForecastWindow(forecast: forecast, span: span)
 

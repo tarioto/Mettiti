@@ -23,6 +23,19 @@ struct PreferenceStoreTests {
         #expect(WeatherProviderPreferenceStore(defaults: defaults).provider == .openMeteo)
     }
 
+    @Test func planWindowDefaultsToRestOfDay() {
+        #expect(PlanWindowPreferenceStore(defaults: isolatedDefaults()).window == .restOfDay)
+    }
+
+    @Test func planWindowIsRememberedAcrossLaunches() {
+        let defaults = isolatedDefaults()
+        let store = PlanWindowPreferenceStore(defaults: defaults)
+
+        store.window = .threeHours
+
+        #expect(PlanWindowPreferenceStore(defaults: defaults).window == .threeHours)
+    }
+
     @Test func customLocationIsRememberedAcrossLaunches() {
         let defaults = isolatedDefaults()
         let store = LocationPreferenceStore(defaults: defaults)

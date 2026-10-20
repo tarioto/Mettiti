@@ -5,11 +5,11 @@ import FoundationModels
 protocol DayPlanFetching: Sendable {
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?)
     func recommendationAvailability() async -> RecommendationAvailability
-    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation
     /// Starts loading the on-device model so a recommendation requested soon after starts faster.
     func prewarmRecommendation()
-    /// Like `recommendation(for:hourly:)`, but reports the suggestion so far as the model writes it.
-    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation
+    /// Like `recommendation(for:hourly:span:)`, but reports the suggestion so far as the model writes it.
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation
 }
 
 struct DayPlanFetcher: DayPlanFetching {
@@ -59,15 +59,15 @@ struct DayPlanFetcher: DayPlanFetching {
         }
     }
 
-    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?) async throws -> OutfitRecommendation {
-        try await outfitAdvisor.recommendation(for: weather, hourly: hourly)
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation {
+        try await outfitAdvisor.recommendation(for: weather, hourly: hourly, span: span)
     }
 
     func prewarmRecommendation() {
         outfitAdvisor.prewarm()
     }
 
-    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
-        try await outfitAdvisor.recommendation(for: weather, hourly: hourly, onPartial: onPartial)
+    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
+        try await outfitAdvisor.recommendation(for: weather, hourly: hourly, span: span, onPartial: onPartial)
     }
 }

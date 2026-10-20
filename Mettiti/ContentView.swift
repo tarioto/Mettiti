@@ -7,6 +7,7 @@ struct ContentView: View {
     let cardPreference: CardPreferenceStore
     let themePreference: ThemePreferenceStore
     let providerPreference: WeatherProviderPreferenceStore
+    let planWindowPreference: PlanWindowPreferenceStore
     @State private var showingSettings = false
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
@@ -70,6 +71,9 @@ struct ContentView: View {
         .onChange(of: providerPreference.provider) {
             viewModel.providerDidChange()
         }
+        .onChange(of: planWindowPreference.window) {
+            viewModel.planWindowDidChange()
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { viewModel.refreshIfStale() }
         }
@@ -79,7 +83,8 @@ struct ContentView: View {
                 temperaturePreference: temperaturePreference,
                 cardPreference: cardPreference,
                 themePreference: themePreference,
-                providerPreference: providerPreference
+                providerPreference: providerPreference,
+                planWindowPreference: planWindowPreference
             )
         }
     }
@@ -109,7 +114,7 @@ struct ContentView: View {
         switch viewModel.state {
         case .loadingWeather:
             return true
-        case .loaded(_, _, _, let recommendation):
+        case .loaded(_, _, _, _, let recommendation):
             return recommendation.isInProgress || viewModel.isUpdatingSavedPlan
         case .idle, .failed:
             return false
@@ -124,14 +129,14 @@ struct ContentView: View {
                 ProgressCaption("Checking today's weather…")
                 SkeletonLoadingView()
             }
-        case .loaded(let weather, let hourly, let provider, let recommendation):
+        case .loaded(let weather, let hourly, let span, let provider, let recommendation):
             VStack(spacing: 12) {
                 if let message = viewModel.refreshFailureMessage {
                     RefreshFailureNotice(message: message)
                 } else if viewModel.isUpdatingSavedPlan {
                     ProgressCaption("Updating…")
                 }
-                DayPlanView(weather: weather, recommendation: recommendation, hourly: hourly, provider: provider) {
+                DayPlanView(weather: weather, recommendation: recommendation, hourly: hourly, span: span, provider: provider) {
                     viewModel.retryRecommendation()
                 }
             }
@@ -147,13 +152,15 @@ struct ContentView: View {
 #Preview {
     let locationPreference = LocationPreferenceStore()
     let providerPreference = WeatherProviderPreferenceStore()
+    let planWindowPreference = PlanWindowPreferenceStore()
     ContentView(
-        viewModel: DayPlanViewModel(locationManager: LocationManager(), locationPreference: locationPreference, providerPreference: providerPreference),
+        viewModel: DayPlanViewModel(locationManager: LocationManager(), locationPreference: locationPreference, providerPreference: providerPreference, planWindowPreference: planWindowPreference),
         locationPreference: locationPreference,
         temperaturePreference: TemperaturePreferenceStore(),
         cardPreference: CardPreferenceStore(),
         themePreference: ThemePreferenceStore(),
-        providerPreference: providerPreference
+        providerPreference: providerPreference,
+        planWindowPreference: planWindowPreference
     )
     .environment(AppIconPreferenceStore())
 }

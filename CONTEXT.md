@@ -32,6 +32,10 @@ _Avoid_: Icon theme, icon setting
 
 ### Day plan
 
+**Plan Window**:
+How far ahead from now the outfit advice covers: 1h, 3h, 6h, 12h or Rest of day, chosen in Settings (default Rest of day). Every window starts at the time the plan is made. Fixed windows cross midnight freely; Rest of day runs until midnight in the forecast location's time zone, but covers at least 3 hours. The plan card's title, the weather card's numbers and the chart's shading all show the window.
+_Avoid_: Time range, horizon, span (outside code)
+
 **Saved Plan**:
 The last day plan the app or the background refresh produced, shared with the widgets (`PlanSnapshot` in code). On launch, a Saved Plan from today for the same location and weather source is shown right away while a fresh one loads. Returning to the app on a later day, or 3 hours after the last load, follows the same rule.
 _Avoid_: Cached plan, snapshot (outside code)
@@ -41,6 +45,7 @@ _Avoid_: Cached plan, snapshot (outside code)
 - Each **Theme** except Default has exactly one **Theme Icon**
 - The **Icon Choice** is independent of the **Theme**: changing the Theme never changes the icon
 - With no **Icon Choice**, the shown icon is the **Build Icon** for the current **Install Source**
+- Each **Saved Plan** covers one **Plan Window**; on launch it's only shown when that's still the chosen one, and changing the Plan Window remakes the plan
 
 ## Flagged ambiguities
 
