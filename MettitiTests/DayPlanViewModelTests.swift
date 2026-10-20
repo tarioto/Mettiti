@@ -1451,7 +1451,7 @@ struct DayPlanViewModelTests {
         #expect(location.locationRequestCount == 2)
     }
 
-    @Test func returningHalfAnHourLaterForTheNextHourRefetchesAndRemakesTheOutfit() async throws {
+    @Test func returningHalfAnHourLaterForTheNextHourRefetchesTheWeather() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
         let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
@@ -1463,7 +1463,7 @@ struct DayPlanViewModelTests {
         clock.now = date("2026-10-19T08:30:00-07:00")
         viewModel.refreshIfStale()
 
-        try await waitUntil { await fetcher.recommendationRequestCount == 2 }
+        try await waitUntil { await fetcher.requestedCoordinates.count == 2 }
         let requested = await fetcher.requestedCoordinates
         #expect(requested.count == 2)
     }
@@ -1503,7 +1503,7 @@ struct DayPlanViewModelTests {
         clock.now = date("2026-10-19T09:00:00-07:00")
         viewModel.refreshIfStale()
 
-        try await waitUntil { await fetcher.recommendationRequestCount == 3 }
+        try await waitUntil { await fetcher.requestedCoordinates.count == 2 }
         let requested = await fetcher.requestedCoordinates
         #expect(requested.count == 2)
     }
@@ -1534,6 +1534,200 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.isIdle)
         let requested = await fetcher.requestedCoordinates
         #expect(requested.isEmpty)
+    }
+
+    // MARK: Regenerating only on a meaningful change (#99)
+
+    @Test func refreshWithoutAMeaningfulChangeUpdatesTheWeatherButKeepsTheOutfitWithoutAskingTheModel() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)), recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
+        let store = FakeSnapshotStore()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .oneHour
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary == "First outfit" }
+
+        await fetcher.setWeather(.forecast(high: 72))
+        await fetcher.setRecommendation(.success(OutfitRecommendation(summary: "Second outfit", items: [])))
+        clock.now = date("2026-10-19T08:30:00-07:00")
+        viewModel.refreshIfStale()
+
+        try await waitUntil { viewModel.state.loadedHigh == 72 }
+        #expect(viewModel.state.readySummary == "First outfit")
+        #expect(viewModel.state.span?.interval.start == date("2026-10-19T08:30:00-07:00"))
+        #expect(await fetcher.recommendationRequestCount == 1)
+        #expect(await fetcher.requestedCoordinates.count == 2)
+        #expect(!viewModel.isUpdatingSavedPlan)
+        // Saved with the fresh weather, still compared with what the outfit was based on.
+        #expect(store.published.map(\.weather.highTemperatureF) == [70, 72])
+        #expect(store.published.last?.recommendation?.summary == "First outfit")
+        #expect(store.published.last?.adviceBasis?.highF == 70)
+    }
+
+    @Test func refreshWithAMeaningfulChangeRegeneratesTheOutfit() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)), recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
+        let store = FakeSnapshotStore()
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .oneHour
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary == "First outfit" }
+
+        await fetcher.setWeather(.forecast(high: 76))
+        await fetcher.setRecommendation(.success(OutfitRecommendation(summary: "Second outfit", items: [])))
+        clock.now = date("2026-10-19T08:30:00-07:00")
+        viewModel.refreshIfStale()
+
+        try await waitUntil { viewModel.state.readySummary == "Second outfit" }
+        #expect(viewModel.state.loadedHigh == 76)
+        #expect(await fetcher.recommendationRequestCount == 2)
+        #expect(store.published.last?.adviceBasis?.highF == 76)
+    }
+
+    @Test func smallChangesAddingUpToAMeaningfulOneRegenerateTheOutfit() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)))
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .oneHour
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        await fetcher.setWeather(.forecast(high: 73))
+        clock.now = date("2026-10-19T08:30:00-07:00")
+        viewModel.refreshIfStale()
+        try await waitUntil { viewModel.state.loadedHigh == 73 }
+
+        await fetcher.setWeather(.forecast(high: 76))
+        clock.now = date("2026-10-19T09:00:00-07:00")
+        viewModel.refreshIfStale()
+        try await waitUntil { await fetcher.recommendationRequestCount == 2 }
+        #expect(viewModel.state.loadedHigh == 76)
+    }
+
+    @Test func savedPlanStillRightOnLaunchKeepsItsOutfitWithTheFreshWeather() async throws {
+        let clock = FakeClock(date("2026-10-19T08:30:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 72)))
+        let store = FakeSnapshotStore()
+        store.saved = .saved(high: 70, summary: "Saved outfit", location: cityA, generatedAt: date("2026-10-19T08:00:00-07:00"))
+            .basedOn(.forecast(high: 70), from: date("2026-10-19T08:00:00-07:00"))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock)
+
+        viewModel.start()
+
+        try await waitUntil { viewModel.state.loadedHigh == 72 }
+        #expect(viewModel.state.readySummary == "Saved outfit")
+        #expect(await fetcher.recommendationRequestCount == 0)
+        #expect(store.published.last?.recommendation?.summary == "Saved outfit")
+        #expect(store.published.last?.adviceBasis?.highF == 70)
+    }
+
+    @Test func savedPlanNoLongerRightOnLaunchIsRegenerated() async throws {
+        let clock = FakeClock(date("2026-10-19T08:30:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 76)))
+        let store = FakeSnapshotStore()
+        store.saved = .saved(high: 70, summary: "Saved outfit", location: cityA, generatedAt: date("2026-10-19T08:00:00-07:00"))
+            .basedOn(.forecast(high: 70), from: date("2026-10-19T08:00:00-07:00"))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock)
+
+        viewModel.start()
+
+        try await waitUntil { viewModel.state.readySummary == OutfitRecommendation.placeholder.summary }
+        #expect(await fetcher.recommendationRequestCount == 1)
+    }
+
+    @Test func pullToRefreshRegeneratesTheOutfitEvenWithoutAMeaningfulChange() async throws {
+        let fetcher = FakeDayPlanFetcher(recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: FakeClock(date("2026-10-19T08:00:00-07:00")))
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary == "First outfit" }
+
+        await fetcher.setRecommendation(.success(OutfitRecommendation(summary: "Second outfit", items: [])))
+        await viewModel.refresh()
+
+        #expect(viewModel.state.readySummary == "Second outfit")
+        #expect(await fetcher.recommendationRequestCount == 2)
+    }
+
+    @Test func changingProviderRegeneratesTheOutfitEvenWithoutAMeaningfulChange() async throws {
+        let fetcher = FakeDayPlanFetcher(recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
+        let providerPreference = WeatherProviderPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = cityA
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: providerPreference,
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { nil },
+            publishSnapshot: { _ in }
+        )
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary == "First outfit" }
+
+        await fetcher.setRecommendation(.success(OutfitRecommendation(summary: "Second outfit", items: [])))
+        select(.openMeteo, in: providerPreference, for: viewModel)
+
+        try await waitUntil { viewModel.state.readySummary == "Second outfit" }
+        #expect(await fetcher.recommendationRequestCount == 2)
+    }
+
+    @Test func changingLocationRegeneratesTheOutfitEvenWithTheSameWeather() async throws {
+        let fetcher = FakeDayPlanFetcher(recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = cityA
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { nil },
+            publishSnapshot: { _ in }
+        )
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary == "First outfit" }
+
+        await fetcher.setRecommendation(.success(OutfitRecommendation(summary: "Second outfit", items: [])))
+        select(.custom(name: "City B", latitude: 20, longitude: 20), in: locationPreference, for: viewModel)
+
+        try await waitUntil { viewModel.state.readySummary == "Second outfit" }
+        #expect(await fetcher.recommendationRequestCount == 2)
+    }
+
+    @Test func refreshInCurrentLocationWithoutAMeaningfulChangeKeepsTheOutfitOnceTheFixArrives() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let location = FakeLocationProvider()
+        let fetcher = FakeDayPlanFetcher(recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
+        let store = FakeSnapshotStore()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { store.saved },
+            publishSnapshot: { store.publish($0) },
+            now: { clock.now },
+            calendar: gregorianCalendar(in: pacific)
+        )
+        viewModel.start()
+        location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
+        try await waitUntil { viewModel.state.readySummary == "First outfit" }
+
+        await fetcher.setRecommendation(.success(OutfitRecommendation(summary: "Second outfit", items: [])))
+        clock.now = date("2026-10-19T11:00:00-07:00")
+        viewModel.refreshIfStale()
+        location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
+
+        try await waitUntil { store.published.count == 2 }
+        #expect(viewModel.state.readySummary == "First outfit")
+        #expect(await fetcher.recommendationRequestCount == 1)
     }
 }
 
@@ -1641,6 +1835,14 @@ private extension PlanSnapshot {
             provider: provider,
             location: location
         )
+    }
+
+    /// This plan with advice based on `weather` (without an hourly forecast) for the rest of the
+    /// day from `start`, Pacific time.
+    func basedOn(_ weather: DailyWeather, from start: Date) -> PlanSnapshot {
+        var snapshot = self
+        snapshot.adviceBasis = WindowSummary(weather: weather, hourly: nil, span: PlanSpan(window: .restOfDay, startingAt: start, timeZone: pacific))
+        return snapshot
     }
 
     var withoutLocation: PlanSnapshot {
@@ -1853,7 +2055,7 @@ private actor FakeDayPlanFetcher: WholeRecommendationFetching {
     private(set) var requestedCoordinates: [CLLocationCoordinate2D] = []
     private(set) var recommendationRequestCount = 0
     private(set) var requestedSpans: [PlanSpan] = []
-    private let weatherResult: Result<DailyWeather, Error>
+    private var weatherResult: Result<DailyWeather, Error>
     private var recommendationResult: Result<OutfitRecommendation, Error>
     private let availability: RecommendationAvailability
 
@@ -1869,6 +2071,10 @@ private actor FakeDayPlanFetcher: WholeRecommendationFetching {
 
     func setRecommendation(_ result: Result<OutfitRecommendation, Error>) {
         recommendationResult = result
+    }
+
+    func setWeather(_ weather: DailyWeather) {
+        weatherResult = .success(weather)
     }
 
     func recommendationAvailability() async -> RecommendationAvailability {

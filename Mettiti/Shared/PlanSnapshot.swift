@@ -15,6 +15,11 @@ struct PlanSnapshot: Codable, Sendable {
     /// What the plan covers. Nil for plans saved before Plan Windows, which all cover the rest
     /// of the day.
     var span: PlanSpan?
+    /// The weather over the span that `recommendation` was written for, which a later refresh
+    /// compares with its own to decide whether to remake the outfit (#99). It stays as is when a
+    /// refresh keeps the outfit, so small changes that add up still count. Nil without a
+    /// recommendation, and in plans saved before it was stored, which are always remade.
+    var adviceBasis: WindowSummary?
 }
 
 extension PlanSnapshot {

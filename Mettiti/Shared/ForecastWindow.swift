@@ -28,6 +28,15 @@ struct ForecastWindow {
         }
     }
 
+    /// Without a forecast to say when the sun sets, whether to treat `date` as after dark: late
+    /// in the evening and at night in `timeZone`.
+    static func assumesDark(at date: Date, in timeZone: TimeZone) -> Bool {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let localHour = calendar.component(.hour, from: date)
+        return localHour >= 20 || localHour < 6
+    }
+
     var high: HourlyTemperaturePoint? { hours.max { $0.meanF < $1.meanF } }
     var low: HourlyTemperaturePoint? { hours.min { $0.meanF < $1.meanF } }
 

@@ -75,7 +75,8 @@ struct BackgroundPlanRefresher {
            latest.recommendation != nil || recommendation == nil {
             return .supersededByApp
         }
-        publish(PlanSnapshot(weather: weather, recommendation: recommendation, generatedAt: now(), provider: provider, location: selection, hourly: hourly, span: span))
+        let adviceBasis = recommendation.map { _ in WindowSummary(weather: weather, hourly: hourly, span: span) }
+        publish(PlanSnapshot(weather: weather, recommendation: recommendation, generatedAt: now(), provider: provider, location: selection, hourly: hourly, span: span, adviceBasis: adviceBasis))
         return recommendation == nil ? .refreshedWeatherOnly : .refreshed
     }
 
