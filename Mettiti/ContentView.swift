@@ -112,6 +112,7 @@ struct ContentView: View {
             ErrorStateView(message: message) {
                 viewModel.retry()
             }
+            .readableColumn()
             .padding(.top, 60)
         }
     }

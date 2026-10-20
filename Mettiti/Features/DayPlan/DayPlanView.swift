@@ -10,16 +10,31 @@ struct DayPlanView: View {
     var onRetryRecommendation: () -> Void = {}
     @Environment(TemperaturePreferenceStore.self) private var temperaturePreference
     @Environment(CardPreferenceStore.self) private var cardPreference
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ScaledMetric(relativeTo: .largeTitle) private var conditionSymbolSize: CGFloat = 44
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            ForEach(cardPreference.visibleOrderedTypes) { type in
-                card(for: type)
-            }
+        VStack(alignment: .leading, spacing: Self.cardSpacing) {
+            cards
 
             WeatherAttributionView(provider: provider, includesOpenMeteoData: hourly?.hasSpread == true)
                 .modifier(PlaceholderShimmer())
+        }
+    }
+
+    private static let cardSpacing: CGFloat = 20
+
+    /// The Wide layout wherever the width is regular, such as iPhone Duo's open display; one column elsewhere.
+    @ViewBuilder
+    private var cards: some View {
+        if horizontalSizeClass == .regular {
+            WideLayoutColumns(arrangement: CardColumnArrangement(cards: cardPreference.visibleOrderedTypes), spacing: Self.cardSpacing) { type in
+                card(for: type)
+            }
+        } else {
+            ForEach(cardPreference.visibleOrderedTypes) { type in
+                card(for: type)
+            }
         }
     }
 
