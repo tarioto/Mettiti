@@ -10,6 +10,9 @@ enum PlanWindow: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
+    /// The Settings default until the user picks one.
+    static let settingsDefault: PlanWindow = .restOfDay
+
     /// The stop's short label in Settings.
     var label: String {
         switch self {

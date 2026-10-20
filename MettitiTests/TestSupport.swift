@@ -22,6 +22,20 @@ extension PlanSnapshot {
     static func weatherOnly(at date: Date) -> PlanSnapshot {
         PlanSnapshot(weather: .placeholder, recommendation: nil, generatedAt: date, provider: .apple)
     }
+
+    /// A full plan covering `window` from `date`, in Pacific time.
+    static func generated(at date: Date, window: PlanWindow) -> PlanSnapshot {
+        covering(window, from: date, recommendation: .placeholder)
+    }
+
+    /// A weather-only plan covering `window` from `date`, in Pacific time.
+    static func weatherOnly(at date: Date, window: PlanWindow) -> PlanSnapshot {
+        covering(window, from: date, recommendation: nil)
+    }
+
+    private static func covering(_ window: PlanWindow, from date: Date, recommendation: OutfitRecommendation?) -> PlanSnapshot {
+        PlanSnapshot(weather: .placeholder, recommendation: recommendation, generatedAt: date, provider: .apple, span: PlanSpan(window: window, startingAt: date, timeZone: pacific))
+    }
 }
 
 /// A throwaway defaults suite so preference tests never touch the app's real settings.

@@ -7,7 +7,7 @@ import Testing
 struct BackgroundPlanRefreshTests {
     @Test func snapshotFromTodayIsLeftAloneWithoutFetching() async {
         let harness = Harness(now: date("2026-10-08T09:00:00-07:00"))
-        harness.snapshot = .generated(at: date("2026-10-08T00:30:00-07:00"))
+        harness.snapshot = .generated(at: date("2026-10-08T08:00:00-07:00"))
 
         let outcome = await harness.refresher.refreshIfStale()
 
@@ -163,7 +163,7 @@ struct BackgroundPlanRefreshTests {
         .appleIntelligenceNotEnabled,
     ])
     func todaysWeatherOnlySnapshotIsFinalWhenTheModelIsPermanentlyUnavailable(reason: RecommendationState.UnavailableReason) async {
-        let harness = Harness(now: date("2026-10-08T09:00:00-07:00"))
+        let harness = Harness(now: date("2026-10-08T08:00:00-07:00"))
         harness.snapshot = .weatherOnly(at: date("2026-10-08T06:00:00-07:00"))
         harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
         await harness.fetcher.makeUnavailable(reason)
@@ -186,8 +186,8 @@ struct BackgroundPlanRefreshTests {
     }
 
     @Test func snapshotFromEarlierTodayInDeviceZoneIsCurrentEvenWhenYesterdayInUTC() async {
-        // 08:00 and 20:00 Tokyo are the same local day, but 08:00 is still Oct 7 in UTC.
-        let harness = Harness(now: date("2026-10-08T20:00:00+09:00"))
+        // 08:00 and 09:00 Tokyo are the same local day, but 08:00 is still Oct 7 in UTC.
+        let harness = Harness(now: date("2026-10-08T09:00:00+09:00"))
         harness.timeZone = TimeZone(identifier: "Asia/Tokyo")!
         harness.snapshot = .generated(at: date("2026-10-08T08:00:00+09:00"))
         harness.selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7)
@@ -258,22 +258,113 @@ struct BackgroundPlanRefreshTests {
         #expect(harness.published.isEmpty)
     }
 
-    @Test func nextRequestIsJustAfterTheNextLocalMidnight() {
-        let harness = Harness(now: date("2026-10-08T15:00:00-07:00"))
-        harness.snapshot = .generated(at: date("2026-10-08T07:00:00-07:00"))
+    // MARK: - Plan Window
 
-        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T00:05:00-07:00"))
+    @Test func todaysPlanStaleForItsWindowIsRefreshed() async {
+        let harness = Harness(now: date("2026-10-08T08:30:00-07:00"))
+        harness.planWindow = .oneHour
+        harness.snapshot = .generated(at: date("2026-10-08T08:00:00-07:00"), window: .oneHour)
+        harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+    }
+
+    @Test func todaysPlanNotYetStaleForItsWindowIsLeftAlone() async {
+        let harness = Harness(now: date("2026-10-08T08:59:00-07:00"))
+        harness.planWindow = .threeHours
+        harness.snapshot = .generated(at: date("2026-10-08T08:00:00-07:00"), window: .threeHours)
+        harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
+
+        #expect(await harness.refresher.refreshIfStale() == .alreadyCurrent)
+        #expect(await harness.fetcher.weatherRequests.isEmpty)
+    }
+
+    @Test func todaysPlanForAnotherWindowThanTheSettingsDefaultIsRemade() async {
+        let now = date("2026-10-08T08:10:00-07:00")
+        let harness = Harness(now: now)
+        harness.planWindow = .sixHours
+        harness.snapshot = .generated(at: date("2026-10-08T08:00:00-07:00"), window: .oneHour)
+        harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+        #expect(harness.published.map(\.span?.window) == [.sixHours])
+    }
+
+    @Test func publishedPlanCoversTheSettingsDefaultWindowFromNow() async {
+        let now = date("2026-10-08T14:00:00-07:00")
+        let harness = Harness(now: now)
+        harness.planWindow = .threeHours
+        harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
+
+        _ = await harness.refresher.refreshIfStale()
+
+        #expect(harness.published.first?.span?.window == .threeHours)
+        #expect(harness.published.first?.span?.interval == DateInterval(start: now, end: date("2026-10-08T17:00:00-07:00")))
+    }
+
+    @Test(arguments: [
+        (PlanWindow.oneHour, "2026-10-08T14:30:00-07:00"),
+        (PlanWindow.threeHours, "2026-10-08T15:00:00-07:00"),
+        (PlanWindow.sixHours, "2026-10-08T16:00:00-07:00"),
+        (PlanWindow.twelveHours, "2026-10-08T17:00:00-07:00"),
+        (PlanWindow.restOfDay, "2026-10-08T17:00:00-07:00"),
+    ])
+    func nextRequestIsWhenTheFreshPlanGoesStaleForItsWindow(window: PlanWindow, expected: String) {
+        let harness = Harness(now: date("2026-10-08T14:00:00-07:00"))
+        harness.planWindow = window
+        harness.snapshot = .generated(at: date("2026-10-08T14:00:00-07:00"), window: window)
+
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date(expected))
+    }
+
+    @Test func nextRequestIsNeverSoonerThanTheThirtyMinuteFloor() {
+        let harness = Harness(now: date("2026-10-08T14:20:00-07:00"))
+        harness.planWindow = .oneHour
+        harness.snapshot = .generated(at: date("2026-10-08T14:00:00-07:00"), window: .oneHour)
+
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-08T14:50:00-07:00"))
+    }
+
+    @Test func nextRequestFallingOvernightWaitsUntilAboutSixAM() {
+        // Stale at 1:00 AM, but a plan made then would be about the night.
+        let harness = Harness(now: date("2026-10-08T22:00:00-07:00"))
+        harness.snapshot = .generated(at: date("2026-10-08T22:00:00-07:00"), window: .restOfDay)
+
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:00:00-07:00"))
+    }
+
+    @Test func nextRequestAfterMidnightWithYesterdaysPlanWaitsUntilAboutSixAM() {
+        let harness = Harness(now: date("2026-10-09T00:30:00-07:00"))
+        harness.snapshot = .generated(at: date("2026-10-08T22:00:00-07:00"), window: .restOfDay)
+
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:00:00-07:00"))
+    }
+
+    @Test func nextRequestForAPlanFromJustBeforeSixAMIsTheNormalStaleTime() {
+        let harness = Harness(now: date("2026-10-08T05:50:00-07:00"))
+        harness.planWindow = .oneHour
+        harness.snapshot = .generated(at: date("2026-10-08T05:50:00-07:00"), window: .oneHour)
+
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-08T06:20:00-07:00"))
     }
 
     @Test(arguments: [
         RecommendationState.UnavailableReason.deviceNotEligible,
         .appleIntelligenceNotEnabled,
     ])
-    func nextRequestWaitsForMidnightWhenTodaysWeatherOnlyPlanCantGetSuggestions(reason: RecommendationState.UnavailableReason) {
-        let harness = Harness(now: date("2026-10-08T15:00:00-07:00"))
+    func nextRequestWaitsForTheStaleTimeWhenTodaysWeatherOnlyPlanCantGetSuggestions(reason: RecommendationState.UnavailableReason) {
+        let harness = Harness(now: date("2026-10-08T08:00:00-07:00"))
         harness.snapshot = .weatherOnly(at: date("2026-10-08T07:00:00-07:00"))
 
-        #expect(harness.refresher.nextRequestDate(availability: .unavailable(reason)) == date("2026-10-09T00:05:00-07:00"))
+        #expect(harness.refresher.nextRequestDate(availability: .unavailable(reason)) == date("2026-10-08T10:00:00-07:00"))
+    }
+
+    @Test func nextRetryIsSoonerForAShortWindow() {
+        let harness = Harness(now: date("2026-10-08T15:00:00-07:00"))
+        harness.planWindow = .oneHour
+        harness.snapshot = .weatherOnly(at: date("2026-10-08T14:50:00-07:00"), window: .oneHour)
+
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-08T15:30:00-07:00"))
     }
 
     @Test(arguments: [RecommendationAvailability.available, .unavailable(.modelNotReady)])
@@ -303,6 +394,7 @@ private final class Harness {
     var selection: LocationSelection = .currentLocation
     var lastKnownGPSCoordinate: CLLocationCoordinate2D?
     var provider: WeatherProvider = .apple
+    var planWindow: PlanWindow = .restOfDay
     private(set) var published: [PlanSnapshot] = []
 
     init(now: Date) {
@@ -318,7 +410,8 @@ private final class Harness {
             publish: { [unowned self] in published.append($0) },
             selection: { [unowned self] in selection },
             lastKnownGPSCoordinate: { [unowned self] in lastKnownGPSCoordinate },
-            provider: { [unowned self] in provider }
+            provider: { [unowned self] in provider },
+            planWindow: { [unowned self] in planWindow }
         )
     }
 }

@@ -27,7 +27,8 @@ extension PlanSnapshot {
         weather: .placeholder,
         recommendation: .placeholder,
         generatedAt: .now,
-        provider: .apple
+        provider: .apple,
+        span: PlanSpan(window: .threeHours, startingAt: .now, timeZone: .current)
     )
 
     /// The plan's Plan Window; plans saved before there was a choice covered the rest of the day.
@@ -76,5 +77,15 @@ enum SharedStore {
 
     private static var storedTemperatureUnit: StoredPreference<TemperatureUnit>? {
         UserDefaults(suiteName: appGroupID).map { .rawValue("temperatureUnit", in: $0) }
+    }
+
+    /// The Plan Window chosen in Settings, stored in `defaults` (the App Group's in production).
+    static func storedPlanWindow(in defaults: UserDefaults) -> StoredPreference<PlanWindow> {
+        .rawValue("planWindow", in: defaults)
+    }
+
+    /// The Settings default Plan Window, which the widgets and background refresh follow.
+    static func loadPlanWindow(from defaults: UserDefaults = appGroupDefaults) -> PlanWindow {
+        storedPlanWindow(in: defaults).load() ?? .settingsDefault
     }
 }

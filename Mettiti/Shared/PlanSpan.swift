@@ -35,7 +35,7 @@ struct PlanSpan: Codable, Sendable, Equatable {
 
     /// Within one day the interval format shares what it can ("2:20 – 5:20 PM"); across midnight
     /// it would add both dates, so the two times are written out instead.
-    private func timeRange(locale: Locale) -> String {
+    func timeRange(locale: Locale = .autoupdatingCurrent) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         // Ending at midnight still counts as crossing it: the end is on the next day.

@@ -5,15 +5,18 @@ struct DescriptionWidgetEntryView: View {
     var entry: PlanEntry
 
     var body: some View {
-        if let snapshot = entry.snapshot {
+        PlanStateView(state: entry.state) { snapshot in
             VStack(alignment: .leading, spacing: 6) {
-                Text(snapshot.weather.conditionDescription)
-                    .font(.caption.bold())
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(snapshot.weather.conditionDescription)
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                    PlanWindowTimesLabel(span: snapshot.span)
+                }
                 if let recommendation = snapshot.recommendation {
                     Text(recommendation.summary)
                         .font(.subheadline)
-                        .lineLimit(6)
+                        .lineLimit(5)
                         .minimumScaleFactor(0.8)
                 } else {
                     let unit = SharedStore.loadTemperatureUnit()
@@ -28,8 +31,6 @@ struct DescriptionWidgetEntryView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .containerBackground(.fill.tertiary, for: .widget)
-        } else {
-            EmptyPlanView()
         }
     }
 }
@@ -52,4 +53,5 @@ struct DescriptionWidget: Widget {
 } timeline: {
     PlanEntry(date: .now, snapshot: .placeholder)
     PlanEntry(date: .now, snapshot: .weatherOnlyPlaceholder)
+    PlanEntry(date: .now, state: .needsUpdate)
 }

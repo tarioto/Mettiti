@@ -6,43 +6,45 @@ struct WidgetPlanTimelineTests {
     @Test func planFromYesterdayIsNotShown() {
         let timeline = WidgetPlanTimeline(
             saved: .generated(at: date("2026-10-07T18:00:00-07:00")),
+            window: .restOfDay,
             now: date("2026-10-08T09:00:00-07:00"),
             calendar: gregorianCalendar(in: pacific)
         )
 
-        #expect(timeline.snapshot == nil)
+        #expect(timeline.entries.map(\.content) == [.empty])
     }
 
     @Test func planFromEarlierTodayIsShown() {
         let generatedAt = date("2026-10-08T00:30:00-07:00")
-        let timeline = WidgetPlanTimeline(saved: .generated(at: generatedAt), now: date("2026-10-08T09:00:00-07:00"), calendar: gregorianCalendar(in: pacific))
+        let timeline = WidgetPlanTimeline(saved: .generated(at: generatedAt), window: .restOfDay, now: date("2026-10-08T09:00:00-07:00"), calendar: gregorianCalendar(in: pacific))
 
-        #expect(timeline.snapshot?.generatedAt == generatedAt)
-        #expect(timeline.snapshot?.recommendation != nil)
+        #expect(timeline.current.snapshot?.generatedAt == generatedAt)
+        #expect(timeline.current.snapshot?.recommendation != nil)
     }
 
     @Test func weatherOnlyPlanFromEarlierTodayIsShown() {
         let generatedAt = date("2026-10-08T07:00:00-07:00")
-        let timeline = WidgetPlanTimeline(saved: .weatherOnly(at: generatedAt), now: date("2026-10-08T09:00:00-07:00"), calendar: gregorianCalendar(in: pacific))
+        let timeline = WidgetPlanTimeline(saved: .weatherOnly(at: generatedAt), window: .restOfDay, now: date("2026-10-08T09:00:00-07:00"), calendar: gregorianCalendar(in: pacific))
 
-        #expect(timeline.snapshot?.generatedAt == generatedAt)
-        #expect(timeline.snapshot?.recommendation == nil)
+        #expect(timeline.current.snapshot?.generatedAt == generatedAt)
+        #expect(timeline.current.snapshot?.recommendation == nil)
     }
 
     @Test func noSavedPlanShowsNothing() {
-        let timeline = WidgetPlanTimeline(saved: nil, now: date("2026-10-08T09:00:00-07:00"), calendar: gregorianCalendar(in: pacific))
+        let timeline = WidgetPlanTimeline(saved: nil, window: .restOfDay, now: date("2026-10-08T09:00:00-07:00"), calendar: gregorianCalendar(in: pacific))
 
-        #expect(timeline.snapshot == nil)
+        #expect(timeline.entries.map(\.content) == [.empty])
     }
 
     @Test func planFromJustBeforeMidnightIsHiddenJustAfterMidnight() {
         let timeline = WidgetPlanTimeline(
             saved: .generated(at: date("2026-10-07T23:59:00-07:00")),
+            window: .restOfDay,
             now: date("2026-10-08T00:01:00-07:00"),
             calendar: gregorianCalendar(in: pacific)
         )
 
-        #expect(timeline.snapshot == nil)
+        #expect(timeline.entries.map(\.content) == [.empty])
     }
 
     @Test func dayIsJudgedInTheDeviceTimeZoneNotUTC() {
@@ -50,27 +52,29 @@ struct WidgetPlanTimelineTests {
         let tokyo = TimeZone(identifier: "Asia/Tokyo")!
         let timeline = WidgetPlanTimeline(
             saved: .generated(at: date("2026-10-08T08:00:00+09:00")),
+            window: .restOfDay,
             now: date("2026-10-08T20:00:00+09:00"),
             calendar: gregorianCalendar(in: tokyo)
         )
 
-        #expect(timeline.snapshot != nil)
+        #expect(timeline.current.snapshot != nil)
     }
 
     @Test func planFromYesterdayInDeviceTimeZoneIsHiddenEvenWhenTodayInUTC() {
         // 23:00 Oct 7 and 01:00 Oct 8 in Pacific time are both Oct 8 in UTC.
         let timeline = WidgetPlanTimeline(
             saved: .generated(at: date("2026-10-07T23:00:00-07:00")),
+            window: .restOfDay,
             now: date("2026-10-08T01:00:00-07:00"),
             calendar: gregorianCalendar(in: pacific)
         )
 
-        #expect(timeline.snapshot == nil)
+        #expect(timeline.entries.map(\.content) == [.empty])
     }
 
     @Test func reloadsHourlyDuringTheDay() {
         let now = date("2026-10-08T09:15:00-07:00")
-        let timeline = WidgetPlanTimeline(saved: nil, now: now, calendar: gregorianCalendar(in: pacific))
+        let timeline = WidgetPlanTimeline(saved: nil, window: .restOfDay, now: now, calendar: gregorianCalendar(in: pacific))
 
         #expect(timeline.reloadDate == date("2026-10-08T10:15:00-07:00"))
     }
@@ -78,6 +82,7 @@ struct WidgetPlanTimelineTests {
     @Test func reloadsAtMidnightWhenTheNextHourCrossesIt() {
         let timeline = WidgetPlanTimeline(
             saved: .generated(at: date("2026-10-08T09:00:00-07:00")),
+            window: .restOfDay,
             now: date("2026-10-08T23:30:00-07:00"),
             calendar: gregorianCalendar(in: pacific)
         )
@@ -87,8 +92,121 @@ struct WidgetPlanTimelineTests {
 
     @Test func midnightIsTheDeviceTimeZonesMidnight() {
         let tokyo = TimeZone(identifier: "Asia/Tokyo")!
-        let timeline = WidgetPlanTimeline(saved: nil, now: date("2026-10-08T23:45:00+09:00"), calendar: gregorianCalendar(in: tokyo))
+        let timeline = WidgetPlanTimeline(saved: nil, window: .restOfDay, now: date("2026-10-08T23:45:00+09:00"), calendar: gregorianCalendar(in: tokyo))
 
         #expect(timeline.reloadDate == date("2026-10-09T00:00:00+09:00"))
+    }
+
+    // MARK: - Plan Window
+
+    @Test func planWithinItsWindowIsShownThenAsksToUpdateAtTheWindowsEnd() {
+        let generatedAt = date("2026-10-08T14:00:00-07:00")
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: generatedAt, window: .threeHours),
+            window: .threeHours,
+            now: date("2026-10-08T15:00:00-07:00"),
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.entries.map(\.date) == [date("2026-10-08T15:00:00-07:00"), date("2026-10-08T17:00:00-07:00")])
+        #expect(timeline.entries.map(\.content) == [.plan(generatedAt), .needsUpdate])
+    }
+
+    @Test func planWhoseWindowHasPassedAsksToUpdateInsteadOfShowingOldAdvice() {
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: date("2026-10-08T09:00:00-07:00"), window: .oneHour),
+            window: .oneHour,
+            now: date("2026-10-08T10:00:00-07:00"),
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.entries.map(\.content) == [.needsUpdate])
+        #expect(timeline.current.snapshot == nil)
+    }
+
+    @Test func planForAnotherWindowThanTheSettingsDefaultAsksToUpdate() {
+        // e.g. the default was just changed in Settings and the app hasn't remade the plan yet.
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: date("2026-10-08T09:00:00-07:00"), window: .twelveHours),
+            window: .threeHours,
+            now: date("2026-10-08T10:00:00-07:00"),
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.entries.map(\.content) == [.needsUpdate])
+    }
+
+    @Test func windowEndingAfterMidnightTurnsToTheEmptyStateAtItsEnd() {
+        // By then the plan is from an earlier day.
+        let generatedAt = date("2026-10-08T22:00:00-07:00")
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: generatedAt, window: .threeHours),
+            window: .threeHours,
+            now: date("2026-10-08T22:30:00-07:00"),
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.entries.map(\.date) == [date("2026-10-08T22:30:00-07:00"), date("2026-10-09T01:00:00-07:00")])
+        #expect(timeline.entries.map(\.content) == [.plan(generatedAt), .empty])
+    }
+
+    @Test func lateEveningPlanStaysShownPastMidnightWhileItsWindowRuns() {
+        // Rest of day made at 10 PM covers at least 3 hours, so until 1 AM.
+        let generatedAt = date("2026-10-07T22:00:00-07:00")
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: generatedAt, window: .restOfDay),
+            window: .restOfDay,
+            now: date("2026-10-08T00:30:00-07:00"),
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.entries.map(\.content) == [.plan(generatedAt), .empty])
+    }
+
+    @Test func planFromAnEarlierDayWhoseWindowHasPassedShowsTheEmptyState() {
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: date("2026-10-07T22:00:00-07:00"), window: .threeHours),
+            window: .threeHours,
+            now: date("2026-10-08T01:00:00-07:00"),
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.entries.map(\.content) == [.empty])
+    }
+
+    @Test func planFromAnEarlierDayForAnotherWindowShowsTheEmptyState() {
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: date("2026-10-07T22:00:00-07:00"), window: .twelveHours),
+            window: .threeHours,
+            now: date("2026-10-08T01:00:00-07:00"),
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.entries.map(\.content) == [.empty])
+    }
+
+    @Test func planSavedBeforePlanWindowsCountsAsRestOfDay() {
+        let generatedAt = date("2026-10-08T09:00:00-07:00")
+        let timeline = WidgetPlanTimeline(saved: .generated(at: generatedAt), window: .restOfDay, now: date("2026-10-08T15:00:00-07:00"), calendar: gregorianCalendar(in: pacific))
+
+        #expect(timeline.entries.map(\.date) == [date("2026-10-08T15:00:00-07:00"), date("2026-10-09T00:00:00-07:00")])
+        #expect(timeline.entries.map(\.content) == [.plan(generatedAt), .empty])
+    }
+}
+
+/// What an entry shows, with plans told apart by when they were made.
+private enum ShownContent: Equatable {
+    case empty
+    case plan(Date)
+    case needsUpdate
+}
+
+private extension WidgetPlanTimeline.Entry {
+    var content: ShownContent {
+        switch state {
+        case .empty: .empty
+        case .plan(let snapshot): .plan(snapshot.generatedAt)
+        case .needsUpdate: .needsUpdate
+        }
     }
 }

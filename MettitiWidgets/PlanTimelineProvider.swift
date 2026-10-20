@@ -1,8 +1,12 @@
 import WidgetKit
 
-struct PlanEntry: TimelineEntry {
-    let date: Date
-    let snapshot: PlanSnapshot?
+typealias PlanEntry = WidgetPlanTimeline.Entry
+
+extension WidgetPlanTimeline.Entry: TimelineEntry {
+    /// An entry showing `snapshot`, e.g. for previews.
+    init(date: Date, snapshot: PlanSnapshot) {
+        self.init(date: date, state: .plan(snapshot))
+    }
 }
 
 struct PlanTimelineProvider: TimelineProvider {
@@ -11,17 +15,17 @@ struct PlanTimelineProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (PlanEntry) -> Void) {
-        let snapshot = context.isPreview ? .placeholder : currentTimeline().snapshot
-        completion(PlanEntry(date: .now, snapshot: snapshot))
+        let now = Date.now
+        completion(context.isPreview ? PlanEntry(date: now, snapshot: .placeholder) : currentTimeline(now: now).current)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PlanEntry>) -> Void) {
-        let now = Date.now
-        let timeline = currentTimeline(now: now)
-        completion(Timeline(entries: [PlanEntry(date: now, snapshot: timeline.snapshot)], policy: .after(timeline.reloadDate)))
+        let timeline = currentTimeline(now: .now)
+        completion(Timeline(entries: timeline.entries, policy: .after(timeline.reloadDate)))
     }
 
-    private func currentTimeline(now: Date = .now) -> WidgetPlanTimeline {
-        WidgetPlanTimeline(saved: SharedStore.load(), now: now, calendar: .current)
+    /// Follows the Settings default Plan Window, never the main screen's override.
+    private func currentTimeline(now: Date) -> WidgetPlanTimeline {
+        WidgetPlanTimeline(saved: SharedStore.load(), window: SharedStore.loadPlanWindow(), now: now, calendar: .current)
     }
 }
