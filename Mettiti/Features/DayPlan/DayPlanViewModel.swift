@@ -149,19 +149,13 @@ final class DayPlanViewModel {
         PlanSpan(window: planWindowPreference.window, startingAt: now(), timeZone: hourly?.timeZone ?? calendar.timeZone)
     }
 
-    /// How old the plan can get before returning to the app refreshes it on the same day. The
-    /// day's high, low and rain chance rarely move within a few hours, and each refresh reruns
-    /// the on-device model, so quick app switches never refresh but morning to evening does.
-    private static let foregroundRefreshInterval: TimeInterval = 3 * 60 * 60
-
-    /// Refreshes a plan left in memory once it's from an earlier day or older than
-    /// `foregroundRefreshInterval` (#24). Same rules as launch: today's Saved Plan stays on screen
-    /// while the fresh one loads; a plan from an earlier day is never shown as current.
+    /// Refreshes a plan left in memory once it's stale for the current Plan Window: from an
+    /// earlier day, or older than the window's `staleAfter` (#24, #98). Same rules as launch:
+    /// today's Saved Plan stays on screen while the fresh one loads; a plan from an earlier day is
+    /// never shown as current.
     func refreshIfStale() {
-        guard hasStarted, let lastLoadRequestedAt else { return }
-        let now = now()
-        guard !calendar.isDate(lastLoadRequestedAt, inSameDayAs: now)
-                || now.timeIntervalSince(lastLoadRequestedAt) >= Self.foregroundRefreshInterval else { return }
+        guard hasStarted, let lastLoadRequestedAt,
+              planWindowPreference.window.isPlanStale(lastLoadedAt: lastLoadRequestedAt, now: now(), calendar: calendar) else { return }
         showSavedPlanIfCurrent()
         if !isShowingSavedPlan { state = .idle }
         beginLoading(for: locationPreference.selection)
