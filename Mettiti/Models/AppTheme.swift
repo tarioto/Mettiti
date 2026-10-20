@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Purely the home screen's background color choice.
+/// Purely the main screen's background color choice.
 enum AppTheme: String, Codable, CaseIterable, Identifiable {
     case none
     case sunset

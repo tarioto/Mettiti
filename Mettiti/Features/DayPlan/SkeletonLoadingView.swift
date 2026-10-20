@@ -38,8 +38,8 @@ extension SkeletonLoadingView {
     }()
 }
 
-// Shimmers placeholder-redacted content. Applied inside each card, beneath its glass:
-// masking the glass itself renders it offscreen, which flattens its diffuse shadow.
+// Shimmers placeholder-redacted content. Applied inside each card, beneath its background,
+// so the card itself stays solid while its placeholders shimmer.
 struct PlaceholderShimmer: ViewModifier {
     @Environment(\.redactionReasons) private var redactionReasons
     @State private var phase: CGFloat = -0.5

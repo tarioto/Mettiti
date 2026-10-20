@@ -7,12 +7,12 @@ A weather-driven outfit suggestion app for iOS, with home screen widgets.
 ### Appearance
 
 **Theme**:
-The colour scheme of the app's home screen background, chosen in Settings. One of Default, Sunset, Ocean, Aurora or Midnight.
+The colour scheme of the main screen's background, chosen in Settings. One of Default, Sunset, Ocean, Aurora or Midnight.
 _Avoid_: Skin, colour scheme
 
-**Appearance**:
-Whether the app runs in Light mode, Dark mode or follows the System setting. Separate from the **Theme**.
-_Avoid_: Mode, theme
+**Light/Dark**:
+Whether the app runs in Light mode, Dark mode or follows the System setting. Separate from the **Theme**. Settings shows it in its Appearance group, alongside the Theme, the App Icon and the cards.
+_Avoid_: Appearance (the Settings group, not this choice), Mode, Automatic
 
 ### App icons
 
@@ -33,7 +33,7 @@ _Avoid_: Icon theme, icon setting
 ### Day plan
 
 **Plan Window**:
-How far ahead from now the outfit advice covers: 1h, 3h, 6h, 12h or Rest of day, chosen in Settings (default Rest of day). Every window starts at the time the plan is made. Fixed windows cross midnight freely; Rest of day runs until midnight in the forecast location's time zone, but covers at least 3 hours. The plan card's title, the weather card's numbers and the chart's shading all show the window.
+How far ahead from now the outfit advice covers: 1h, 3h, 6h, 12h or Rest of day, chosen in Settings (default Rest of day). Every window starts at the time the plan is made. Fixed windows cross midnight freely; Rest of day runs until midnight in the forecast location's time zone, but covers at least 3 hours. The main screen names the window once, in its Plan Window menu; the plan card's title shows the window's times, and the weather card's numbers and the chart's shading cover it.
 _Avoid_: Time range, horizon, span (outside code)
 
 **Window Override**:

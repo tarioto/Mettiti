@@ -11,66 +11,16 @@ struct SettingsView: View {
     @Bindable var planWindowPreference: PlanWindowPreferenceStore
     @Environment(AppIconPreferenceStore.self) private var appIconPreference
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    @State private var searchText = ""
-    @State private var isSearching = false
-    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Weather Location") {
-                    Button {
-                        preference.selection = .currentLocation
-                        dismiss()
+                Section("Location") {
+                    NavigationLink {
+                        LocationSettingsView(preference: preference)
                     } label: {
-                        HStack {
-                            Label("Current Location", systemImage: "location.fill")
-                            Spacer()
-                            if case .currentLocation = preference.selection {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.tint)
-                            }
-                        }
+                        LabeledContent("Weather Location", value: locationName)
                     }
-                    .foregroundStyle(.primary)
-                }
-
-                Section {
-                    HStack {
-                        TextField("City name", text: $searchText)
-                            .textInputAutocapitalization(.words)
-                            .autocorrectionDisabled()
-                            .onSubmit { search() }
-                        if isSearching {
-                            ProgressView()
-                        }
-                    }
-
-                    Button("Use This City") {
-                        search()
-                    }
-                    .disabled(searchText.trimmingCharacters(in: .whitespaces).isEmpty || isSearching)
-
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
-                    }
-
-                    if case .custom(let name, _, _) = preference.selection {
-                        HStack {
-                            Label(name, systemImage: "mappin.and.ellipse")
-                            Spacer()
-                            Image(systemName: "checkmark")
-                                .foregroundStyle(.tint)
-                        }
-                    }
-                } header: {
-                    Text("Custom City")
-                } footer: {
-                    Text("Search for a city to see its weather instead of your current location.")
                 }
 
                 Section {
@@ -79,143 +29,104 @@ struct SettingsView: View {
                             Text(provider.label).tag(provider)
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                } header: {
-                    Text("Weather Source")
-                } footer: {
-                    Text("Apple Weather uses the same data as the Weather app. With either source, the hourly chart's shaded band shows the forecast spread from Open-Meteo's ensemble.")
-                }
 
-                Section {
-                    // Five segments don't fit at accessibility text sizes, where a menu lists them in full.
-                    if dynamicTypeSize.isAccessibilitySize {
-                        Picker("Plan Window", selection: $planWindowPreference.window) {
-                            ForEach(PlanWindow.allCases) { window in
-                                Text(window.name()).tag(window)
-                            }
+                    Picker("Plan Window", selection: $planWindowPreference.window) {
+                        ForEach(PlanWindow.allCases) { window in
+                            Text(window.name()).tag(window)
                         }
-                        .pickerStyle(.menu)
-                    } else {
-                        Picker("Plan Window", selection: $planWindowPreference.window) {
-                            ForEach(PlanWindow.allCases) { window in
-                                Text(window.label)
-                                    .accessibilityLabel(window.name())
-                                    .tag(window)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
                     }
-                } header: {
-                    Text("Plan Window")
-                } footer: {
-                    Text("How far ahead from now the outfit advice covers. Rest of day runs until midnight, but at least 3 hours.")
-                }
 
-                Section("Temperature Unit") {
                     Picker("Temperature Unit", selection: $temperaturePreference.unit) {
                         ForEach(TemperatureUnit.allCases) { unit in
                             Text(unit.label).tag(unit)
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
+                } header: {
+                    Text("Forecast")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Plan Window is how far ahead from now the outfit advice covers. Rest of day runs until midnight, but at least 3 hours.")
+                        Text("Apple Weather uses the same data as the Weather app. With either source, the hourly chart's shaded band shows the forecast spread from Open-Meteo's ensemble.")
+                    }
                 }
 
                 Section {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 18) {
-                            ForEach(AppTheme.allCases) { theme in
-                                let isSelected = themePreference.theme == theme
-                                Button {
-                                    themePreference.theme = theme
-                                } label: {
-                                    VStack(spacing: 6) {
-                                        Circle()
-                                            .fill(theme.swatchGradient)
-                                            .frame(width: 46, height: 46)
-                                            .overlay(
-                                                Circle()
-                                                    .strokeBorder(
-                                                        Color.primary,
-                                                        lineWidth: isSelected ? 3 : 0
-                                                    )
-                                            )
-                                            .overlay {
-                                                if isSelected {
-                                                    Image(systemName: "checkmark")
-                                                        .font(.caption.bold())
-                                                        .foregroundStyle(.white)
-                                                }
-                                            }
-                                        Text(theme.label)
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel(theme.label)
-                                .accessibilityAddTraits(isSelected ? .isSelected : [])
-                            }
-                        }
-                        .padding(.vertical, 6)
-                    }
-
-                    Picker("Appearance", selection: $themePreference.appearance) {
-                        ForEach(AppAppearance.allCases) { appearance in
-                            Text(appearance.label).tag(appearance)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                } header: {
-                    Text("Theme")
-                } footer: {
-                    Text("The color is used for the home screen background. Appearance controls Light/Dark mode independently.")
-                }
-
-                if appIconPreference.supportsAlternateIcons {
-                    Section("App Icon") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Theme")
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 18) {
-                                appIconOption(.default, label: String(localized: "Default"), thumbnailName: appIconPreference.buildIcon.thumbnailName)
-                                ForEach(ThemeIcon.allCases) { icon in
-                                    appIconOption(.theme(icon), label: icon.label, thumbnailName: icon.thumbnailName)
+                                ForEach(AppTheme.allCases) { theme in
+                                    let isSelected = themePreference.theme == theme
+                                    Button {
+                                        themePreference.theme = theme
+                                    } label: {
+                                        VStack(spacing: 6) {
+                                            Circle()
+                                                .fill(theme.swatchGradient)
+                                                .frame(width: 46, height: 46)
+                                                .overlay(
+                                                    Circle()
+                                                        .strokeBorder(
+                                                            Color.primary,
+                                                            lineWidth: isSelected ? 3 : 0
+                                                        )
+                                                )
+                                                .overlay {
+                                                    if isSelected {
+                                                        Image(systemName: "checkmark")
+                                                            .font(.caption.bold())
+                                                            .foregroundStyle(.white)
+                                                    }
+                                                }
+                                            Text(theme.label)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel(theme.label)
+                                    .accessibilityAddTraits(isSelected ? .isSelected : [])
                                 }
                             }
                             .padding(.vertical, 6)
                         }
                     }
-                }
 
-                Section {
-                    ForEach($cardPreference.cards) { $config in
-                        HStack {
-                            Image(systemName: config.type.icon)
-                                .foregroundStyle(.secondary)
-                                .frame(width: 24)
-                            Text(config.type.title)
-                            Spacer()
-                            Toggle(config.type.title, isOn: $config.isVisible)
-                                .labelsHidden()
+                    Picker("Light/Dark", selection: $themePreference.appearance) {
+                        ForEach(AppAppearance.allCases) { appearance in
+                            Text(appearance.label).tag(appearance)
                         }
                     }
-                    .onMove { indices, newOffset in
-                        cardPreference.cards.move(fromOffsets: indices, toOffset: newOffset)
+
+                    if appIconPreference.supportsAlternateIcons {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("App Icon")
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 18) {
+                                    appIconOption(.default, label: String(localized: "Default"), thumbnailName: appIconPreference.buildIcon.thumbnailName)
+                                    ForEach(ThemeIcon.allCases) { icon in
+                                        appIconOption(.theme(icon), label: icon.label, thumbnailName: icon.thumbnailName)
+                                    }
+                                }
+                                .padding(.vertical, 6)
+                            }
+                        }
+                    }
+
+                    NavigationLink("Cards") {
+                        CardSettingsView(cardPreference: cardPreference)
                     }
                 } header: {
-                    Text("Home Screen Cards")
+                    Text("Appearance")
                 } footer: {
-                    Text("Drag to reorder. Turn off a card to hide it from the home screen.")
+                    Text("The theme color is used for the main screen's background. Cards sets which cards the main screen shows, and in what order.")
                 }
             }
-            .environment(\.editMode, .constant(.active))
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button(role: .confirm) { dismiss() }
                 }
             }
         }
@@ -261,6 +172,73 @@ struct SettingsView: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
+    private var locationName: String {
+        switch preference.selection {
+        case .currentLocation: return String(localized: "Current Location")
+        case .custom(let name, _, _): return name
+        }
+    }
+}
+
+/// Picks the weather location: the current location, or a city found by searching. Picking one
+/// goes back to Settings.
+private struct LocationSettingsView: View {
+    let preference: LocationPreferenceStore
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var searchText = ""
+    @State private var isSearching = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        List {
+            Section {
+                Button {
+                    preference.selection = .currentLocation
+                    dismiss()
+                } label: {
+                    HStack {
+                        Label("Current Location", systemImage: "location.fill")
+                        Spacer()
+                        if case .currentLocation = preference.selection {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                }
+                .foregroundStyle(.primary)
+
+                if case .custom(let name, _, _) = preference.selection {
+                    HStack {
+                        Label(name, systemImage: "mappin.and.ellipse")
+                        Spacer()
+                        Image(systemName: "checkmark")
+                            .foregroundStyle(.tint)
+                    }
+                }
+            } footer: {
+                Text("Search for a city to see its weather instead of your current location.")
+            }
+
+            if isSearching {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+            }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+        }
+        .navigationTitle("Weather Location")
+        .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: Text("City name"))
+        .textInputAutocapitalization(.words)
+        .autocorrectionDisabled()
+        .onSubmit(of: .search) { search() }
+    }
+
     private func search() {
         let query = searchText.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return }
@@ -288,6 +266,37 @@ struct SettingsView: View {
                 errorMessage = String(localized: "Couldn't find that location. Try a different search.")
             }
         }
+    }
+}
+
+/// Orders the main screen's cards and turns them on or off.
+private struct CardSettingsView: View {
+    @Bindable var cardPreference: CardPreferenceStore
+
+    var body: some View {
+        List {
+            Section {
+                ForEach($cardPreference.cards) { $config in
+                    HStack {
+                        Image(systemName: config.type.icon)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 24)
+                        Text(config.type.title)
+                        Spacer()
+                        Toggle(config.type.title, isOn: $config.isVisible)
+                            .labelsHidden()
+                    }
+                }
+                .onMove { indices, newOffset in
+                    cardPreference.cards.move(fromOffsets: indices, toOffset: newOffset)
+                }
+            } footer: {
+                Text("Drag to reorder. Turn off a card to hide it from the main screen.")
+            }
+        }
+        .environment(\.editMode, .constant(.active))
+        .navigationTitle("Cards")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

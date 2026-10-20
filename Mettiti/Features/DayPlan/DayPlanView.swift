@@ -37,20 +37,12 @@ struct DayPlanView: View {
 
     private var weatherCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(CardType.weather.title)
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .center)
-            Divider()
+            CardTitle(type: .weather)
 
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(weather.conditionDescription)
                         .font(.title2.bold())
-                    if let span, forecastWindow != nil {
-                        Text(span.window.name())
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
                     Text("\(temperaturePreference.unit.formattedHighLow(highFahrenheit: details.highF, lowFahrenheit: details.lowF))  •  \((Double(details.precipitationProbability) / 100).formatted(.percent)) rain  •  UV \(Int(details.uvIndex.rounded()))", comment: "Weather card details: high/low, chance of rain, UV index")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -67,7 +59,7 @@ struct DayPlanView: View {
             }
         }
         .padding()
-        .cardGlass()
+        .cardBackground()
     }
 
     /// The hourly forecast over the plan's span, or nil without one (or with no hours in it),
@@ -89,14 +81,7 @@ struct DayPlanView: View {
 
     private var planCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(span?.title() ?? CardType.plan.title)
-                .font(.headline)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .accessibilityLabel(span?.accessibilityLabel() ?? CardType.plan.title)
-                .accessibilityAddTraits(.isHeader)
-            Divider()
+            CardTitle(type: .plan, title: span?.timeRange(), accessibilityLabel: span?.accessibilityLabel())
             progressCaption(for: .plan)
             switch recommendation {
             case .ready(let outfit):
@@ -118,15 +103,12 @@ struct DayPlanView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .cardGlass()
+        .cardBackground()
     }
 
     private var wearAndBringCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(CardType.wearAndBring.title)
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .center)
-            Divider()
+            CardTitle(type: .wearAndBring)
             progressCaption(for: .wearAndBring)
 
             switch recommendation {
@@ -142,7 +124,7 @@ struct DayPlanView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .cardGlass()
+        .cardBackground()
     }
 
     /// With `paddedWithPlaceholders`, placeholder rows fill in up to the skeleton's count, so the
@@ -281,6 +263,24 @@ private struct DayPlanPreview: View {
     }
 }
 
+/// A card's title, in the style of the Weather app's card headers: the card's symbol and a small
+/// secondary label at the leading edge.
+private struct CardTitle: View {
+    let type: CardType
+    var title: String? = nil
+    var accessibilityLabel: String? = nil
+
+    var body: some View {
+        Label(title ?? type.title, systemImage: type.icon)
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel(accessibilityLabel ?? title ?? type.title)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
 private struct ItemRow: View {
     let item: RecommendedItem
     @ScaledMetric(relativeTo: .title) private var emojiSize: CGFloat = 34
@@ -304,8 +304,10 @@ private struct ItemRow: View {
 }
 
 private extension View {
-    func cardGlass() -> some View {
+    /// Cards are content, so they sit on a material rather than Liquid Glass, which the HIG keeps
+    /// for the controls floating above content.
+    func cardBackground() -> some View {
         modifier(PlaceholderShimmer())
-            .glassEffect(in: .rect(cornerRadius: 16))
+            .background(.regularMaterial, in: .rect(cornerRadius: 16))
     }
 }

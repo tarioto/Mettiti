@@ -11,8 +11,8 @@ struct HourlyTemperatureChart: View {
     /// Grows with Dynamic Type from the 9pt the axis labels have at the default size.
     @ScaledMetric(relativeTo: .caption2) private var hourLabelSize: CGFloat = 9
 
-    private static let halfHour: TimeInterval = 1800
-    private static let hour: TimeInterval = 3600
+    nonisolated private static let halfHour: TimeInterval = 1800
+    nonisolated private static let hour: TimeInterval = 3600
 
     /// Each bar spans this share of its hour, centred on the hour it covers.
     private static let barWidthFraction = 0.6
@@ -38,7 +38,7 @@ struct HourlyTemperatureChart: View {
     }
 
     /// The first and last hours padded by half an hour, so their bars aren't clipped.
-    static func timeDomain(for points: [HourlyTemperaturePoint]) -> ClosedRange<Date> {
+    nonisolated static func timeDomain(for points: [HourlyTemperaturePoint]) -> ClosedRange<Date> {
         guard let first = points.first?.date, let last = points.last?.date else {
             return Date.now...Date.now.addingTimeInterval(hour)
         }
@@ -46,7 +46,7 @@ struct HourlyTemperatureChart: View {
     }
 
     /// The part of the plan's span a chart of `points` shows, or nil when they don't overlap.
-    static func shadedRange(of span: PlanSpan?, over points: [HourlyTemperaturePoint]) -> ClosedRange<Date>? {
+    nonisolated static func shadedRange(of span: PlanSpan?, over points: [HourlyTemperaturePoint]) -> ClosedRange<Date>? {
         guard let span, !points.isEmpty else { return nil }
         let domain = timeDomain(for: points)
         let start = max(span.interval.start, domain.lowerBound)
