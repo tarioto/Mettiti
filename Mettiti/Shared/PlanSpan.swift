@@ -23,7 +23,7 @@ struct PlanSpan: Codable, Sendable, Equatable {
         )
     }
 
-    /// The window's local times, e.g. "2:20 – 5:20 PM": the plan card's title, under the main
+    /// The window's local times, e.g. "2:20 – 5:20 PM": in the plan card's title, under the main
     /// screen's Plan Window menu, which already names the window.
     ///
     /// Within one day the interval format shares what it can ("2:20 – 5:20 PM"); across midnight

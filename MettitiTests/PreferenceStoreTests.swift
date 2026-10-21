@@ -71,17 +71,41 @@ struct PreferenceStoreTests {
         store.cards = [
             CardConfig(type: .weather, isVisible: false),
             CardConfig(type: .wearAndBring, isVisible: true),
+            CardConfig(type: .location, isVisible: false),
             CardConfig(type: .plan, isVisible: true),
         ]
 
         #expect(CardPreferenceStore(defaults: defaults).visibleOrderedTypes == [.wearAndBring, .plan])
     }
 
-    @Test func storedCardLayoutMissingACardFallsBackToTheDefaultLayout() throws {
+    @Test func storedCardLayoutMissingCardsGetsThemAtTheirDefaultPositions() throws {
         let defaults = isolatedDefaults()
         let incomplete = [CardConfig(type: .weather, isVisible: true)]
         defaults.set(try JSONEncoder().encode(incomplete), forKey: "cardConfiguration")
 
-        #expect(CardPreferenceStore(defaults: defaults).visibleOrderedTypes == [.plan, .weather, .wearAndBring])
+        #expect(CardPreferenceStore(defaults: defaults).visibleOrderedTypes == [.plan, .weather, .location, .wearAndBring])
+    }
+
+    @Test func layoutSavedBeforeTheLocationCardKeepsItsOrderAndHiddenCards() throws {
+        let defaults = isolatedDefaults()
+        let saved = [
+            CardConfig(type: .wearAndBring, isVisible: true),
+            CardConfig(type: .weather, isVisible: false),
+            CardConfig(type: .plan, isVisible: true),
+        ]
+        defaults.set(try JSONEncoder().encode(saved), forKey: "cardConfiguration")
+
+        let cards = CardPreferenceStore(defaults: defaults).cards
+
+        #expect(cards.map(\.type) == [.wearAndBring, .weather, .location, .plan])
+        #expect(cards.map(\.isVisible) == [true, false, true, true])
+    }
+
+    @Test func storedCardLayoutListingACardTwiceFallsBackToTheDefaultLayout() throws {
+        let defaults = isolatedDefaults()
+        let duplicated = [CardConfig(type: .weather, isVisible: true), CardConfig(type: .weather, isVisible: false)]
+        defaults.set(try JSONEncoder().encode(duplicated), forKey: "cardConfiguration")
+
+        #expect(CardPreferenceStore(defaults: defaults).visibleOrderedTypes == [.plan, .weather, .location, .wearAndBring])
     }
 }

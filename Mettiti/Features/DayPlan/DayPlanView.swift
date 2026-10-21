@@ -1,3 +1,4 @@
+import MapKit
 import SwiftUI
 
 struct DayPlanView: View {
@@ -7,6 +8,8 @@ struct DayPlanView: View {
     /// What the plan covers; nil in previews.
     var span: PlanSpan? = nil
     var provider: WeatherProvider = .openMeteo
+    /// Where the plan is for; nil while Current Location waits for a fix, and in previews.
+    var location: PlanLocation? = nil
     var onRetryRecommendation: () -> Void = {}
     @Environment(TemperaturePreferenceStore.self) private var temperaturePreference
     @Environment(CardPreferenceStore.self) private var cardPreference
@@ -47,6 +50,8 @@ struct DayPlanView: View {
             planCard
         case .wearAndBring:
             wearAndBringCard
+        case .location:
+            LocationCard(location: location)
         }
     }
 
@@ -96,7 +101,15 @@ struct DayPlanView: View {
 
     private var planCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CardTitle(type: .plan, title: span?.timeRange(), accessibilityLabel: span?.accessibilityLabel())
+            CardTitle(
+                type: .plan,
+                title: span.map { String(localized: "planCard.title", defaultValue: "\(CardType.plan.title) · \($0.timeRange())", comment: "Plan card title: the card's name, then the times it covers, e.g. Plan · 2:20 – 5:20 PM") },
+                accessibilityLabel: span.map { String(localized: "planCard.accessibilityLabel", defaultValue: "\(CardType.plan.title), \($0.accessibilityLabel())", comment: "VoiceOver label for the plan card title: the card's name, then its Plan Window and times") }
+            )
+            if let city = location?.name {
+                Text(city)
+                    .font(.title2.bold())
+            }
             progressCaption(for: .plan)
             switch recommendation {
             case .ready(let outfit):
@@ -166,7 +179,7 @@ struct DayPlanView: View {
     }
 
     private var firstSuggestionCard: CardType? {
-        cardPreference.visibleOrderedTypes.first { $0 != .weather }
+        cardPreference.visibleOrderedTypes.first(where: \.showsSuggestion)
     }
 
     /// The full explanation and action go in the first visible suggestion card; any later one
@@ -293,6 +306,41 @@ private struct CardTitle: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityLabel(accessibilityLabel ?? title ?? type.title)
             .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// The city the plan is for, on a map with a pin.
+private struct LocationCard: View {
+    let location: PlanLocation?
+    @ScaledMetric(relativeTo: .body) private var mapHeight: CGFloat = 160
+
+    /// The map runs to the card's edges, so only the title is padded and the card clips the map
+    /// to its corners.
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            CardTitle(type: .location)
+                .padding()
+
+            map
+                .frame(height: mapHeight)
+                .accessibilityHidden(true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardBackground()
+        .clipShape(.rect(cornerRadius: 16))
+    }
+
+    @ViewBuilder
+    private var map: some View {
+        if let location {
+            let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 12_000, longitudinalMeters: 12_000)
+            Map(position: .constant(.region(region)), interactionModes: []) {
+                Marker(location.name ?? "", systemImage: "mappin", coordinate: location.coordinate)
+            }
+        } else {
+            Rectangle()
+                .fill(.quaternary)
+        }
     }
 }
 

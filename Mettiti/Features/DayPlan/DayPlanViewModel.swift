@@ -31,6 +31,9 @@ final class DayPlanViewModel {
     var activePlanWindow: PlanWindow {
         planWindowOverride ?? planWindowPreference.window
     }
+    /// Where the plan is for, for the Location card: the searched city as soon as it's picked, or
+    /// Current Location once there's a fix, with its city name filled in once it's looked up.
+    private(set) var location: PlanLocation?
 
     private let locationManager: LocationProviding
     private let locationPreference: LocationPreferenceStore
@@ -42,6 +45,7 @@ final class DayPlanViewModel {
     private let now: @MainActor () -> Date
     /// Defines "today"; autoupdating so a time zone change while the app is in memory counts.
     private let calendar: Calendar
+    private let lookUpCityName: @Sendable (CLLocationCoordinate2D) async -> String?
     @ObservationIgnored private var hasStarted = false
     /// Last GPS fix; only Current Location refreshes reuse it, so custom-city loads never set it.
     /// Cleared on every selection change so returning to Current Location waits for a fresh fix.
@@ -83,7 +87,7 @@ final class DayPlanViewModel {
     /// that keeps the outfit keeps them too.
     @ObservationIgnored private var outfitsByWindow: [PlanWindow: Advice] = [:]
 
-    init(locationManager: LocationProviding, locationPreference: LocationPreferenceStore, providerPreference: WeatherProviderPreferenceStore, planWindowPreference: PlanWindowPreferenceStore, fetcher: DayPlanFetching = DayPlanFetcher(), loadSnapshot: @escaping @MainActor () -> PlanSnapshot? = SharedStore.load, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = DayPlanViewModel.saveAndReloadWidgets, now: @escaping @MainActor () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent) {
+    init(locationManager: LocationProviding, locationPreference: LocationPreferenceStore, providerPreference: WeatherProviderPreferenceStore, planWindowPreference: PlanWindowPreferenceStore, fetcher: DayPlanFetching = DayPlanFetcher(), loadSnapshot: @escaping @MainActor () -> PlanSnapshot? = SharedStore.load, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = DayPlanViewModel.saveAndReloadWidgets, now: @escaping @MainActor () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent, lookUpCityName: @escaping @Sendable (CLLocationCoordinate2D) async -> String? = PlaceNameLookup.cityName) {
         self.locationManager = locationManager
         self.locationPreference = locationPreference
         self.providerPreference = providerPreference
@@ -93,6 +97,7 @@ final class DayPlanViewModel {
         self.publishSnapshot = publishSnapshot
         self.now = now
         self.calendar = calendar
+        self.lookUpCityName = lookUpCityName
         appliedSelection = locationPreference.selection
         appliedProvider = providerPreference.provider
         appliedPlanWindow = planWindowPreference.window
@@ -116,6 +121,7 @@ final class DayPlanViewModel {
         isUpdatingSavedPlan = false
         state = .idle
         lastCoordinate = nil
+        location = nil
         keepsUnchangedAdvice = false
         outfitsByWindow = [:]
         beginLoading(for: selection)
@@ -351,8 +357,10 @@ final class DayPlanViewModel {
             isUpdatingSavedPlan = isHoldingOutfit
             lastLoadRequestedAt = now()
             locationManager.requestLocation()
-        case .custom(_, let latitude, let longitude):
-            startLoad(for: CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
+        case .custom(let name, let latitude, let longitude):
+            let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+            location = PlanLocation(name: name, coordinate: coordinate, isCurrentLocation: false)
+            startLoad(for: coordinate)
         }
     }
 
@@ -376,6 +384,7 @@ final class DayPlanViewModel {
     private func handleGPSCoordinate(_ coordinate: CLLocationCoordinate2D) {
         guard case .currentLocation = locationPreference.selection else { return }
         lastCoordinate = coordinate
+        showCurrentLocation(at: coordinate)
         // A Saved Plan on screen isn't .idle, but the first fix still has to start its refresh.
         let savedPlanAwaitsFix = isShowingSavedPlan && loadTask == nil
         guard case .idle = state else {
@@ -383,6 +392,19 @@ final class DayPlanViewModel {
             return
         }
         startLoad(for: coordinate)
+    }
+
+    /// A fix near the one already shown keeps its name, so small moves don't look it up again.
+    private func showCurrentLocation(at coordinate: CLLocationCoordinate2D) {
+        if let location, location.isCurrentLocation, location.isNear(coordinate) { return }
+        let shown = PlanLocation(name: nil, coordinate: coordinate, isCurrentLocation: true)
+        location = shown
+        Task {
+            let name = await lookUpCityName(coordinate)
+            // A later fix or another selection has replaced it meanwhile.
+            guard location == shown else { return }
+            location?.name = name
+        }
     }
 
     private func handleGPSError(_ message: String) {

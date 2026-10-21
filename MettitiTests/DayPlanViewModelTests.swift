@@ -36,6 +36,57 @@ struct DayPlanViewModelTests {
         #expect(requested.map(\.longitude) == [-122.3])
     }
 
+    @Test func searchedCityIsTheLocationAsSoonAsItsPicked() {
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .custom(name: "Lisbon", latitude: 38.7, longitude: -9.1)
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: FakeDayPlanFetcher(),
+            loadSnapshot: { nil },
+            publishSnapshot: { _ in },
+            lookUpCityName: { _ in "Looked up" }
+        )
+
+        viewModel.start()
+
+        #expect(viewModel.location == PlanLocation(name: "Lisbon", coordinate: CLLocationCoordinate2D(latitude: 38.7, longitude: -9.1), isCurrentLocation: false))
+    }
+
+    @Test func currentLocationGetsItsCityNameOnceLookedUpAndKeepsItForANearbyFix() async throws {
+        let location = FakeLocationProvider()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        let lookups = Mutex(0)
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: FakeDayPlanFetcher(),
+            loadSnapshot: { nil },
+            publishSnapshot: { _ in },
+            lookUpCityName: { _ in
+                lookups.withLock { $0 += 1 }
+                return "Bangkok"
+            }
+        )
+
+        viewModel.start()
+        #expect(viewModel.location == nil)
+        location.deliver(CLLocationCoordinate2D(latitude: 13.75, longitude: 100.5))
+        #expect(viewModel.location?.isCurrentLocation == true)
+
+        try await waitUntil { viewModel.location?.name == "Bangkok" }
+        location.deliver(CLLocationCoordinate2D(latitude: 13.752, longitude: 100.501))
+        try await waitUntil { viewModel.state.isLoaded }
+
+        #expect(viewModel.location?.name == "Bangkok")
+        #expect(lookups.withLock { $0 } == 1)
+    }
+
     @Test func refreshInCurrentLocationAfterCustomCityDoesNotReloadThatCity() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
