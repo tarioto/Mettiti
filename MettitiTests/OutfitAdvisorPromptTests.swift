@@ -118,6 +118,66 @@ struct OutfitAdvisorPromptTests {
         #expect(prompt.contains("- 8 PM: 30°C (hot), Clear sky"))
     }
 
+    /// Bangkok in the evening: thunderstorms, cooling off from hot to warm, never cooler.
+    private let bangkokEvening = HourlyForecast(timeZone: pacific, points: [
+        hour("2026-10-10T03:00:00Z", temperature: 86, rain: 60, uv: 0, wind: 6, code: 95, daylight: false),
+        hour("2026-10-10T04:00:00Z", temperature: 81, rain: 40, uv: 0, wind: 5, code: 95, daylight: false),
+        hour("2026-10-10T05:00:00Z", temperature: 78, rain: 20, uv: 0, wind: 4, code: 3, daylight: false),
+    ])
+
+    @Test func promptSaysNoWarmLayerIsNeededWhenItsWarmThroughout() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: bangkokEvening, span: restOfDay(from: evening), unit: .fahrenheit)
+
+        #expect(prompt.contains("- Coldest it gets: warm, so no jacket, sweater or other warm layer is needed."))
+    }
+
+    @Test func promptDoesntRuleOutAWarmLayerWhenItGetsMildOrColder() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, span: restOfDay(from: afternoon), unit: .fahrenheit)
+
+        #expect(!prompt.contains("Coldest it gets"))
+    }
+
+    @Test func wholeDayPromptSaysNoWarmLayerIsNeededForAWarmDay() {
+        let tropicalDay = DailyWeather(date: date("2026-10-09T07:00:00Z"), highTemperatureF: 90, lowTemperatureF: 79, precipitationProbability: 70, uvIndex: 8, windSpeedMph: 5, conditionCode: 95, conditionDescription: "Thunderstorm")
+
+        let prompt = OutfitAdvisor.prompt(for: tropicalDay, hourly: nil, span: restOfDay(from: afternoon), unit: .celsius)
+
+        // 79°F = 26°C
+        #expect(prompt.contains("Low: 26°C (warm)\n- Coldest it gets: warm, so no jacket"))
+    }
+
+    @Test func recommendationForAWarmEveningDropsWarmLayersButKeepsRainGear() {
+        let suggested = OutfitRecommendation(summary: "Stormy and warm.", items: [
+            RecommendedItem(emoji: "👕", name: "Light jacket", reason: "Warmth is moderate in the morning."),
+            RecommendedItem(emoji: "☂️", name: "Umbrella", reason: "Thunderstorms are expected."),
+            RecommendedItem(emoji: "🧥", name: "Raincoat", reason: "Heavy showers."),
+            RecommendedItem(emoji: "🧥", name: "Rain jacket", reason: "Heavy showers."),
+            RecommendedItem(emoji: "🧥", name: "Heavy jacket", reason: "Temperature cools off after 7 PM."),
+            RecommendedItem(emoji: "🧶", name: "Sweater", reason: "Cooler evening."),
+        ])
+
+        let checked = OutfitAdvisor.checked(suggested, for: weather, hourly: bangkokEvening, span: restOfDay(from: evening), unit: .fahrenheit)
+
+        #expect(checked.items.map(\.name) == ["Umbrella", "Raincoat", "Rain jacket"])
+        #expect(checked.summary == "Stormy and warm.")
+    }
+
+    @Test func recommendationForACoolEveningKeepsItsJacket() {
+        let suggested = OutfitRecommendation(summary: "", items: [
+            RecommendedItem(emoji: "🧥", name: "Light jacket", reason: "Cooler after sunset."),
+        ])
+
+        let checked = OutfitAdvisor.checked(suggested, for: weather, hourly: hourly, span: restOfDay(from: afternoon), unit: .fahrenheit)
+
+        #expect(checked.items.map(\.name) == ["Light jacket"])
+    }
+
+    @Test func instructionsOnlyAllowWarmLayersWhenSomeHourFeelsMildOrColder() {
+        let instructions = OutfitAdvisor.instructions.lowercased()
+
+        #expect(instructions.contains("only suggest a jacket, sweater or other warm layer when some hour feels mild or colder"))
+    }
+
     @Test func temperaturesThatReadTheSameFeelTheSame() {
         let nearTheEdge = HourlyForecast(timeZone: pacific, points: [
             hour("2026-10-10T03:00:00Z", temperature: 46.4, rain: 0, uv: 0, wind: 4, code: 0, daylight: false),

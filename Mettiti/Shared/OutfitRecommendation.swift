@@ -31,3 +31,23 @@ extension OutfitRecommendation {
         ]
     )
 }
+
+extension OutfitRecommendation {
+    /// Without jackets, coats, sweaters and the like, for when it's warm throughout. Rain gear
+    /// stays: a raincoat or rain jacket is about the rain, not the cold.
+    func withoutWarmLayers() -> OutfitRecommendation {
+        OutfitRecommendation(summary: summary, items: items.filter { !$0.isWarmLayer })
+    }
+}
+
+extension RecommendedItem {
+    private static let warmLayerWords: Set<String> = [
+        "jacket", "jackets", "coat", "coats", "sweater", "sweaters", "hoodie", "hoodies", "fleece",
+        "cardigan", "parka", "sweatshirt", "pullover", "jumper", "puffer", "overcoat", "thermal", "thermals",
+    ]
+
+    var isWarmLayer: Bool {
+        let words = Set(name.lowercased().split { !$0.isLetter }.map(String.init))
+        return !words.contains("rain") && !words.isDisjoint(with: Self.warmLayerWords)
+    }
+}

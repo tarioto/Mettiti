@@ -42,6 +42,7 @@
 		4F186792F54EFE7696BF57B8 /* PlanSpanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CF0DBD7AAB260355B3BBFE5 /* PlanSpanTests.swift */; };
 		521BFE300C381AD60318AE91 /* PlanWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06561526092AA48CBBA0EDF2 /* PlanWindow.swift */; };
 		5380F6B981E731045D0EA961 /* PlanWindowTimesLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6085AF3D8BC6D121CADB83 /* PlanWindowTimesLabel.swift */; };
+		53E513644F1DAECAD476A3D4 /* PlanLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60868A2885AC1FBA2E16F5A7 /* PlanLocation.swift */; };
 		55700F0574090A169F5528ED /* HourlyForecastService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF56FB0D8716881DD6B86696 /* HourlyForecastService.swift */; };
 		5B796F5B3DD68C30DE055DA3 /* TemperaturePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40DE379AB97AB9FDA3A80A43 /* TemperaturePreferenceStore.swift */; };
 		5DA8990F438756DEBDBF53E7 /* WeatherProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */; };
@@ -201,6 +202,7 @@
 		5E0AC7C044DFAAB5CB2472A7 /* BackgroundPlanRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPlanRefresher.swift; sourceTree = "<group>"; };
 		5F24F553D93776EE20644077 /* RecommendedItemListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendedItemListTests.swift; sourceTree = "<group>"; };
 		6025660EBF339BC99DD24263 /* BackgroundPlanRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPlanRefreshTests.swift; sourceTree = "<group>"; };
+		60868A2885AC1FBA2E16F5A7 /* PlanLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanLocation.swift; sourceTree = "<group>"; };
 		668F8428BBBFFCD235AE1111 /* AppleWeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleWeatherService.swift; sourceTree = "<group>"; };
 		69BDB3EB5C696CC97549BE0A /* PlanStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanStateView.swift; sourceTree = "<group>"; };
 		6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherProvider.swift; sourceTree = "<group>"; };
@@ -392,6 +394,7 @@
 				DF02175CFC638146DBFB8B80 /* AppTheme.swift */,
 				FD67BE0EDA02AE2B5C2169E2 /* CardColumnArrangement.swift */,
 				2C985AD59754D0385058546B /* CardType.swift */,
+				60868A2885AC1FBA2E16F5A7 /* PlanLocation.swift */,
 				C8E2F427185CEFE591E18329 /* RecommendationState.swift */,
 				FA4FF1D77D799481A5D6F0ED /* UserFacingMessage.swift */,
 			);
@@ -711,6 +714,7 @@
 				9786136362046F55E19CD33D /* OpenMeteoHourlyTime.swift in Sources */,
 				FEE65AB6C3EDB3B1B4A63A04 /* OutfitAdvisor.swift in Sources */,
 				F24DB7EA6A74E1042EB31FB2 /* OutfitRecommendation.swift in Sources */,
+				53E513644F1DAECAD476A3D4 /* PlanLocation.swift in Sources */,
 				F289267E1C6ED89D4E7A4CD8 /* PlanSnapshot.swift in Sources */,
 				684AE8EB5799D41381398D32 /* PlanSpan.swift in Sources */,
 				8C1C3D5EAEC2CCBE78158101 /* PlanWindow.swift in Sources */,

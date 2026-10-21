@@ -19,8 +19,9 @@ struct OutfitAdvisor: Sendable {
 
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation {
         try Self.checkAvailability()
-        let response = try await Self.makeSession().respond(to: Self.prompt(for: weather, hourly: hourly, span: span, unit: unitProvider()), generating: OutfitRecommendation.self)
-        return response.content
+        let unit = unitProvider()
+        let response = try await Self.makeSession().respond(to: Self.prompt(for: weather, hourly: hourly, span: span, unit: unit), generating: OutfitRecommendation.self)
+        return Self.checked(response.content, for: weather, hourly: hourly, span: span, unit: unit)
     }
 
     /// Creates the next recommendation's session and loads the model into memory, so it can run
@@ -37,11 +38,27 @@ struct OutfitAdvisor: Sendable {
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
         try Self.checkAvailability()
         let session = preparedSession.take() ?? Self.makeSession()
-        let stream = session.streamResponse(to: Self.prompt(for: weather, hourly: hourly, span: span, unit: unitProvider()), generating: OutfitRecommendation.self)
+        let unit = unitProvider()
+        let stream = session.streamResponse(to: Self.prompt(for: weather, hourly: hourly, span: span, unit: unit), generating: OutfitRecommendation.self)
         for try await partial in stream {
-            await onPartial(Self.draft(from: partial.content))
+            await onPartial(Self.checked(Self.draft(from: partial.content), for: weather, hourly: hourly, span: span, unit: unit))
         }
-        return try await stream.collect().content
+        return Self.checked(try await stream.collect().content, for: weather, hourly: hourly, span: span, unit: unit)
+    }
+
+    /// Drops warm layers when it's warm throughout: the prompt says so, but the model still
+    /// suggested a heavy jacket for a Bangkok evening that only "cooled off" to warm.
+    static func checked(_ recommendation: OutfitRecommendation, for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent) -> OutfitRecommendation {
+        guard isWarmThroughout(weather, hourly: hourly, span: span, unit: unit.resolved(for: locale)) else { return recommendation }
+        return recommendation.withoutWarmLayers()
+    }
+
+    /// Whether even the coldest part of the plan feels warm or hot: the span's low hour, or the
+    /// day's low without an hourly forecast for it. `unit` must be resolved.
+    private static func isWarmThroughout(_ weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit) -> Bool {
+        let window = hourly.map { ForecastWindow(forecast: $0, span: span.interval) }
+        let coldestF = window?.low?.meanF ?? weather.lowTemperatureF
+        return ["warm", "hot"].contains(feel(fahrenheit: coldestF, in: unit))
     }
 
     /// The suggestion so far: fields the model hasn't reached are empty, and items appear once
@@ -79,6 +96,8 @@ struct OutfitAdvisor: Sendable {
     Consider rain protection (umbrella, raincoat) and temperature layering (light or heavy \
     jacket) when relevant to the forecast. Each temperature comes with how it feels (freezing, \
     cold, cool, mild, warm or hot); base clothing on how it feels, whatever the time of day. \
+    Only suggest a jacket, sweater or other warm layer when some hour feels mild or colder; \
+    a warm evening that cools off a little is still warm. \
     Only suggest sun protection (sunglasses, sunscreen, \
     hat) when the forecast shows meaningful UV during daylight hours; never for hours after \
     dark. When the weather changes during the forecast, describe the change in words, such as \
@@ -98,10 +117,9 @@ struct OutfitAdvisor: Sendable {
     static func prompt(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent) -> String {
         let unit = unit.resolved(for: locale)
         func temperature(_ fahrenheit: Double) -> String {
-            // The feel goes by the rounded value shown, so two hours that both read 8°C feel the same.
-            let shown = unit.convert(fromFahrenheit: fahrenheit, locale: promptLocale).rounded()
-            return "\(unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)) (\(feel(shown, in: unit)))"
+            "\(unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)) (\(feel(fahrenheit: fahrenheit, in: unit)))"
         }
+        let warmThroughout = isWarmThroughout(weather, hourly: hourly, span: span, unit: unit)
         let now = span.interval.start
         let timeZone = span.timeZone
         func formatted(_ date: Date, _ style: Date.FormatStyle) -> String {
@@ -121,7 +139,8 @@ struct OutfitAdvisor: Sendable {
             if isDark {
                 currentTime += " It's dark outside, so sun protection isn't needed."
             }
-            return wholeDayPrompt(for: weather, currentTime: currentTime, isDark: isDark, temperature: temperature)
+            let noWarmLayer = warmThroughout ? noWarmLayerLine(low: weather.lowTemperatureF, unit: unit) : nil
+            return wholeDayPrompt(for: weather, currentTime: currentTime, isDark: isDark, noWarmLayer: noWarmLayer, temperature: temperature)
         }
 
         switch window.isDaylightAtStart {
@@ -131,6 +150,9 @@ struct OutfitAdvisor: Sendable {
         }
 
         var summary = ["- High: \(temperature(high.meanF)) at \(hour(high.date)), Low: \(temperature(low.meanF)) at \(hour(low.date))"]
+        if warmThroughout {
+            summary.append(noWarmLayerLine(low: low.meanF, unit: unit))
+        }
         if let wettest = window.wettest, let probability = wettest.precipitationProbability {
             summary.append("- Highest chance of precipitation: \(probability)% at \(hour(wettest.date))")
         }
@@ -172,10 +194,17 @@ struct OutfitAdvisor: Sendable {
         """
     }
 
-    /// How a whole-degree temperature in `unit` (Celsius or Fahrenheit) feels, so the model doesn't
-    /// judge the number itself: on its own it called 30°C at night "chilly". Each unit has its own
-    /// whole-degree bands, so the same number always gets the same word.
-    private static func feel(_ temperature: Double, in unit: TemperatureUnit) -> String {
+    /// Spelled out because the model reads "cooling off" as a reason for a jacket.
+    private static func noWarmLayerLine(low fahrenheit: Double, unit: TemperatureUnit) -> String {
+        "- Coldest it gets: \(feel(fahrenheit: fahrenheit, in: unit)), so no jacket, sweater or other warm layer is needed."
+    }
+
+    /// How a temperature feels in `unit` (Celsius or Fahrenheit), so the model doesn't judge the
+    /// number itself: on its own it called 30°C at night "chilly". Each unit has its own
+    /// whole-degree bands, and the feel goes by the rounded value shown, so two hours that both
+    /// read 8°C feel the same.
+    private static func feel(fahrenheit: Double, in unit: TemperatureUnit) -> String {
+        let temperature = unit.convert(fromFahrenheit: fahrenheit, locale: promptLocale).rounded()
         let bands: [Double] = unit == .fahrenheit ? [32, 46, 59, 72, 84] : [0, 8, 15, 22, 29]
         let words = ["freezing", "cold", "cool", "mild", "warm"]
         return zip(bands, words).first { temperature < $0.0 }?.1 ?? "hot"
@@ -184,13 +213,13 @@ struct OutfitAdvisor: Sendable {
     /// For when there's no hourly forecast to cover: the whole day's high, low and maximums.
     /// It leaves out the day's peak UV, which may have passed, and after dark asks about the night,
     /// so a plan made in the evening doesn't suggest sunscreen.
-    private static func wholeDayPrompt(for weather: DailyWeather, currentTime: String, isDark: Bool, temperature: (Double) -> String) -> String {
+    private static func wholeDayPrompt(for weather: DailyWeather, currentTime: String, isDark: Bool, noWarmLayer: String?, temperature: (Double) -> String) -> String {
         """
         \(currentTime)
 
         \(isDark ? "Today's forecast, including the hours that have passed:" : "Today's forecast:")
         - Condition: \(weather.conditionDescription)
-        - High: \(temperature(weather.highTemperatureF)), Low: \(temperature(weather.lowTemperatureF))
+        - High: \(temperature(weather.highTemperatureF)), Low: \(temperature(weather.lowTemperatureF))\(noWarmLayer.map { "\n\($0)" } ?? "")
         - Chance of precipitation: \(weather.precipitationProbability)%
         - Wind: \(Int(weather.windSpeedMph.rounded())) mph
 
