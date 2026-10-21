@@ -17,6 +17,15 @@ enum CardType: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// Whether the card shows the outfit suggestion, so it can say the suggestion is on its way
+    /// or explain why there isn't one.
+    var showsSuggestion: Bool {
+        switch self {
+        case .plan, .wearAndBring: return true
+        case .weather, .location: return false
+        }
+    }
+
     var icon: String {
         switch self {
         case .weather: return "cloud.sun.fill"

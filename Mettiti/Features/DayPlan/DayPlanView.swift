@@ -103,8 +103,8 @@ struct DayPlanView: View {
         VStack(alignment: .leading, spacing: 8) {
             CardTitle(
                 type: .plan,
-                title: span.map { String(localized: "\(CardType.plan.title) · \($0.timeRange())", comment: "Plan card title: the card's name, then the times it covers, e.g. Plan · 2:20 – 5:20 PM") },
-                accessibilityLabel: span.map { String(localized: "\(CardType.plan.title), \($0.accessibilityLabel())", comment: "VoiceOver label for the plan card title: the card's name, then its Plan Window and times") }
+                title: span.map { String(localized: "planCard.title", defaultValue: "\(CardType.plan.title) · \($0.timeRange())", comment: "Plan card title: the card's name, then the times it covers, e.g. Plan · 2:20 – 5:20 PM") },
+                accessibilityLabel: span.map { String(localized: "planCard.accessibilityLabel", defaultValue: "\(CardType.plan.title), \($0.accessibilityLabel())", comment: "VoiceOver label for the plan card title: the card's name, then its Plan Window and times") }
             )
             if let city = location?.name {
                 Text(city)
@@ -179,7 +179,7 @@ struct DayPlanView: View {
     }
 
     private var firstSuggestionCard: CardType? {
-        cardPreference.visibleOrderedTypes.first { $0 == .plan || $0 == .wearAndBring }
+        cardPreference.visibleOrderedTypes.first(where: \.showsSuggestion)
     }
 
     /// The full explanation and action go in the first visible suggestion card; any later one

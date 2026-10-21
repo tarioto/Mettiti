@@ -156,7 +156,7 @@ struct OutfitAdvisorPromptTests {
             RecommendedItem(emoji: "🧶", name: "Sweater", reason: "Cooler evening."),
         ])
 
-        let checked = OutfitAdvisor.checked(suggested, for: weather, hourly: bangkokEvening, span: restOfDay(from: evening), unit: .fahrenheit)
+        let checked = OutfitAdvisor.request(for: weather, hourly: bangkokEvening, span: restOfDay(from: evening), unit: .fahrenheit).droppingWarmLayersIfWarmThroughout(suggested)
 
         #expect(checked.items.map(\.name) == ["Umbrella", "Raincoat", "Rain jacket"])
         #expect(checked.summary == "Stormy and warm.")
@@ -167,7 +167,7 @@ struct OutfitAdvisorPromptTests {
             RecommendedItem(emoji: "🧥", name: "Light jacket", reason: "Cooler after sunset."),
         ])
 
-        let checked = OutfitAdvisor.checked(suggested, for: weather, hourly: hourly, span: restOfDay(from: afternoon), unit: .fahrenheit)
+        let checked = OutfitAdvisor.request(for: weather, hourly: hourly, span: restOfDay(from: afternoon), unit: .fahrenheit).droppingWarmLayersIfWarmThroughout(suggested)
 
         #expect(checked.items.map(\.name) == ["Light jacket"])
     }

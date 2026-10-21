@@ -36,10 +36,18 @@ _Avoid_: Icon theme, icon setting
 The arrangement of the main screen when it's wide enough to show the cards side by side instead of in one column, such as on the iPhone Duo's open display, a large iPhone turned sideways, or an iPad. Only the width of the app's window decides, never the device: an iPad window made narrow by multitasking gets one column. The last card in the user's order takes the right column and the ones before it stack in order on the left; with only one card shown it sits alone in a centred column. Settings sits in the bottom-right corner instead of the header. Anywhere narrower, the cards stay in one column.
 _Avoid_: Duo layout, tablet layout, landscape layout
 
+**Cards**:
+The main screen's sections, which the user orders and turns on or off in Settings: Plan, Weather, Location and Wear & bring. A saved order keeps its order and hidden cards when a new card is added; the new card goes in at its default position, shown.
+_Avoid_: Today's plan (the Plan card's old name), panels, sections
+
+**Location card**:
+A map of where the plan is for, with a pin, under the header "Location". For Current Location it follows the GPS fix, and the city's name is looked up from it (a fix within a kilometre keeps the name); for a searched city it's that city. The city's name is the Plan card's main title.
+_Avoid_: Map card, Current Location card
+
 ### Day plan
 
 **Plan Window**:
-How far ahead from now the outfit advice covers: 1h, 3h, 6h, 12h or Rest of day, chosen in Settings (default Rest of day). Every window starts at the time the plan is made. Fixed windows cross midnight freely; Rest of day runs until midnight in the forecast location's time zone, but covers at least 3 hours. The main screen names the window once, in its Plan Window menu; the plan card's title shows the window's times, and the weather card's numbers and the chart's shading cover it.
+How far ahead from now the outfit advice covers: 1h, 3h, 6h, 12h or Rest of day, chosen in Settings (default Rest of day). Every window starts at the time the plan is made. Fixed windows cross midnight freely; Rest of day runs until midnight in the forecast location's time zone, but covers at least 3 hours. The main screen names the window once, in its Plan Window menu; the Plan card's title shows the window's times ("Plan · 2:20 – 5:20 PM"), and the weather card's numbers and the chart's shading cover it.
 _Avoid_: Time range, horizon, span (outside code)
 
 **Window Override**:

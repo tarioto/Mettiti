@@ -358,8 +358,9 @@ final class DayPlanViewModel {
             lastLoadRequestedAt = now()
             locationManager.requestLocation()
         case .custom(let name, let latitude, let longitude):
-            location = PlanLocation(name: name, latitude: latitude, longitude: longitude, isCurrentLocation: false)
-            startLoad(for: CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
+            let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+            location = PlanLocation(name: name, coordinate: coordinate, isCurrentLocation: false)
+            startLoad(for: coordinate)
         }
     }
 
@@ -396,7 +397,7 @@ final class DayPlanViewModel {
     /// A fix near the one already shown keeps its name, so small moves don't look it up again.
     private func showCurrentLocation(at coordinate: CLLocationCoordinate2D) {
         if let location, location.isCurrentLocation, location.isNear(coordinate) { return }
-        let shown = PlanLocation(name: nil, latitude: coordinate.latitude, longitude: coordinate.longitude, isCurrentLocation: true)
+        let shown = PlanLocation(name: nil, coordinate: coordinate, isCurrentLocation: true)
         location = shown
         Task {
             let name = await lookUpCityName(coordinate)

@@ -19,9 +19,9 @@ struct OutfitAdvisor: Sendable {
 
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation {
         try Self.checkAvailability()
-        let unit = unitProvider()
-        let response = try await Self.makeSession().respond(to: Self.prompt(for: weather, hourly: hourly, span: span, unit: unit), generating: OutfitRecommendation.self)
-        return Self.checked(response.content, for: weather, hourly: hourly, span: span, unit: unit)
+        let request = Self.request(for: weather, hourly: hourly, span: span, unit: unitProvider())
+        let response = try await Self.makeSession().respond(to: request.prompt, generating: OutfitRecommendation.self)
+        return request.droppingWarmLayersIfWarmThroughout(response.content)
     }
 
     /// Creates the next recommendation's session and loads the model into memory, so it can run
@@ -38,19 +38,20 @@ struct OutfitAdvisor: Sendable {
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
         try Self.checkAvailability()
         let session = preparedSession.take() ?? Self.makeSession()
-        let unit = unitProvider()
-        let stream = session.streamResponse(to: Self.prompt(for: weather, hourly: hourly, span: span, unit: unit), generating: OutfitRecommendation.self)
+        let request = Self.request(for: weather, hourly: hourly, span: span, unit: unitProvider())
+        let stream = session.streamResponse(to: request.prompt, generating: OutfitRecommendation.self)
         for try await partial in stream {
-            await onPartial(Self.checked(Self.draft(from: partial.content), for: weather, hourly: hourly, span: span, unit: unit))
+            await onPartial(request.droppingWarmLayersIfWarmThroughout(Self.draft(from: partial.content)))
         }
-        return Self.checked(try await stream.collect().content, for: weather, hourly: hourly, span: span, unit: unit)
+        return request.droppingWarmLayersIfWarmThroughout(try await stream.collect().content)
     }
 
-    /// Drops warm layers when it's warm throughout: the prompt says so, but the model still
-    /// suggested a heavy jacket for a Bangkok evening that only "cooled off" to warm.
-    static func checked(_ recommendation: OutfitRecommendation, for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent) -> OutfitRecommendation {
-        guard isWarmThroughout(weather, hourly: hourly, span: span, unit: unit.resolved(for: locale)) else { return recommendation }
-        return recommendation.withoutWarmLayers()
+    /// What to ask the model about the plan, and whether to drop warm layers from its answer.
+    static func request(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent) -> OutfitRequest {
+        OutfitRequest(
+            prompt: prompt(for: weather, hourly: hourly, span: span, unit: unit, locale: locale),
+            isWarmThroughout: isWarmThroughout(weather, hourly: hourly, span: span, unit: unit.resolved(for: locale))
+        )
     }
 
     /// Whether even the coldest part of the plan feels warm or hot: the span's low hour, or the
@@ -58,7 +59,7 @@ struct OutfitAdvisor: Sendable {
     private static func isWarmThroughout(_ weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit) -> Bool {
         let window = hourly.map { ForecastWindow(forecast: $0, span: span.interval) }
         let coldestF = window?.low?.meanF ?? weather.lowTemperatureF
-        return ["warm", "hot"].contains(feel(fahrenheit: coldestF, in: unit))
+        return TemperatureFeel(fahrenheit: coldestF, in: unit).isWarm
     }
 
     /// The suggestion so far: fields the model hasn't reached are empty, and items appear once
@@ -117,7 +118,7 @@ struct OutfitAdvisor: Sendable {
     static func prompt(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent) -> String {
         let unit = unit.resolved(for: locale)
         func temperature(_ fahrenheit: Double) -> String {
-            "\(unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)) (\(feel(fahrenheit: fahrenheit, in: unit)))"
+            "\(unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)) (\(TemperatureFeel(fahrenheit: fahrenheit, in: unit).rawValue))"
         }
         let warmThroughout = isWarmThroughout(weather, hourly: hourly, span: span, unit: unit)
         let now = span.interval.start
@@ -196,18 +197,28 @@ struct OutfitAdvisor: Sendable {
 
     /// Spelled out because the model reads "cooling off" as a reason for a jacket.
     private static func noWarmLayerLine(low fahrenheit: Double, unit: TemperatureUnit) -> String {
-        "- Coldest it gets: \(feel(fahrenheit: fahrenheit, in: unit)), so no jacket, sweater or other warm layer is needed."
+        "- Coldest it gets: \(TemperatureFeel(fahrenheit: fahrenheit, in: unit).rawValue), so no jacket, sweater or other warm layer is needed."
     }
 
-    /// How a temperature feels in `unit` (Celsius or Fahrenheit), so the model doesn't judge the
-    /// number itself: on its own it called 30°C at night "chilly". Each unit has its own
-    /// whole-degree bands, and the feel goes by the rounded value shown, so two hours that both
-    /// read 8°C feel the same.
-    private static func feel(fahrenheit: Double, in unit: TemperatureUnit) -> String {
-        let temperature = unit.convert(fromFahrenheit: fahrenheit, locale: promptLocale).rounded()
-        let bands: [Double] = unit == .fahrenheit ? [32, 46, 59, 72, 84] : [0, 8, 15, 22, 29]
-        let words = ["freezing", "cold", "cool", "mild", "warm"]
-        return zip(bands, words).first { temperature < $0.0 }?.1 ?? "hot"
+    /// How a temperature feels in `unit` (Celsius or Fahrenheit), given with each temperature so
+    /// the model doesn't judge the number itself: on its own it called 30°C at night "chilly". The
+    /// raw values are the words the prompt uses.
+    private enum TemperatureFeel: String {
+        case freezing, cold, cool, mild, warm, hot
+
+        /// Each unit has its own whole-degree bands, and the feel goes by the rounded value shown,
+        /// so two hours that both read 8°C feel the same.
+        init(fahrenheit: Double, in unit: TemperatureUnit) {
+            let temperature = unit.convert(fromFahrenheit: fahrenheit, locale: OutfitAdvisor.promptLocale).rounded()
+            let bands: [Double] = unit == .fahrenheit ? [32, 46, 59, 72, 84] : [0, 8, 15, 22, 29]
+            let feels: [TemperatureFeel] = [.freezing, .cold, .cool, .mild, .warm]
+            self = zip(bands, feels).first { temperature < $0.0 }?.1 ?? .hot
+        }
+
+        /// Warm enough throughout that no jacket or other warm layer is needed.
+        var isWarm: Bool {
+            self == .warm || self == .hot
+        }
     }
 
     /// For when there's no hourly forecast to cover: the whole day's high, low and maximums.
@@ -241,6 +252,19 @@ struct OutfitAdvisor: Sendable {
         @unknown default:
             return String(localized: "AI recommendations aren't available right now.")
         }
+    }
+}
+
+/// What one recommendation asks the model, and whether it's warm enough throughout that warm
+/// layers are dropped from the answer.
+struct OutfitRequest: Sendable {
+    let prompt: String
+    let isWarmThroughout: Bool
+
+    /// The prompt says no warm layer is needed when it's warm throughout, but the model still
+    /// suggested a heavy jacket for a Bangkok evening that only "cooled off" to warm.
+    func droppingWarmLayersIfWarmThroughout(_ recommendation: OutfitRecommendation) -> OutfitRecommendation {
+        isWarmThroughout ? recommendation.withoutWarmLayers() : recommendation
     }
 }
 

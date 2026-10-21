@@ -52,7 +52,7 @@ struct DayPlanViewModelTests {
 
         viewModel.start()
 
-        #expect(viewModel.location == PlanLocation(name: "Lisbon", latitude: 38.7, longitude: -9.1, isCurrentLocation: false))
+        #expect(viewModel.location == PlanLocation(name: "Lisbon", coordinate: CLLocationCoordinate2D(latitude: 38.7, longitude: -9.1), isCurrentLocation: false))
     }
 
     @Test func currentLocationGetsItsCityNameOnceLookedUpAndKeepsItForANearbyFix() async throws {
