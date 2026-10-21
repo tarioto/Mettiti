@@ -9,7 +9,11 @@ struct ContentView: View {
     let providerPreference: WeatherProviderPreferenceStore
     let planWindowPreference: PlanWindowPreferenceStore
     @State private var showingSettings = false
+    /// Whether the system keeps a bar down the trailing edge, which a matching leading inset
+    /// (an ordinary iPhone in landscape) doesn't count as.
+    @State private var hasTrailingSideBar = false
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         NavigationStack {
@@ -21,6 +25,9 @@ struct ContentView: View {
                 await viewModel.refresh()
             }
             .background(themeBackground)
+            .onGeometryChange(for: Bool.self) { proxy in
+                proxy.safeAreaInsets.trailing > proxy.safeAreaInsets.leading
+            } action: { hasTrailingSideBar = $0 }
             .toolbarColorScheme(themePreference.theme.overlayColorScheme, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -32,13 +39,17 @@ struct ContentView: View {
                 }
                 // Bare words like the Invites app's title menu, rather than a glass button.
                 .sharedBackgroundVisibility(.hidden)
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingSettings = true
-                    } label: {
-                        Label("Settings", systemImage: "gearshape.fill")
+                // In the Wide layout, or when the system keeps a bar down the trailing edge (as on
+                // iPhone Duo's outer display), Settings moves to the bottom-right corner.
+                if horizontalSizeClass == .regular || hasTrailingSideBar {
+                    ToolbarSpacer(.flexible, placement: .bottomBar)
+                    ToolbarItem(placement: .bottomBar) {
+                        settingsButton
                     }
-                    .tint(.primary)
+                } else {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        settingsButton
+                    }
                 }
             }
         }
@@ -71,6 +82,15 @@ struct ContentView: View {
                 planWindowPreference: planWindowPreference
             )
         }
+    }
+
+    private var settingsButton: some View {
+        Button {
+            showingSettings = true
+        } label: {
+            Label("Settings", systemImage: "gearshape.fill")
+        }
+        .tint(.primary)
     }
 
     private var themeBackground: some View {
@@ -112,6 +132,7 @@ struct ContentView: View {
             ErrorStateView(message: message) {
                 viewModel.retry()
             }
+            .readableColumn()
             .padding(.top, 60)
         }
     }

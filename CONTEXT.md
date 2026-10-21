@@ -30,6 +30,12 @@ An alternate home screen icon matching one **Theme**: the standard artwork on th
 The icon the user explicitly picked in Settings. While there's no Icon Choice, the app shows the **Build Icon** for its Install Source. An Icon Choice always takes precedence over the Build Icon.
 _Avoid_: Icon theme, icon setting
 
+### Main screen
+
+**Wide layout**:
+The arrangement of the main screen when it's wide enough to show the cards side by side instead of in one column, such as on the iPhone Duo's open display, a large iPhone turned sideways, or an iPad. Only the width of the app's window decides, never the device: an iPad window made narrow by multitasking gets one column. The last card in the user's order takes the right column and the ones before it stack in order on the left; with only one card shown it sits alone in a centred column. Settings sits in the bottom-right corner instead of the header. Anywhere narrower, the cards stay in one column.
+_Avoid_: Duo layout, tablet layout, landscape layout
+
 ### Day plan
 
 **Plan Window**:
