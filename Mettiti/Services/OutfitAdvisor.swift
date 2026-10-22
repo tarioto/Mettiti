@@ -41,7 +41,7 @@ struct OutfitAdvisor: Sendable {
         let request = Self.request(for: weather, hourly: hourly, span: span, unit: unitProvider())
         let stream = session.streamResponse(to: request.prompt, generating: OutfitRecommendation.self)
         for try await partial in stream {
-            await onPartial(request.droppingWarmLayersIfWarmThroughout(Self.draft(from: partial.content)))
+            await onPartial(request.draft(from: partial.content))
         }
         return request.droppingWarmLayersIfWarmThroughout(try await stream.collect().content)
     }
@@ -63,12 +63,14 @@ struct OutfitAdvisor: Sendable {
     }
 
     /// The suggestion so far: fields the model hasn't reached are empty, and items appear once
-    /// they have an emoji and a name.
-    static func draft(from partial: OutfitRecommendation.PartiallyGenerated) -> OutfitRecommendation {
+    /// they have an emoji and a name. With `waitingForWholeNames`, items wait for the model to
+    /// start their reason, which comes after the name.
+    static func draft(from partial: OutfitRecommendation.PartiallyGenerated, waitingForWholeNames: Bool = false) -> OutfitRecommendation {
         OutfitRecommendation(
             summary: partial.summary ?? "",
             items: (partial.items ?? []).compactMap { item in
                 guard let emoji = item.emoji, let name = item.name else { return nil }
+                if waitingForWholeNames && item.reason == nil { return nil }
                 return RecommendedItem(emoji: emoji, name: name, reason: item.reason ?? "")
             }
         )
@@ -265,6 +267,12 @@ struct OutfitRequest: Sendable {
     /// suggested a heavy jacket for a Bangkok evening that only "cooled off" to warm.
     func droppingWarmLayersIfWarmThroughout(_ recommendation: OutfitRecommendation) -> OutfitRecommendation {
         isWarmThroughout ? recommendation.withoutWarmLayers() : recommendation
+    }
+
+    /// The suggestion so far, without warm layers if it's warm throughout. Then items wait until
+    /// their name is written, so "Heavy" doesn't show before it becomes "Heavy jacket" and goes.
+    func draft(from partial: OutfitRecommendation.PartiallyGenerated) -> OutfitRecommendation {
+        droppingWarmLayersIfWarmThroughout(OutfitAdvisor.draft(from: partial, waitingForWholeNames: isWarmThroughout))
     }
 }
 

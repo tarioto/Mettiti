@@ -152,13 +152,28 @@ struct OutfitAdvisorPromptTests {
             RecommendedItem(emoji: "☂️", name: "Umbrella", reason: "Thunderstorms are expected."),
             RecommendedItem(emoji: "🧥", name: "Raincoat", reason: "Heavy showers."),
             RecommendedItem(emoji: "🧥", name: "Rain jacket", reason: "Heavy showers."),
+            RecommendedItem(emoji: "🧥", name: "Waterproof jacket", reason: "Heavy showers."),
+            RecommendedItem(emoji: "🧥", name: "Storm jacket", reason: "Heavy showers."),
+            RecommendedItem(emoji: "🧥", name: "Rainproof jacket", reason: "Heavy showers."),
+            RecommendedItem(emoji: "🧥", name: "Trench coat", reason: "Heavy showers."),
+            RecommendedItem(emoji: "🧥", name: "Poncho", reason: "Heavy showers."),
             RecommendedItem(emoji: "🧥", name: "Heavy jacket", reason: "Temperature cools off after 7 PM."),
             RecommendedItem(emoji: "🧶", name: "Sweater", reason: "Cooler evening."),
+            RecommendedItem(emoji: "🧥", name: "Fleeces", reason: "Cooler evening."),
+            RecommendedItem(emoji: "🧶", name: "Cardigans", reason: "Cooler evening."),
+            RecommendedItem(emoji: "🧥", name: "Parkas", reason: "Cooler evening."),
+            RecommendedItem(emoji: "👕", name: "Light layer", reason: "Cooler evening."),
+            RecommendedItem(emoji: "👕", name: "Layers", reason: "Cooler evening."),
+            RecommendedItem(emoji: "👕", name: "Long sleeves", reason: "Cooler evening."),
+            RecommendedItem(emoji: "👕", name: "Long-sleeved shirt", reason: "Cooler evening."),
+            RecommendedItem(emoji: "🧥", name: "Training jacket", reason: "Cooler evening."),
+            RecommendedItem(emoji: "🦺", name: "Vest", reason: "Cooler evening."),
+            RecommendedItem(emoji: "👕", name: "Short-sleeve shirt", reason: "Warm all evening."),
         ])
 
         let checked = OutfitAdvisor.request(for: weather, hourly: bangkokEvening, span: restOfDay(from: evening), unit: .fahrenheit).droppingWarmLayersIfWarmThroughout(suggested)
 
-        #expect(checked.items.map(\.name) == ["Umbrella", "Raincoat", "Rain jacket"])
+        #expect(checked.items.map(\.name) == ["Umbrella", "Raincoat", "Rain jacket", "Waterproof jacket", "Storm jacket", "Rainproof jacket", "Trench coat", "Poncho", "Short-sleeve shirt"])
         #expect(checked.summary == "Stormy and warm.")
     }
 

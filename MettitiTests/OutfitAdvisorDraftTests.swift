@@ -20,6 +20,31 @@ struct OutfitAdvisorDraftTests {
         #expect(draft.items.map(\.reason) == ["Cool morning", ""])
     }
 
+    @Test func warmDraftHidesItemsUntilTheirNameIsWrittenAndDropsWarmLayers() throws {
+        let partial = try OutfitRecommendation.PartiallyGenerated(GeneratedContent(properties: [
+            "summary": "Warm all evening",
+            "items": [
+                GeneratedContent(properties: ["emoji": "☂️", "name": "Umbrella", "reason": "Showers"]),
+                GeneratedContent(properties: ["emoji": "🧥", "name": "Light jacket", "reason": ""]),
+                GeneratedContent(properties: ["emoji": "🧥", "name": "Heavy"]),
+            ],
+        ]))
+
+        let draft = OutfitRequest(prompt: "", isWarmThroughout: true).draft(from: partial)
+
+        #expect(draft.items.map(\.name) == ["Umbrella"])
+    }
+
+    @Test func draftThatIsntWarmThroughoutShowsNamesAsTheyreWritten() throws {
+        let partial = try OutfitRecommendation.PartiallyGenerated(GeneratedContent(properties: [
+            "items": [GeneratedContent(properties: ["emoji": "🧥", "name": "Heavy"])],
+        ]))
+
+        let draft = OutfitRequest(prompt: "", isWarmThroughout: false).draft(from: partial)
+
+        #expect(draft.items.map(\.name) == ["Heavy"])
+    }
+
     @Test func draftBeforeAnythingIsWrittenIsEmpty() throws {
         let partial = try OutfitRecommendation.PartiallyGenerated(GeneratedContent(properties: [:]))
 
