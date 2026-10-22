@@ -77,14 +77,45 @@ struct DayPlanViewModelTests {
         viewModel.start()
         #expect(viewModel.location == nil)
         location.deliver(CLLocationCoordinate2D(latitude: 13.75, longitude: 100.5))
-        #expect(viewModel.location?.isCurrentLocation == true)
 
         try await waitUntil { viewModel.location?.name == "Bangkok" }
+        #expect(viewModel.location?.isCurrentLocation == true)
         location.deliver(CLLocationCoordinate2D(latitude: 13.752, longitude: 100.501))
         try await waitUntil { viewModel.state.isLoaded }
 
         #expect(viewModel.location?.name == "Bangkok")
         #expect(lookups.withLock { $0 } == 1)
+    }
+
+    @Test func currentLocationFollowsTheWeatherOnScreenNotEveryFix() async throws {
+        let location = FakeLocationProvider()
+        let fetcher = FakeDayPlanFetcher()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { nil },
+            publishSnapshot: { _ in },
+            lookUpCityName: { $0.latitude < 13.77 ? "Bangkok" : "Nonthaburi" }
+        )
+
+        viewModel.start()
+        location.deliver(CLLocationCoordinate2D(latitude: 13.75, longitude: 100.5))
+        try await waitUntil { viewModel.state.isLoaded && viewModel.location?.name == "Bangkok" }
+
+        // About 5 km north: the plan on screen is still for Bangkok, so the card stays there.
+        location.deliver(CLLocationCoordinate2D(latitude: 13.795, longitude: 100.5))
+        #expect(viewModel.location?.coordinate.latitude == 13.75)
+        #expect(viewModel.location?.name == "Bangkok")
+
+        await viewModel.refresh()
+        try await waitUntil { viewModel.location?.name == "Nonthaburi" }
+        #expect(viewModel.location?.coordinate.latitude == 13.795)
+        #expect(await fetcher.requestedCoordinates.map(\.latitude) == [13.75, 13.795])
     }
 
     @Test func refreshInCurrentLocationAfterCustomCityDoesNotReloadThatCity() async throws {
@@ -1196,6 +1227,23 @@ struct DayPlanViewModelTests {
         await fetcher.complete(latitude: 47.6, with: .success(.forecast(high: 10)))
         try await waitUntil { viewModel.state.loadedHigh == 10 }
         #expect(!viewModel.isUpdatingSavedPlan)
+        #expect(viewModel.location?.coordinate.latitude == 47.6)
+    }
+
+    @Test func savedPlansOutfitKeptAfterAFailedSuggestionKeepsTheLocationCardOffTheNewFix() async throws {
+        let location = FakeLocationProvider()
+        let fetcher = GatedDayPlanFetcher(availability: .available, recommendation: .failure(FakeFetchError()))
+        let viewModel = makeCurrentLocationViewModel(location: location, fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: .currentLocation))
+
+        viewModel.start()
+        location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 47.6) }
+        await fetcher.complete(latitude: 47.6, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+
+        // The Saved Plan's weather is still on screen, so the card doesn't claim the new fix.
+        #expect(viewModel.state.loadedHigh == 99)
+        #expect(viewModel.location == nil)
     }
 
     @Test func locationErrorWhileWaitingForTheFirstFixStopsSayingTheSavedPlanIsUpdating() async throws {

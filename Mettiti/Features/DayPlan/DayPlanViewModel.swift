@@ -32,7 +32,8 @@ final class DayPlanViewModel {
         planWindowOverride ?? planWindowPreference.window
     }
     /// Where the plan is for, for the Location card: the searched city as soon as it's picked, or
-    /// Current Location once there's a fix, with its city name filled in once it's looked up.
+    /// Current Location once weather for a fix has arrived, with its city name filled in once it's
+    /// looked up. A later fix moves it only when a load brings weather for that fix.
     private(set) var location: PlanLocation?
 
     private let locationManager: LocationProviding
@@ -384,7 +385,6 @@ final class DayPlanViewModel {
     private func handleGPSCoordinate(_ coordinate: CLLocationCoordinate2D) {
         guard case .currentLocation = locationPreference.selection else { return }
         lastCoordinate = coordinate
-        showCurrentLocation(at: coordinate)
         // A Saved Plan on screen isn't .idle, but the first fix still has to start its refresh.
         let savedPlanAwaitsFix = isShowingSavedPlan && loadTask == nil
         guard case .idle = state else {
@@ -394,6 +394,13 @@ final class DayPlanViewModel {
         startLoad(for: coordinate)
     }
 
+    /// Moves Current Location's card to where the weather going on screen was fetched for, so it
+    /// never shows a newer fix than the weather does (#120). Nil, or a searched city, leaves it.
+    private func showLocation(ofWeatherAt coordinate: CLLocationCoordinate2D?) {
+        guard let coordinate, case .currentLocation = locationPreference.selection else { return }
+        showCurrentLocation(at: coordinate)
+    }
+
     /// A fix near the one already shown keeps its name, so small moves don't look it up again.
     private func showCurrentLocation(at coordinate: CLLocationCoordinate2D) {
         if let location, location.isCurrentLocation, location.isNear(coordinate) { return }
@@ -401,7 +408,7 @@ final class DayPlanViewModel {
         location = shown
         Task {
             let name = await lookUpCityName(coordinate)
-            // A later fix or another selection has replaced it meanwhile.
+            // A later load's fix or another selection has replaced it meanwhile.
             guard location == shown else { return }
             location?.name = name
         }
@@ -461,12 +468,13 @@ final class DayPlanViewModel {
                 ? [adviceToKeep, outfitsByWindow[span.window]].compactMap { $0 }.first { $0.basis.window == span.window }
                 : nil
             if let candidate, !WindowSummary(weather: weather, hourly: hourly, span: span).differsMeaningfully(from: candidate.basis) {
+                showLocation(ofWeatherAt: coordinate)
                 showFreshWeather(weather: weather, hourly: hourly, span: span, provider: provider, keeping: candidate)
                 return
             }
             // The outfit is remade for this weather, so other windows' outfits are remade as needed too.
             outfitsByWindow = [:]
-            await loadRecommendation(weather: weather, hourly: hourly, span: span, provider: provider)
+            await loadRecommendation(weather: weather, hourly: hourly, span: span, provider: provider, fetchedFor: coordinate)
         } catch {
             fetchFinished()
             guard !Task.isCancelled else { return }
@@ -475,7 +483,9 @@ final class DayPlanViewModel {
     }
 
     /// Fills in the recommendation for weather that's already on screen; never fails the whole plan.
-    private func loadRecommendation(weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, provider: WeatherProvider) async {
+    /// `coordinate` is where freshly fetched weather is for, so the Location card moves with it
+    /// once it's on screen; nil when the weather was on screen already.
+    private func loadRecommendation(weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, provider: WeatherProvider, fetchedFor coordinate: CLLocationCoordinate2D? = nil) async {
         // A retry runs this directly as `loadTask`, so it needs its own guard (#10).
         guard !Task.isCancelled else { return }
         let recommendation: RecommendationState
@@ -492,6 +502,7 @@ final class DayPlanViewModel {
             if !isHoldingOutfit {
                 isShowingSavedPlan = false
                 isSwitchingWindow = false
+                showLocation(ofWeatherAt: coordinate)
                 state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .loading)
             }
             do {
@@ -515,6 +526,7 @@ final class DayPlanViewModel {
         isUpdatingSavedPlan = false
         refreshFailureMessage = nil
         adviceBasis = recommendation.outfit.map { _ in WindowSummary(weather: weather, hourly: hourly, span: span) }
+        showLocation(ofWeatherAt: coordinate)
         state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: recommendation)
         if let currentAdvice {
             outfitsByWindow[span.window] = currentAdvice
