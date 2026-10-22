@@ -4,9 +4,9 @@ name: Claude
 # (CLAUDE_CODE_OAUTH_TOKEN, from `claude setup-token`).
 #
 # - Labeling an issue ready-for-agent queues it. If it lists a blocker that's still open (a
-#   "Blocked by" section or line, or a GitHub issue dependency), it's relabeled blocked and
-#   rechecked whenever an issue closes or main changes. Otherwise Claude implements it following
-#   mattpocock-skills' implement steps and opens a PR.
+#   "Blocked by" section or line, or a GitHub issue dependency), it waits and is rechecked whenever
+#   an issue closes or main changes. Otherwise Claude implements it following mattpocock-skills'
+#   implement steps and opens a PR. A claude/issue-N branch marks an issue as started.
 # - Mentioning @claude in an issue, PR, comment or review asks Claude directly. The action ignores
 #   mentions from users without write access, which matters on a public repo.
 on:
@@ -24,7 +24,7 @@ on:
 
 jobs:
   # Decides which issues are ready to start: the newly labeled one, or (when an issue closes or
-  # main changes) any blocked issues whose blockers are now all closed.
+  # main changes) any waiting ready-for-agent issues whose blockers are now all closed.
   gate:
     if: |
       (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'ready-for-agent') ||
@@ -60,7 +60,7 @@ jobs:
           if [[ -n "$LABELED_ISSUE" ]]; then
             candidates="$LABELED_ISSUE"
           else
-            candidates=$(gh issue list --state open --label blocked --limit 100 --json number -q '.[].number')
+            candidates=$(gh issue list --state open --label ready-for-agent --limit 100 --json number -q '.[].number')
           fi
 
           ready=()
@@ -69,6 +69,13 @@ jobs:
             labels=$(jq -r '[.labels[].name] | join(",")' <<<"$issue")
             if [[ $(jq -r .state <<<"$issue") != OPEN || ",$labels," == *",claude-pr,"* ]]; then
               echo "#$n: closed or already has a Claude PR, skipping"
+              continue
+            fi
+            if gh api "repos/$GH_REPO/git/ref/heads/claude/issue-$n" --silent 2>/dev/null; then
+              echo "#$n: already started (claude/issue-$n exists), skipping"
+              if [[ -n "$LABELED_ISSUE" ]]; then
+                gh issue comment "$n" --body "Claude has already started on this issue (branch \`claude/issue-$n\`). To start over, delete that branch and add \`ready-for-agent\` again."
+              fi
               continue
             fi
 
@@ -84,14 +91,12 @@ jobs:
 
             if (( ${#open_blockers[@]} )); then
               echo "#$n: blocked by ${open_blockers[*]}"
-              if [[ ",$labels," != *",blocked,"* ]]; then
-                gh issue edit "$n" --add-label blocked --remove-label ready-for-agent
-                gh issue comment "$n" --body "Waiting on ${open_blockers[*]} before Claude starts. This issue is labeled \`blocked\` and will start on its own once those are closed."
+              if [[ -n "$LABELED_ISSUE" ]]; then
+                gh issue comment "$n" --body "Waiting on ${open_blockers[*]} before Claude starts. It will start on its own once those are closed."
               fi
             else
               echo "#$n: ready"
-              if [[ ",$labels," == *",blocked,"* ]]; then
-                gh issue edit "$n" --remove-label blocked --add-label ready-for-agent
+              if [[ -z "$LABELED_ISSUE" && -n "$refs" ]]; then
                 gh issue comment "$n" --body "Blockers are closed, so Claude is starting on this issue."
               fi
               ready+=("$n")
@@ -129,7 +134,21 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - uses: anthropics/claude-code-action@6b6870e649b5ff408753befeaee5fc7989d4e6a9 # v1.0.258
+      # Pushing the branch up front marks the issue as started, so later checks don't start it again.
+      - id: claim
+        env:
+          BRANCH: claude/issue-${{ matrix.issue }}
+        run: |
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; then
+            echo "$BRANCH already exists, so this issue has already started."
+            echo "started=true" >> "$GITHUB_OUTPUT"
+          else
+            git switch -c "$BRANCH"
+            git push -u origin "$BRANCH"
+          fi
+
+      - if: steps.claim.outputs.started != 'true'
+        uses: anthropics/claude-code-action@6b6870e649b5ff408753befeaee5fc7989d4e6a9 # v1.0.258
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: https://github.com/anthropics/claude-plugins-official.git
@@ -141,14 +160,14 @@ jobs:
             The issue tracker is GitHub Issues, used through the gh CLI.
 
             1. Read the issue with `gh issue view ${{ matrix.issue }} --comments` and state its title.
-            2. Create a branch: `git switch -c claude/issue-${{ matrix.issue }}`.
+            2. You're already on the branch claude/issue-${{ matrix.issue }}, made from main. Work on it.
             3. Implement the work the issue describes. Use the mattpocock-skills:tdd skill where possible,
                at the seams the issue names.
             4. Build regularly, and run single test classes regularly (xcodebuild test with -only-testing).
                Run the full test suite once at the end.
             5. When done, use the mattpocock-skills:code-review skill to review the work, with origin/main as
                the fixed point and issue #${{ matrix.issue }} as the spec. Fix the issues it raises.
-            6. Commit your work, then push: `git push -u origin claude/issue-${{ matrix.issue }}`.
+            6. Commit your work, then push: `git push origin claude/issue-${{ matrix.issue }}`.
             7. Open a PR against main with `gh pr create`. Use a plain-language title, say what changed and
                why, list any decisions you made, and include "Closes #${{ matrix.issue }}".
                If the build or tests still fail, or you couldn't finish, open it with --draft and explain what's left.
