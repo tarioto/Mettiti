@@ -1,33 +1,179 @@
 name: Claude
 
 # Claude works on issues and PRs, authenticated with the Claude subscription's OAuth token
-# (CLAUDE_CODE_OAUTH_TOKEN, from `claude setup-token`). It starts when:
-#   - an issue is labeled ready-for-agent: Claude implements it and pushes a claude/ branch
-#   - someone with write access mentions @claude in an issue, PR, comment or review
-# The action ignores mentions from users without write access, which matters on a public repo.
+# (CLAUDE_CODE_OAUTH_TOKEN, from `claude setup-token`).
+#
+# - Labeling an issue ready-for-agent queues it. If it lists a blocker that's still open (a
+#   "Blocked by" section or line, or a GitHub issue dependency), it's relabeled blocked and
+#   rechecked whenever an issue closes or main changes. Otherwise Claude implements it following
+#   mattpocock-skills' implement steps and opens a PR.
+# - Mentioning @claude in an issue, PR, comment or review asks Claude directly. The action ignores
+#   mentions from users without write access, which matters on a public repo.
 on:
   issues:
-    types: [opened, labeled]
+    types: [opened, labeled, closed]
   issue_comment:
     types: [created]
   pull_request_review_comment:
     types: [created]
   pull_request_review:
     types: [submitted]
-
-concurrency:
-  group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
-  cancel-in-progress: false
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  claude:
+  # Decides which issues are ready to start: the newly labeled one, or (when an issue closes or
+  # main changes) any blocked issues whose blockers are now all closed.
+  gate:
     if: |
       (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'ready-for-agent') ||
+      (github.event_name == 'issues' && github.event.action == 'closed') ||
+      github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # One at a time, so an issue closing and its PR landing on main can't both start the same issue.
+    concurrency:
+      group: claude-gate
+      cancel-in-progress: false
+    permissions:
+      issues: write
+      pull-requests: read
+    outputs:
+      issues: ${{ steps.check.outputs.issues }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          LABELED_ISSUE: ${{ github.event.action == 'labeled' && github.event.issue.number || '' }}
+        run: |
+          set -euo pipefail
+
+          # Issue numbers in a "Blocked by" section (up to the next heading) or on a "Blocked by" line.
+          body_blockers() {
+            awk '
+              /^#+[ \t]/ { in_section = (tolower($0) ~ /blocked by/); next }
+              in_section || tolower($0) ~ /blocked by/ { print }
+            ' | grep -oE '#[0-9]+' | tr -d '#' || true
+          }
+
+          if [[ -n "$LABELED_ISSUE" ]]; then
+            candidates="$LABELED_ISSUE"
+          else
+            candidates=$(gh issue list --state open --label blocked --limit 100 --json number -q '.[].number')
+          fi
+
+          ready=()
+          for n in $candidates; do
+            issue=$(gh issue view "$n" --json state,body,labels)
+            labels=$(jq -r '[.labels[].name] | join(",")' <<<"$issue")
+            if [[ $(jq -r .state <<<"$issue") != OPEN || ",$labels," == *",claude-pr,"* ]]; then
+              echo "#$n: closed or already has a Claude PR, skipping"
+              continue
+            fi
+
+            refs=$( { jq -r .body <<<"$issue" | body_blockers
+                      gh api "repos/$GH_REPO/issues/$n/dependencies/blocked_by" -q '.[].number'; } | sort -un)
+            open_blockers=()
+            for ref in $refs; do
+              [[ "$ref" == "$n" ]] && continue
+              if [[ $(gh api "repos/$GH_REPO/issues/$ref" -q .state 2>/dev/null || echo missing) == open ]]; then
+                open_blockers+=("#$ref")
+              fi
+            done
+
+            if (( ${#open_blockers[@]} )); then
+              echo "#$n: blocked by ${open_blockers[*]}"
+              if [[ ",$labels," != *",blocked,"* ]]; then
+                gh issue edit "$n" --add-label blocked --remove-label ready-for-agent
+                gh issue comment "$n" --body "Waiting on ${open_blockers[*]} before Claude starts. This issue is labeled \`blocked\` and will start on its own once those are closed."
+              fi
+            else
+              echo "#$n: ready"
+              if [[ ",$labels," == *",blocked,"* ]]; then
+                gh issue edit "$n" --remove-label blocked --add-label ready-for-agent
+                gh issue comment "$n" --body "Blockers are closed, so Claude is starting on this issue."
+              fi
+              ready+=("$n")
+            fi
+          done
+
+          echo "issues=$(printf '%s\n' "${ready[@]}" | jq -Rsc 'split("\n") | map(select(length > 0) | tonumber)')" >> "$GITHUB_OUTPUT"
+
+  # Implements each ready issue and opens a PR for it.
+  implement:
+    needs: gate
+    if: needs.gate.outputs.issues != '[]' && needs.gate.outputs.issues != ''
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        issue: ${{ fromJSON(needs.gate.outputs.issues) }}
+    concurrency:
+      group: claude-implement-${{ matrix.issue }}
+      cancel-in-progress: false
+    # The same image and Xcode as the Build workflow, so Claude can build and run the tests.
+    runs-on: xcode-27
+    timeout-minutes: 120
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@6b6870e649b5ff408753befeaee5fc7989d4e6a9 # v1.0.258
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          plugin_marketplaces: https://github.com/anthropics/claude-plugins-official.git
+          plugins: mattpocock-skills@claude-plugins-official
+          # mattpocock-skills' implement skill can only be started by a person, so its steps are inlined here.
+          prompt: |
+            You are working unattended on GitHub issue #${{ matrix.issue }} in ${{ github.repository }}. Nobody can answer
+            questions during this run, so make reasonable decisions and record them in the PR description.
+            The issue tracker is GitHub Issues, used through the gh CLI.
+
+            1. Read the issue with `gh issue view ${{ matrix.issue }} --comments` and state its title.
+            2. Create a branch: `git switch -c claude/issue-${{ matrix.issue }}`.
+            3. Implement the work the issue describes. Use the mattpocock-skills:tdd skill where possible,
+               at the seams the issue names.
+            4. Build regularly, and run single test classes regularly (xcodebuild test with -only-testing).
+               Run the full test suite once at the end.
+            5. When done, use the mattpocock-skills:code-review skill to review the work, with origin/main as
+               the fixed point and issue #${{ matrix.issue }} as the spec. Fix the issues it raises.
+            6. Commit your work, then push: `git push -u origin claude/issue-${{ matrix.issue }}`.
+            7. Open a PR against main with `gh pr create`. Use a plain-language title, say what changed and
+               why, list any decisions you made, and include "Closes #${{ matrix.issue }}".
+               If the build or tests still fail, or you couldn't finish, open it with --draft and explain what's left.
+            8. Run `gh issue edit ${{ matrix.issue }} --remove-label ready-for-agent --add-label claude-pr`.
+
+            Build with:
+              xcodebuild build -project Mettiti.xcodeproj -scheme Mettiti -configuration Debug -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
+            Run tests the way .github/workflows/build.yml does: pick an available iPhone simulator on iOS 26 or later.
+            If you add or move files in the Xcode project, mirror the change in project.yml, since XcodeGen
+            regenerates the project from it.
+          claude_args: |
+            --max-turns 200
+            --permission-mode acceptEdits
+            --allowedTools "Skill,Agent,Task,TodoWrite,Read,Glob,Grep,Edit,Write,Bash(git:*),Bash(xcodebuild:*),Bash(xcrun simctl:*),Bash(xcbeautify:*),Bash(jq:*),Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*)"
+
+  # Answers @claude mentions in issues, PRs, comments and reviews.
+  mention:
+    if: |
       (github.event_name == 'issues' && github.event.action == 'opened' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude'))) ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude'))
-    # The same image and Xcode as the Build workflow, so Claude can build and run the tests.
+    concurrency:
+      group: claude-mention-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: false
     runs-on: xcode-27
     timeout-minutes: 60
     env:
@@ -46,7 +192,6 @@ jobs:
       - uses: anthropics/claude-code-action@6b6870e649b5ff408753befeaee5fc7989d4e6a9 # v1.0.258
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          label_trigger: ready-for-agent
           claude_args: |
             --max-turns 100
             --allowedTools "Bash(xcodebuild:*),Bash(xcrun simctl:*),Bash(xcbeautify:*),Bash(jq:*),Bash(gh issue view:*),Bash(gh pr view:*),Bash(gh pr diff:*)"
