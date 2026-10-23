@@ -38,8 +38,8 @@ enum RecommendationState {
             return String(localized: "Turn on Apple Intelligence to get outfit suggestions.")
         case .unavailable(.modelNotReady):
             return String(localized: "Apple Intelligence is still getting ready. Try again soon.")
-        case .failed:
-            return String(localized: "Couldn't come up with outfit suggestions this time.")
+        case .failed(let message):
+            return message
         case .loading, .generating, .ready:
             return nil
         }

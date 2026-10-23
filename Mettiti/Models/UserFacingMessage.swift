@@ -109,7 +109,8 @@ enum UserFacingMessage {
         String(localized: "Outfit suggestions aren't available in your language yet.")
     }
 
-    private static var noSuggestion: String {
+    /// The Wear & bring card's message when there's no suggestion and no more specific reason.
+    static var noSuggestion: String {
         String(localized: "Couldn't come up with outfit suggestions this time.")
     }
 }
