@@ -425,9 +425,10 @@ final class DayPlanViewModel {
         isSwitchingWindow = false
         if isShowingSavedPlan {
             refreshFailureMessage = message
-            // A Saved Plan without an outfit shows .loading; nothing is loading it any more.
+            // A Saved Plan without an outfit shows .loading; nothing is loading it any more. The
+            // notice says what went wrong, which may be about the weather, so the Wear & bring card doesn't.
             if case .loaded(let weather, let hourly, let span, let provider, .loading) = state {
-                state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .failed(message))
+                state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .failed(UserFacingMessage.noSuggestion))
             }
         } else {
             state = .failed(message)

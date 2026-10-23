@@ -573,6 +573,8 @@ struct DayPlanViewModelTests {
         try await waitUntil { viewModel.state.recommendationFailureMessage != nil }
 
         #expect(viewModel.state.recommendationFailureMessage == "Apple Intelligence is busy right now. Try again in a moment.")
+        // What the Wear & bring card shows, not just what's stored (#96).
+        #expect(viewModel.state.recommendationState?.problemMessage == "Apple Intelligence is busy right now. Try again in a moment.")
     }
 
     // MARK: Saved Plan on launch (#22)
@@ -826,6 +828,19 @@ struct DayPlanViewModelTests {
         try await waitUntil { viewModel.refreshFailureMessage != nil }
         #expect(viewModel.state.loadedHigh == 99)
         #expect(viewModel.state.recommendationFailureMessage != nil)
+    }
+
+    @Test func failedRefreshOfASavedPlanWithoutAnOutfitKeepsWeatherCopyOutOfTheWearAndBringCard() async throws {
+        let fetcher = GatedDayPlanFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: nil, location: cityA))
+
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .failure(URLError(.notConnectedToInternet)))
+
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+        #expect(viewModel.refreshFailureMessage == "You're offline. Check your connection and try again.")
+        #expect(viewModel.state.recommendationState?.problemMessage == "Couldn't come up with outfit suggestions this time.")
     }
 
     @Test func tryAgainOnTheSavedPlanRefreshesTheWholePlanInPlace() async throws {
@@ -1352,7 +1367,7 @@ struct DayPlanViewModelTests {
 
         #expect(viewModel.state.readySummary == "Saved outfit")
         #expect(viewModel.state.loadedHigh == 99)
-        #expect(viewModel.refreshFailureMessage == RecommendationState.failed("").problemMessage)
+        #expect(viewModel.refreshFailureMessage == "Stale request failed")
         #expect(!viewModel.isUpdatingSavedPlan)
         #expect(snapshots.isEmpty)
     }
