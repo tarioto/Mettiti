@@ -1424,6 +1424,8 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.loadedHigh == nil)
         await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
         try await waitUntil { viewModel.state.loadedHigh == 10 }
+        // Today's weather shows while the outfit is still loading, and the plan is published after.
+        try await waitUntil { store.published.count == 2 }
         #expect(store.published.map(\.weather.highTemperatureF) == [99, 10])
     }
 

@@ -41,13 +41,22 @@ extension OutfitRecommendation {
 }
 
 extension RecommendedItem {
+    /// Singular, as each word of a name is matched without a trailing "s".
     private static let warmLayerWords: Set<String> = [
-        "jacket", "jackets", "coat", "coats", "sweater", "sweaters", "hoodie", "hoodies", "fleece",
-        "cardigan", "parka", "sweatshirt", "pullover", "jumper", "puffer", "overcoat", "thermal", "thermals",
+        "jacket", "coat", "sweater", "hoodie", "fleece", "cardigan", "parka", "sweatshirt", "pullover",
+        "jumper", "puffer", "overcoat", "thermal", "layer", "vest",
     ]
 
+    /// Rain gear doesn't always say "rain" as a word of its own, as in "Waterproof jacket" or
+    /// "Trench coat". Matched at the start of a word, so "Raincoat" counts but "Training jacket"
+    /// doesn't.
+    private static let rainGearPrefixes = ["rain", "waterproof", "storm", "trench", "poncho"]
+
     var isWarmLayer: Bool {
-        let words = Set(name.lowercased().split { !$0.isLetter }.map(String.init))
-        return !words.contains("rain") && !words.isDisjoint(with: Self.warmLayerWords)
+        let words = name.lowercased().split { !$0.isLetter }.map { $0.hasSuffix("s") ? String($0.dropLast()) : String($0) }
+        let isRainGear = words.contains { word in Self.rainGearPrefixes.contains { word.hasPrefix($0) } }
+        // Long sleeves are a warm layer, short sleeves aren't.
+        let hasLongSleeves = zip(words, words.dropFirst()).contains { $0 == "long" && $1.hasPrefix("sleeve") }
+        return !isRainGear && (hasLongSleeves || !Set(words).isDisjoint(with: Self.warmLayerWords))
     }
 }
