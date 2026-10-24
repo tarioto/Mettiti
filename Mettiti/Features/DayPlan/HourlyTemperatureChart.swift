@@ -124,7 +124,10 @@ struct HourlyTemperatureChart: View {
             .frame(height: 124)
             .accessibilityChartDescriptor(HourlyChartDescriptor(points: hourly.points, hourFormat: hourFormat, scale: scale, span: span))
 
-            Text(hasSpread ? "Shaded band shows model spread · bars show chance of rain" : "Bars show chance of rain")
+            // Explicit keys: a ternary of literals would pick the non-localizing `String` overload.
+            Text(hasSpread
+                 ? LocalizedStringKey("Shaded band shows model spread · bars show chance of rain")
+                 : LocalizedStringKey("Bars show chance of rain"))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
