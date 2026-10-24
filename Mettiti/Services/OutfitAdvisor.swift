@@ -19,8 +19,9 @@ struct OutfitAdvisor: Sendable {
 
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation {
         try Self.checkAvailability()
-        let request = Self.request(for: weather, hourly: hourly, span: span, unit: unitProvider())
-        let response = try await Self.makeSession().respond(to: request.prompt, generating: OutfitRecommendation.self)
+        let language = Self.responseLanguage()
+        let request = Self.request(for: weather, hourly: hourly, span: span, unit: unitProvider(), language: language)
+        let response = try await Self.makeSession(language: language).respond(to: request.prompt, generating: OutfitRecommendation.self)
         return request.droppingWarmLayersIfWarmThroughout(response.content)
     }
 
@@ -28,7 +29,7 @@ struct OutfitAdvisor: Sendable {
     /// while the weather is still loading (#23). Does nothing when the model is unavailable.
     func prewarm() {
         guard Self.isAvailable else { return }
-        let session = Self.makeSession()
+        let session = Self.makeSession(language: Self.responseLanguage())
         session.prewarm()
         preparedSession.store(session)
     }
@@ -37,8 +38,9 @@ struct OutfitAdvisor: Sendable {
     /// session from `prewarm()` if there is one.
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
         try Self.checkAvailability()
-        let session = preparedSession.take() ?? Self.makeSession()
-        let request = Self.request(for: weather, hourly: hourly, span: span, unit: unitProvider())
+        let language = Self.responseLanguage()
+        let session = preparedSession.take() ?? Self.makeSession(language: language)
+        let request = Self.request(for: weather, hourly: hourly, span: span, unit: unitProvider(), language: language)
         let stream = session.streamResponse(to: request.prompt, generating: OutfitRecommendation.self)
         for try await partial in stream {
             await onPartial(request.draft(from: partial.content))
@@ -47,9 +49,9 @@ struct OutfitAdvisor: Sendable {
     }
 
     /// What to ask the model about the plan, and whether to drop warm layers from its answer.
-    static func request(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent) -> OutfitRequest {
+    static func request(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent, language: String = defaultLanguage) -> OutfitRequest {
         OutfitRequest(
-            prompt: prompt(for: weather, hourly: hourly, span: span, unit: unit, locale: locale),
+            prompt: prompt(for: weather, hourly: hourly, span: span, unit: unit, locale: locale, language: language),
             isWarmThroughout: isWarmThroughout(weather, hourly: hourly, span: span, unit: unit.resolved(for: locale))
         )
     }
@@ -76,8 +78,8 @@ struct OutfitAdvisor: Sendable {
         )
     }
 
-    private static func makeSession() -> LanguageModelSession {
-        LanguageModelSession(instructions: Instructions { instructions })
+    private static func makeSession(language: String) -> LanguageModelSession {
+        LanguageModelSession(instructions: Instructions { sessionInstructions(language: language) })
     }
 
     private static var isAvailable: Bool {
@@ -92,6 +94,34 @@ struct OutfitAdvisor: Sendable {
     }
 
     private static let promptLocale = Locale(identifier: "en_US_POSIX")
+
+    static let defaultLanguage = "English"
+
+    /// The English name of the language the model should answer in: the app's current localization,
+    /// or English when Foundation Models doesn't support it. `appLanguages` is in preference order,
+    /// as `Bundle.preferredLocalizations` gives it.
+    static func responseLanguage(
+        appLanguages: [String] = Bundle.main.preferredLocalizations,
+        supports: (Locale) -> Bool = { SystemLanguageModel.default.supportsLocale($0) }
+    ) -> String {
+        guard let identifier = appLanguages.first else { return defaultLanguage }
+        let locale = Locale(identifier: identifier)
+        guard supports(locale),
+              let code = locale.language.languageCode?.identifier,
+              let name = Locale(identifier: "en").localizedString(forLanguageCode: code)
+        else { return defaultLanguage }
+        return name
+    }
+
+    /// Tells the model which language to write the summary, item names and reasons in.
+    /// Item emojis are unaffected.
+    static func responseLanguageLine(_ language: String) -> String {
+        "Respond in \(language): write the summary and each item's name and reason in \(language)."
+    }
+
+    static func sessionInstructions(language: String) -> String {
+        "\(instructions)\n\n\(responseLanguageLine(language))"
+    }
 
     static let instructions = """
     You are a friendly outfit and packing assistant. Given the weather from now until \
@@ -117,12 +147,17 @@ struct OutfitAdvisor: Sendable {
     /// explicit unit and how they feel ("72°F (warm)"), and times in English ("4 PM"), because the model
     /// reads them, not the user. Conditions are in the user's language, like the weather provider's own
     /// descriptions. Times are in the span's time zone.
-    static func prompt(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent) -> String {
+    static func prompt(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent, language: String = defaultLanguage) -> String {
         let unit = unit.resolved(for: locale)
         func temperature(_ fahrenheit: Double) -> String {
             "\(unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)) (\(TemperatureFeel(fahrenheit: fahrenheit, in: unit).rawValue))"
         }
         let warmThroughout = isWarmThroughout(weather, hourly: hourly, span: span, unit: unit)
+        // The weather is stored in mph; the model gets km/h where the locale doesn't use miles.
+        func wind(_ mph: Double) -> String {
+            let usesMiles = locale.measurementSystem == .us || locale.measurementSystem == .uk
+            return usesMiles ? "\(Int(mph.rounded())) mph" : "\(Int((mph * 1.609344).rounded())) km/h"
+        }
         let now = span.interval.start
         let timeZone = span.timeZone
         func formatted(_ date: Date, _ style: Date.FormatStyle) -> String {
@@ -143,7 +178,7 @@ struct OutfitAdvisor: Sendable {
                 currentTime += " It's dark outside, so sun protection isn't needed."
             }
             let noWarmLayer = warmThroughout ? noWarmLayerLine(low: weather.lowTemperatureF, unit: unit) : nil
-            return wholeDayPrompt(for: weather, currentTime: currentTime, isDark: isDark, noWarmLayer: noWarmLayer, temperature: temperature)
+            return wholeDayPrompt(for: weather, currentTime: currentTime, isDark: isDark, noWarmLayer: noWarmLayer, temperature: temperature, wind: wind, language: language)
         }
 
         switch window.isDaylightAtStart {
@@ -160,7 +195,7 @@ struct OutfitAdvisor: Sendable {
             summary.append("- Highest chance of precipitation: \(probability)% at \(hour(wettest.date))")
         }
         if let windiest = window.windiest, let speed = windiest.windSpeedMph {
-            summary.append("- Strongest wind: \(Int(speed.rounded())) mph at \(hour(windiest.date))")
+            summary.append("- Strongest wind: \(wind(speed)) at \(hour(windiest.date))")
         }
         for event in window.sunEvents {
             summary.append("- \(event.kind == .sunrise ? "Sunrise" : "Sunset") at \(clockTime(event.date))")
@@ -178,7 +213,7 @@ struct OutfitAdvisor: Sendable {
             if let code = point.conditionCode { parts.append(WMOWeatherCode.description(for: code)) }
             if let probability = point.precipitationProbability { parts.append("\(probability)% chance of precipitation") }
             if let uvIndex = point.uvIndex { parts.append("UV index \(Int(uvIndex.rounded()))") }
-            if let speed = point.windSpeedMph { parts.append("wind \(Int(speed.rounded())) mph") }
+            if let speed = point.windSpeedMph { parts.append("wind \(wind(speed))") }
             if let isDaylight = point.isDaylight { parts.append(isDaylight ? "daylight" : "dark") }
             return "- \(hour(point.date)): \(parts.joined(separator: ", "))"
         }
@@ -193,7 +228,7 @@ struct OutfitAdvisor: Sendable {
         Hour by hour:
         \(hours.joined(separator: "\n"))
 
-        Recommend what to wear and bring from now until \(end).
+        Recommend what to wear and bring from now until \(end). \(responseLanguageLine(language))
         """
     }
 
@@ -226,7 +261,7 @@ struct OutfitAdvisor: Sendable {
     /// For when there's no hourly forecast to cover: the whole day's high, low and maximums.
     /// It leaves out the day's peak UV, which may have passed, and after dark asks about the night,
     /// so a plan made in the evening doesn't suggest sunscreen.
-    private static func wholeDayPrompt(for weather: DailyWeather, currentTime: String, isDark: Bool, noWarmLayer: String?, temperature: (Double) -> String) -> String {
+    private static func wholeDayPrompt(for weather: DailyWeather, currentTime: String, isDark: Bool, noWarmLayer: String?, temperature: (Double) -> String, wind: (Double) -> String, language: String) -> String {
         """
         \(currentTime)
 
@@ -234,9 +269,9 @@ struct OutfitAdvisor: Sendable {
         - Condition: \(weather.conditionDescription)
         - High: \(temperature(weather.highTemperatureF)), Low: \(temperature(weather.lowTemperatureF))\(noWarmLayer.map { "\n\($0)" } ?? "")
         - Chance of precipitation: \(weather.precipitationProbability)%
-        - Wind: \(Int(weather.windSpeedMph.rounded())) mph
+        - Wind: \(wind(weather.windSpeedMph))
 
-        Recommend what to wear and bring for the rest of \(isDark ? "tonight" : "today").
+        Recommend what to wear and bring for the rest of \(isDark ? "tonight" : "today"). \(responseLanguageLine(language))
         """
     }
 
