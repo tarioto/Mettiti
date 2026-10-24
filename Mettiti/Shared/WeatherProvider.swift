@@ -8,6 +8,7 @@ enum WeatherProvider: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var label: LocalizedStringResource {
         switch self {
+        // A brand name, so deliberately not translated.
         case .openMeteo: return LocalizedStringResource(stringLiteral: "Open-Meteo")
         case .apple: return LocalizedStringResource("Apple Weather", table: "Shared")
         }

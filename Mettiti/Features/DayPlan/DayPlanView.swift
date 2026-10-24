@@ -103,8 +103,8 @@ struct DayPlanView: View {
         VStack(alignment: .leading, spacing: 8) {
             CardTitle(
                 type: .plan,
-                title: span.map { String(localized: "planCard.title", defaultValue: "\(String(localized: CardType.plan.title)) ·\($0.timeRange())", comment: "Plan card title: the card's name, then the times it covers, e.g. Plan · 2:20 – 5:20 PM") },
-                accessibilityLabel: span.map { String(localized: "planCard.accessibilityLabel", defaultValue: "\(String(localized: CardType.plan.title)),\($0.accessibilityLabel())", comment: "VoiceOver label for the plan card title: the card's name, then its Plan Window and times") }
+                title: span.map { String(localized: "planCard.title", defaultValue: "\(String(localized: CardType.plan.title)) · \($0.timeRange())", comment: "Plan card title: the card's name, then the times it covers, e.g. Plan · 2:20 – 5:20 PM") },
+                accessibilityLabel: span.map { String(localized: "planCard.accessibilityLabel", defaultValue: "\(String(localized: CardType.plan.title)), \($0.accessibilityLabel())", comment: "VoiceOver label for the plan card title: the card's name, then its Plan Window and times") }
             )
             if let city = location?.name {
                 Text(city)
