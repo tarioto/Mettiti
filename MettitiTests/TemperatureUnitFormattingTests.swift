@@ -55,3 +55,51 @@ struct TemperatureUnitFormattingTests {
         #expect(TemperatureUnit.fahrenheit.formatted(fahrenheit: 72.5, locale: us) == "73°")
     }
 }
+
+struct DayPlanLocaleFormattingTests {
+    private let us = Locale(identifier: "en_US")
+    private let italy = Locale(identifier: "it_IT")
+    private let utc = TimeZone(identifier: "UTC")!
+    private var appBundle: Bundle { Bundle(for: DayPlanViewModel.self) }
+
+    private func italianBundle() throws -> Bundle {
+        let path = try #require(appBundle.path(forResource: "it", ofType: "lproj"))
+        return try #require(Bundle(path: path))
+    }
+
+    private func hourLabel(_ locale: Locale) -> String {
+        let forecast = HourlyForecast(timeZone: utc, points: [])
+        // 14:00 UTC
+        return Date(timeIntervalSince1970: 14 * 3600).formatted(forecast.hourFormat.locale(locale))
+    }
+
+    @Test func hoursFollowTheLocalesTwelveOrTwentyFourHourConvention() {
+        #expect(hourLabel(us).replacingOccurrences(of: "\u{202F}", with: " ") == "2 PM")
+        #expect(hourLabel(italy) == "14")
+    }
+
+    @Test func summaryLineInUSEnglishUsesPlaceholders() {
+        let text = TemperatureUnit.fahrenheit.formattedSummary(highFahrenheit: 72, lowFahrenheit: 58, precipitationProbability: 30, uvIndex: 4.6, locale: us)
+        #expect(text == "H:72° L:58°  •  30% rain  •  UV 5")
+    }
+
+    @Test func summaryLineIsItalianWithLocaleFormattedPercent() throws {
+        let key = "H:%@ L:%@  •  %@ rain  •  UV %lld"
+        let format = try italianBundle().localizedString(forKey: key, value: "<missing>", table: "Shared")
+        let rain = (0.3).formatted(.percent.precision(.fractionLength(0)).locale(italy))
+        #expect(rain == "30%")
+        #expect(String(format: format, "22 °C", "14 °C", rain, 5) == "Max 22 °C Min 14 °C  •  pioggia 30%  •  UV 5")
+    }
+
+    @Test func chartLegendAndAxisLabelsAreInItalian() throws {
+        let bundle = try italianBundle()
+        let keys = [
+            "Bars show chance of rain",
+            "Shaded band shows model spread · bars show chance of rain",
+            "Time", "Temperature", "Chance of rain", "Hourly forecast",
+        ]
+        for key in keys {
+            #expect(bundle.localizedString(forKey: key, value: "<missing>", table: nil) != "<missing>", "\(key)")
+        }
+    }
+}
