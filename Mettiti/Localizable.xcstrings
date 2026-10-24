@@ -208,11 +208,29 @@
     "Received an unexpected response from the weather service." : {
 
     },
+    "Refresh" : {
+      "comment" : "VoiceOver action on the main screen that reloads the weather and outfit",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aggiorna"
+          }
+        }
+      }
+    },
     "Search for a city to see its weather instead of your current location." : {
 
     },
     "Settings" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impostazioni"
+          }
+        }
+      }
     },
     "Shaded band shows model spread · bars show chance of rain" : {
 
@@ -253,6 +271,17 @@
     },
     "Time" : {
       "comment" : "VoiceOver title for the hourly chart's time axis"
+    },
+    "Today" : {
+      "comment" : "Title of the main screen",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Oggi"
+          }
+        }
+      }
     },
     "Try Again" : {
 

@@ -5,6 +5,10 @@ options:
     iOS: "26.0"
   createIntermediateGroups: true
   xcodeVersion: "27.1"
+  # English is the development language and the fallback; Italian is declared here so it survives
+  # `xcodegen generate`. The app follows the system/per-app language (no in-app picker).
+  developmentLanguage: en
+  knownRegions: [en, Base, it]
 settings:
   base:
     SWIFT_VERSION: "6.0"
