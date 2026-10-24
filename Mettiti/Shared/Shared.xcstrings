@@ -24,10 +24,24 @@
       }
     },
     "Apple Weather" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Meteo"
+          }
+        }
+      }
     },
     "Celsius" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Celsius"
+          }
+        }
+      }
     },
     "Clear sky" : {
 
@@ -36,7 +50,14 @@
 
     },
     "Fahrenheit" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Fahrenheit"
+          }
+        }
+      }
     },
     "Foggy" : {
 
@@ -62,16 +83,48 @@
 
     },
     "Next 3 hours" : {
-      "comment" : "Plan Window heading for a three-hour window"
+      "comment" : "Plan Window heading for a three-hour window",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Prossime 3 ore"
+          }
+        }
+      }
     },
     "Next 6 hours" : {
-      "comment" : "Plan Window heading for a six-hour window"
+      "comment" : "Plan Window heading for a six-hour window",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Prossime 6 ore"
+          }
+        }
+      }
     },
     "Next 12 hours" : {
-      "comment" : "Plan Window heading for a twelve-hour window"
+      "comment" : "Plan Window heading for a twelve-hour window",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Prossime 12 ore"
+          }
+        }
+      }
     },
     "Next hour" : {
-      "comment" : "Plan Window heading for a one-hour window"
+      "comment" : "Plan Window heading for a one-hour window",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Prossima ora"
+          }
+        }
+      }
     },
     "Overcast" : {
 
@@ -86,7 +139,15 @@
 
     },
     "Rest of day" : {
-      "comment" : "Plan Window stop: from now until midnight"
+      "comment" : "Plan Window stop: from now until midnight",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Resto della giornata"
+          }
+        }
+      }
     },
     "Snow" : {
 
@@ -98,7 +159,14 @@
 
     },
     "System" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sistema"
+          }
+        }
+      }
     },
     "Thunderstorm" : {
 

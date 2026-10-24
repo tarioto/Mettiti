@@ -52,7 +52,7 @@ enum ThemeIcon: String, CaseIterable, Identifiable {
         }
     }
 
-    var label: String { theme.label }
+    var label: LocalizedStringResource { theme.label }
 
     var alternateIconName: String { "AppIcon-\(assetSuffix)" }
 
