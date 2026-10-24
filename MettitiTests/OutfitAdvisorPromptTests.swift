@@ -280,6 +280,46 @@ struct OutfitAdvisorPromptTests {
         #expect(instructions.contains("describe the change in words"))
         #expect(instructions.contains("instead of averaging"))
     }
+
+    // MARK: Response language and wind unit
+
+    private let supportsItalian: (Locale) -> Bool = { $0.language.languageCode?.identifier == "it" }
+
+    @Test func responseLanguageFollowsTheAppsLocalization() {
+        #expect(OutfitAdvisor.responseLanguage(appLanguages: ["it"], supports: supportsItalian) == "Italian")
+    }
+
+    @Test func responseLanguageFallsBackToEnglishWhenTheModelDoesntSupportIt() {
+        #expect(OutfitAdvisor.responseLanguage(appLanguages: ["it"], supports: { _ in false }) == "English")
+        #expect(OutfitAdvisor.responseLanguage(appLanguages: [], supports: supportsItalian) == "English")
+    }
+
+    @Test func promptAsksForTheResponseLanguage() {
+        let italian = OutfitAdvisor.prompt(for: weather, hourly: hourly, span: restOfDay(from: afternoon), unit: .fahrenheit, language: "Italian")
+        let wholeDay = OutfitAdvisor.prompt(for: weather, hourly: nil, span: restOfDay(from: afternoon), unit: .fahrenheit, language: "Italian")
+        let fallback = OutfitAdvisor.prompt(for: weather, hourly: hourly, span: restOfDay(from: afternoon), unit: .fahrenheit)
+
+        #expect(italian.contains(OutfitAdvisor.responseLanguageLine("Italian")))
+        #expect(wholeDay.contains(OutfitAdvisor.responseLanguageLine("Italian")))
+        #expect(fallback.contains(OutfitAdvisor.responseLanguageLine("English")))
+        #expect(!fallback.contains("Italian"))
+        #expect(OutfitAdvisor.sessionInstructions(language: "Italian").contains("Respond in Italian"))
+    }
+
+    @Test func windSpeedIsInKilometersPerHourWhereTheLocaleDoesntUseMiles() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, span: restOfDay(from: afternoon), unit: .system, locale: Locale(identifier: "it_IT"))
+
+        // 6 mph = 9.7 km/h; 11 mph = 17.7 km/h
+        #expect(prompt.contains("wind 10 km/h"))
+        #expect(prompt.contains("wind 18 km/h"))
+        #expect(!prompt.contains("mph"))
+    }
+
+    @Test func windSpeedStaysInMilesPerHourInTheUS() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: nil, span: restOfDay(from: afternoon), unit: .system, locale: Locale(identifier: "en_US"))
+
+        #expect(prompt.contains("Wind: 20 mph"))
+    }
 }
 
 private func hour(_ iso: String, temperature: Double, rain: Int, uv: Double, wind: Double, code: Int, daylight: Bool) -> HourlyTemperaturePoint {
