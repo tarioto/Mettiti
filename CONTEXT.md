@@ -41,7 +41,7 @@ The main screen's sections, which the user orders and turns on or off in Setting
 _Avoid_: Today's plan (the Plan card's old name), panels, sections
 
 **Location card**:
-A map of where the plan is for, with a pin, under the header "Location". For Current Location it follows the GPS fix the weather on screen was loaded for, not every new fix, and the city's name is looked up from it (a fix within a kilometre keeps the name); for a searched city it's that city. The city's name is the Plan card's main title.
+A map of where the plan is for, with an unlabelled pin, under the header "Location". For Current Location it follows the GPS fix the weather on screen was loaded for, not every new fix, and the city's name is looked up from it (a fix within a kilometre keeps the name); for a searched city it's that city. The city's name is the Plan card's main title.
 _Avoid_: Map card, Current Location card
 
 ### Day plan
