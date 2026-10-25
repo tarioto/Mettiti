@@ -111,22 +111,20 @@ struct DayPlanView: View {
                     .font(.title2.bold())
             }
             progressCaption(for: .plan)
-            switch recommendation {
-            case .ready(let outfit):
-                Text(outfit.summary)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            case .generating(let partial) where !partial.summary.isEmpty:
-                Text(partial.summary)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            case .loading, .generating:
-                Text(SkeletonLoadingView.recommendation.summary)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .redacted(reason: .placeholder)
-            case .unavailable, .failed:
-                recommendationNotice(for: .plan)
+            crossfading {
+                switch recommendation {
+                case .ready(let outfit):
+                    Text(outfit.summary)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                case .loading:
+                    Text(SkeletonLoadingView.recommendation.summary)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .redacted(reason: .placeholder)
+                case .unavailable, .failed:
+                    recommendationNotice(for: .plan)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -139,15 +137,16 @@ struct DayPlanView: View {
             CardTitle(type: .wearAndBring)
             progressCaption(for: .wearAndBring)
 
-            switch recommendation {
-            case .ready(let outfit):
-                itemList(outfit.items)
-            case .generating(let partial):
-                itemList(partial.items, paddedWithPlaceholders: true)
-            case .loading:
-                itemList([], paddedWithPlaceholders: true)
-            case .unavailable, .failed:
-                recommendationNotice(for: .wearAndBring)
+            crossfading {
+                switch recommendation {
+                case .ready(let outfit):
+                    itemList(outfit.items)
+                case .loading:
+                    itemList(SkeletonLoadingView.recommendation.items)
+                        .redacted(reason: .placeholder)
+                case .unavailable, .failed:
+                    recommendationNotice(for: .wearAndBring)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -155,20 +154,27 @@ struct DayPlanView: View {
         .cardBackground()
     }
 
-    /// With `paddedWithPlaceholders`, placeholder rows fill in up to the skeleton's count, so the
-    /// card doesn't change height as streamed items arrive.
-    private func itemList(_ items: [RecommendedItem], paddedWithPlaceholders: Bool = false) -> some View {
-        let placeholders = paddedWithPlaceholders ? Array(SkeletonLoadingView.recommendation.items.dropFirst(items.count)) : []
-        return VStack(spacing: 12) {
+    private func itemList(_ items: [RecommendedItem]) -> some View {
+        VStack(spacing: 12) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 ItemRow(item: item)
             }
-            ForEach(Array(placeholders.enumerated()), id: \.offset) { _, item in
-                ItemRow(item: item)
-                    .redacted(reason: .placeholder)
-            }
         }
     }
+
+    /// Lets a card's skeleton, outfit or notice crossfade into the next as the recommendation
+    /// changes, including a refresh swapping in a new outfit. Stacked in a ZStack so the old and
+    /// new content don't both take up height while they fade.
+    private func crossfading<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        ZStack(alignment: .top) {
+            content()
+                .id(recommendation.crossfadeID)
+                .transition(.opacity)
+        }
+        .animation(Self.crossfade, value: recommendation.crossfadeID)
+    }
+
+    static let crossfade = Animation.easeInOut(duration: 0.3)
 
     /// While the outfit is on its way, only the first visible suggestion card says so, so it isn't repeated.
     @ViewBuilder
@@ -248,7 +254,7 @@ private struct RecommendationNoticeView: View {
                 Label("Try Again", systemImage: "arrow.clockwise")
             }
             .buttonStyle(.bordered)
-        case .unavailable(.deviceNotEligible), .loading, .generating, .ready:
+        case .unavailable(.deviceNotEligible), .loading, .ready:
             EmptyView()
         }
     }
@@ -272,10 +278,6 @@ private struct RecommendationNoticeView: View {
 
 #Preview("Suggestions loading") {
     DayPlanPreview(recommendation: .loading)
-}
-
-#Preview("Suggestions streaming") {
-    DayPlanPreview(recommendation: .generating(OutfitRecommendation(summary: "Expect mild temperatures with a chance", items: [OutfitRecommendation.placeholder.items[0]])))
 }
 
 private struct DayPlanPreview: View {

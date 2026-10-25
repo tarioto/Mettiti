@@ -112,8 +112,18 @@ struct ContentView: View {
         }
     }
 
-    @ViewBuilder
+    /// The first-load skeleton crossfades into the weather as soon as it's ready.
     private var content: some View {
+        ZStack(alignment: .top) {
+            stateContent
+                .id(viewModel.state.crossfadeID)
+                .transition(.opacity)
+        }
+        .animation(DayPlanView.crossfade, value: viewModel.state.crossfadeID)
+    }
+
+    @ViewBuilder
+    private var stateContent: some View {
         switch viewModel.state {
         case .idle, .loadingWeather:
             VStack(spacing: 12) {
