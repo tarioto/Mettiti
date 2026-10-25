@@ -8,12 +8,12 @@ enum CardType: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
-        case .weather: return String(localized: "Weather")
-        case .plan: return String(localized: "Plan")
-        case .wearAndBring: return String(localized: "Wear & bring")
-        case .location: return String(localized: "Location")
+        case .weather: return "Weather"
+        case .plan: return "Plan"
+        case .wearAndBring: return "Wear & bring"
+        case .location: return "Location"
         }
     }
 

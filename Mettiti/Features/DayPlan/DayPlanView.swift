@@ -103,8 +103,8 @@ struct DayPlanView: View {
         VStack(alignment: .leading, spacing: 8) {
             CardTitle(
                 type: .plan,
-                title: span.map { String(localized: "planCard.title", defaultValue: "\(CardType.plan.title) · \($0.timeRange())", comment: "Plan card title: the card's name, then the times it covers, e.g. Plan · 2:20 – 5:20 PM") },
-                accessibilityLabel: span.map { String(localized: "planCard.accessibilityLabel", defaultValue: "\(CardType.plan.title), \($0.accessibilityLabel())", comment: "VoiceOver label for the plan card title: the card's name, then its Plan Window and times") }
+                title: span.map { String(localized: "planCard.title", defaultValue: "\(String(localized: CardType.plan.title)) · \($0.timeRange())", comment: "Plan card title: the card's name, then the times it covers, e.g. Plan · 2:20 – 5:20 PM") },
+                accessibilityLabel: span.map { String(localized: "planCard.accessibilityLabel", defaultValue: "\(String(localized: CardType.plan.title)), \($0.accessibilityLabel())", comment: "VoiceOver label for the plan card title: the card's name, then its Plan Window and times") }
             )
             if let city = location?.name {
                 Text(city)
@@ -299,12 +299,12 @@ private struct CardTitle: View {
     var accessibilityLabel: String? = nil
 
     var body: some View {
-        Label(title ?? type.title, systemImage: type.icon)
+        Label(title ?? String(localized: type.title), systemImage: type.icon)
             .font(.footnote.weight(.semibold))
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityLabel(accessibilityLabel ?? title ?? type.title)
+            .accessibilityLabel(accessibilityLabel ?? title ?? String(localized: type.title))
             .accessibilityAddTraits(.isHeader)
     }
 }
