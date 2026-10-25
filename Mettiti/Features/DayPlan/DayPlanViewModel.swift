@@ -44,8 +44,12 @@ final class DayPlanViewModel {
     private let loadSnapshot: @MainActor () -> PlanSnapshot?
     private let publishSnapshot: @MainActor (PlanSnapshot) -> Void
     private let now: @MainActor () -> Date
-    /// Defines "today"; autoupdating so a time zone change while the app is in memory counts.
-    private let calendar: Calendar
+    /// The device's calendar (autoupdating, so a time zone change while the app is in memory counts):
+    /// the fallback for `calendar`, and the time zone for display when there's no forecast.
+    private let deviceCalendar: Calendar
+    /// Defines "today" for every day and staleness check: the selected location's, so the app
+    /// agrees with the widgets and background refresh. The device's when the selection has no time zone.
+    private var calendar: Calendar { locationPreference.selection.calendar(fallback: deviceCalendar) }
     private let lookUpCityName: @Sendable (CLLocationCoordinate2D) async -> String?
     @ObservationIgnored private var hasStarted = false
     /// Last GPS fix; only Current Location refreshes reuse it, so custom-city loads never set it.
@@ -97,7 +101,7 @@ final class DayPlanViewModel {
         self.loadSnapshot = loadSnapshot
         self.publishSnapshot = publishSnapshot
         self.now = now
-        self.calendar = calendar
+        self.deviceCalendar = calendar
         self.lookUpCityName = lookUpCityName
         appliedSelection = locationPreference.selection
         appliedProvider = providerPreference.provider
@@ -256,14 +260,14 @@ final class DayPlanViewModel {
         isShowingSavedPlan = true
         adviceBasis = snapshot.adviceBasis
         let recommendation: RecommendationState = snapshot.recommendation.map { .ready($0) } ?? .loading
-        let span = snapshot.span ?? PlanSpan(window: .restOfDay, startingAt: snapshot.generatedAt, timeZone: snapshot.hourly?.timeZone ?? calendar.timeZone)
+        let span = snapshot.span ?? PlanSpan(window: .restOfDay, startingAt: snapshot.generatedAt, timeZone: snapshot.hourly?.timeZone ?? deviceCalendar.timeZone)
         state = .loaded(weather: snapshot.weather, hourly: snapshot.hourly, span: span, provider: providerPreference.provider, recommendation: recommendation)
     }
 
     /// The active Plan Window's span from now (the Window Override's, if any), in the forecast location's time zone (the
     /// device's without an hourly forecast).
     private func currentSpan(for hourly: HourlyForecast?) -> PlanSpan {
-        PlanSpan(window: activePlanWindow, startingAt: now(), timeZone: hourly?.timeZone ?? calendar.timeZone)
+        PlanSpan(window: activePlanWindow, startingAt: now(), timeZone: hourly?.timeZone ?? deviceCalendar.timeZone)
     }
 
     /// Refreshes a plan left in memory once it's stale for the current Plan Window: from an

@@ -1999,6 +1999,95 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.span?.window == .restOfDay)
     }
 
+    @Test func aSavedPlanFromBeforeTokyosMidnightIsNotShownAfterIt() async throws {
+        // 07:30 PDT is 23:30 in Tokyo; at 08:30 PDT it's the next day in Tokyo, the same day on the device.
+        let clock = FakeClock(date("2026-10-19T08:30:00-07:00"))
+        let saved = PlanSnapshot.saved(high: 99, summary: "Saved outfit", location: tokyoCity, generatedAt: date("2026-10-19T07:30:00-07:00"))
+        let viewModel = makeTokyoViewModel(fetcher: GatedDayPlanFetcher(), saved: saved, clock: clock)
+
+        viewModel.start()
+
+        #expect(viewModel.state.readySummary == nil)
+    }
+
+    @Test func aSavedPlanFromAfterTokyosMidnightIsStillShownAfterTheDevicesMidnight() async throws {
+        // Made at 00:30 Oct 20 in Tokyo; 01:00 PDT Oct 20 is 17:00 there, the same day.
+        let clock = FakeClock(date("2026-10-20T01:00:00-07:00"))
+        let saved = PlanSnapshot.saved(high: 99, summary: "Saved outfit", location: tokyoCity, generatedAt: date("2026-10-19T08:30:00-07:00"))
+        let viewModel = makeTokyoViewModel(fetcher: GatedDayPlanFetcher(), saved: saved, clock: clock)
+
+        viewModel.start()
+
+        #expect(viewModel.state.readySummary == "Saved outfit")
+    }
+
+    @Test func returningAfterTokyosMidnightRefetchesEvenWithinTheStaleInterval() async throws {
+        let clock = FakeClock(date("2026-10-19T07:50:00-07:00"))
+        let fetcher = FakeDayPlanFetcher()
+        let viewModel = makeTokyoViewModel(fetcher: fetcher, saved: nil, clock: clock)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+        let requests = await fetcher.requestedCoordinates.count
+
+        clock.now = date("2026-10-19T08:05:00-07:00")
+        viewModel.refreshIfStale()
+
+        try await waitUntil { await fetcher.requestedCoordinates.count == requests + 1 }
+    }
+
+    @Test func theOverrideEndsAtTokyosMidnight() async throws {
+        let clock = FakeClock(date("2026-10-19T07:00:00-07:00"))
+        let viewModel = makeTokyoViewModel(fetcher: FakeDayPlanFetcher(), saved: nil, clock: clock)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+        viewModel.selectPlanWindow(.oneHour)
+
+        clock.now = date("2026-10-19T08:10:00-07:00")
+        viewModel.refreshIfStale()
+
+        #expect(viewModel.activePlanWindow == .restOfDay)
+    }
+
+    @Test func theOverrideSurvivesTheDevicesMidnightWhileItIsTheSameDayInTokyo() async throws {
+        let clock = FakeClock(date("2026-10-19T23:00:00-07:00"))
+        let viewModel = makeTokyoViewModel(fetcher: FakeDayPlanFetcher(), saved: nil, clock: clock)
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+        viewModel.selectPlanWindow(.oneHour)
+
+        // Tokyo's Oct 20 began at 08:00 PDT Oct 19; the device's midnight is 16:00 in Tokyo.
+        clock.now = date("2026-10-20T00:10:00-07:00")
+        viewModel.refreshIfStale()
+
+        #expect(viewModel.activePlanWindow == .oneHour)
+    }
+
+    @Test func changingTheLocationAppliesItsDayRightAway() async throws {
+        let clock = FakeClock(date("2026-10-19T07:00:00-07:00"))
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3, timeZone: pacific)
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: FakeDayPlanFetcher(),
+            loadSnapshot: { nil },
+            publishSnapshot: { _ in },
+            now: { clock.now },
+            calendar: gregorianCalendar(in: pacific)
+        )
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+        viewModel.selectPlanWindow(.oneHour)
+
+        locationPreference.selection = tokyoCity
+        clock.now = date("2026-10-19T08:10:00-07:00")
+        viewModel.refreshIfStale()
+
+        #expect(viewModel.activePlanWindow == .restOfDay)
+    }
+
     @Test func changingTheSettingsDefaultReplacesTheOverride() async throws {
         let fetcher = FakeDayPlanFetcher()
         let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
@@ -2285,6 +2374,26 @@ private func makePlanWindowViewModel(fetcher: DayPlanFetching, planWindowPrefere
         fetcher: fetcher,
         loadSnapshot: { saved },
         publishSnapshot: publishSnapshot,
+        now: { clock.now },
+        calendar: gregorianCalendar(in: pacific)
+    )
+}
+
+private let tokyoCity = LocationSelection.custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: TimeZone(identifier: "Asia/Tokyo")!)
+
+/// A Tokyo view model on a Pacific device calendar.
+@MainActor
+private func makeTokyoViewModel(fetcher: DayPlanFetching, saved: PlanSnapshot?, clock: FakeClock) -> DayPlanViewModel {
+    let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+    locationPreference.selection = tokyoCity
+    return DayPlanViewModel(
+        locationManager: FakeLocationProvider(),
+        locationPreference: locationPreference,
+        providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+        planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+        fetcher: fetcher,
+        loadSnapshot: { saved },
+        publishSnapshot: { _ in },
         now: { clock.now },
         calendar: gregorianCalendar(in: pacific)
     )
