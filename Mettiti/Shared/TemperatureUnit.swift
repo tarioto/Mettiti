@@ -7,11 +7,11 @@ enum TemperatureUnit: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var label: String {
+    var label: LocalizedStringResource {
         switch self {
-        case .system: return String(localized: "System", table: "Shared")
-        case .fahrenheit: return String(localized: "Fahrenheit", table: "Shared")
-        case .celsius: return String(localized: "Celsius", table: "Shared")
+        case .system: return LocalizedStringResource("System", table: "Shared")
+        case .fahrenheit: return LocalizedStringResource("Fahrenheit", table: "Shared")
+        case .celsius: return LocalizedStringResource("Celsius", table: "Shared")
         }
     }
 

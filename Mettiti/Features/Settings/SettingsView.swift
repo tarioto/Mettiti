@@ -81,7 +81,7 @@ struct SettingsView: View {
                                 }
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel(theme.label)
+                            .accessibilityLabel(Text(theme.label))
                             .accessibilityAddTraits(isSelected ? .isSelected : [])
                         }
                     }
@@ -94,7 +94,7 @@ struct SettingsView: View {
 
                     if appIconPreference.supportsAlternateIcons {
                         ChoiceRow("App Icon") {
-                            appIconOption(.default, label: String(localized: "Default"), thumbnailName: appIconPreference.buildIcon.thumbnailName)
+                            appIconOption(.default, label: LocalizedStringResource("Default"), thumbnailName: appIconPreference.buildIcon.thumbnailName)
                             ForEach(ThemeIcon.allCases) { icon in
                                 appIconOption(.theme(icon), label: icon.label, thumbnailName: icon.thumbnailName)
                             }
@@ -125,7 +125,7 @@ struct SettingsView: View {
     private static let iconThumbnailCornerRadius = iconThumbnailSize * 0.258
     private static let iconSelectionGap: CGFloat = 4
 
-    private func appIconOption(_ option: AppIconSelection, label: String, thumbnailName: String) -> some View {
+    private func appIconOption(_ option: AppIconSelection, label: LocalizedStringResource, thumbnailName: String) -> some View {
         let isSelected = appIconPreference.selection == option
         return Button {
             Task { await appIconPreference.select(option) }
@@ -156,7 +156,7 @@ struct SettingsView: View {
             .padding(Self.iconSelectionGap)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(Text(label))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
@@ -293,7 +293,7 @@ private struct CardSettingsView: View {
                             .frame(width: 24)
                         Text(config.type.title)
                         Spacer()
-                        Toggle(config.type.title, isOn: $config.isVisible)
+                        Toggle(isOn: $config.isVisible) { Text(config.type.title) }
                             .labelsHidden()
                     }
                 }
