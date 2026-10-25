@@ -182,6 +182,32 @@ jobs:
             --permission-mode acceptEdits
             --allowedTools "Skill,Agent,Task,TodoWrite,Read,Glob,Grep,Edit,Write,Bash(git:*),Bash(xcodebuild:*),Bash(xcrun simctl:*),Bash(xcbeautify:*),Bash(jq:*),Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*)"
 
+      # Claude can end "successfully" without opening a PR (#72 did), which would leave the issue
+      # looking started forever. Say so on the issue and fail the job. The claim branch is deleted
+      # only when nothing was pushed to it, so relabeling the issue starts it again.
+      - if: always() && steps.claim.outputs.started != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE: ${{ matrix.issue }}
+          BRANCH: claude/issue-${{ matrix.issue }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$(gh pr list --head "$BRANCH" --state all --json number --jq '.[].number')" ]]; then
+            exit 0
+          fi
+          git fetch -q origin main "$BRANCH"
+          if [[ "$(git rev-list --count "origin/main..origin/$BRANCH")" == 0 ]]; then
+            git push origin --delete "$BRANCH"
+            note="Nothing was pushed, so the branch is deleted. Add the ready-for-agent label again to retry."
+          else
+            note="Its commits are on $BRANCH. Open a PR from it, or delete it and add the ready-for-agent label again to retry."
+          fi
+          gh issue edit "$ISSUE" --remove-label ready-for-agent
+          gh issue comment "$ISSUE" --body "Claude finished without opening a PR ([run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)). $note"
+          echo "::error::Claude finished without opening a PR for #$ISSUE."
+          exit 1
+
   # Answers @claude mentions in issues, PRs, comments and reviews.
   mention:
     if: |
