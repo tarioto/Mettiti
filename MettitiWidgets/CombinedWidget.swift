@@ -5,12 +5,25 @@ struct CombinedWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family
     var entry: PlanEntry
 
+    private var isExtraLargePortrait: Bool {
+        if #available(iOS 27.0, *) {
+            return family == .systemExtraLargePortrait
+        }
+        return false
+    }
+
     private var itemLimit: Int {
+        if isExtraLargePortrait { return .max }
         switch family {
         case .systemMedium: return 3
         case .systemLarge: return 6
         default: return 8
         }
+    }
+
+    private var summaryLineLimit: Int? {
+        if isExtraLargePortrait { return nil }
+        return family == .systemLarge ? 3 : 4
     }
 
     var body: some View {
@@ -23,7 +36,7 @@ struct CombinedWidgetEntryView: View {
                         Text(recommendation.summary)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .lineLimit(family == .systemLarge ? 3 : 4)
+                            .lineLimit(summaryLineLimit)
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -36,6 +49,9 @@ struct CombinedWidgetEntryView: View {
                             }
                         }
                     }
+                    // A very long plan is cut off at the bottom so the header and attribution stay visible.
+                    .frame(maxHeight: isExtraLargePortrait ? .infinity : nil, alignment: .top)
+                    .clipped()
                 } else {
                     NoSuggestionsNote()
                 }
@@ -81,11 +97,28 @@ struct CombinedWidget: Widget {
         }
         .configurationDisplayName("Today's Full Plan")
         .description("Weather, summary, and everything to wear and bring today.")
-        .supportedFamilies([.systemMedium, .systemLarge, .systemExtraLarge])
+        .supportedFamilies(Self.supportedFamilies)
+    }
+
+    private static var supportedFamilies: [WidgetFamily] {
+        var families: [WidgetFamily] = [.systemMedium, .systemLarge, .systemExtraLarge]
+        if #available(iOS 27.0, *) {
+            families.append(.systemExtraLargePortrait)
+        }
+        return families
     }
 }
 
 #Preview(as: .systemLarge) {
+    CombinedWidget()
+} timeline: {
+    PlanEntry(date: .now, snapshot: .placeholder)
+    PlanEntry(date: .now, snapshot: .weatherOnlyPlaceholder)
+    PlanEntry(date: .now, state: .needsUpdate)
+}
+
+@available(iOS 27.0, *)
+#Preview(as: .systemExtraLargePortrait) {
     CombinedWidget()
 } timeline: {
     PlanEntry(date: .now, snapshot: .placeholder)
