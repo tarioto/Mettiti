@@ -41,8 +41,12 @@ The main screen's sections, which the user orders and turns on or off in Setting
 _Avoid_: Today's plan (the Plan card's old name), panels, sections
 
 **Location card**:
-A map of where the plan is for, with an unlabelled pin, under the header "Location". For Current Location it follows the GPS fix the weather on screen was loaded for, not every new fix, and the city's name is looked up from it (a fix within a kilometre keeps the name); for a searched city it's that city. The city's name is the Plan card's main title.
+A map of where the plan is for, with an unlabelled pin, under the header "Location". For Current Location it follows the GPS fix the weather on screen was loaded for, not every new fix, and the city's name is looked up from it (a fix within a kilometre keeps the name); for a searched city it's that city. The city's name is the Plan card's main title. While there's no location yet, the card shows a desaturated map of roughly where the device is, without a pin.
 _Avoid_: Map card, Current Location card
+
+**Skeleton**:
+The main screen's only loading state: a card's shapes shimmering where its content will go, until all of that card's content is ready and fades in at once. Shown on the first load, while an outfit is made, and when switching to a **Plan Window** whose outfit has to be made. A refresh behind a plan already on screen never shows it; the plan stays until the new one replaces it.
+_Avoid_: Loading state, spinner, placeholder (for the whole state)
 
 ### Day plan
 
