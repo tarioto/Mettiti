@@ -7,11 +7,11 @@ enum TemperatureUnit: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var label: String {
+    var label: LocalizedStringResource {
         switch self {
-        case .system: return String(localized: "System", table: "Shared")
-        case .fahrenheit: return String(localized: "Fahrenheit", table: "Shared")
-        case .celsius: return String(localized: "Celsius", table: "Shared")
+        case .system: return LocalizedStringResource("System", table: "Shared")
+        case .fahrenheit: return LocalizedStringResource("Fahrenheit", table: "Shared")
+        case .celsius: return LocalizedStringResource("Celsius", table: "Shared")
         }
     }
 
@@ -49,6 +49,28 @@ enum TemperatureUnit: String, Codable, CaseIterable, Identifiable {
             table: "Shared",
             locale: locale,
             comment: "Today's high and low temperatures, each already formatted with its unit"
+        )
+    }
+
+    /// The one-line summary of a day or window, e.g. "H:72° L:58°  •  30% rain  •  UV 5". A single string
+    /// with placeholders so word order and abbreviations can differ per language; shared by the app
+    /// and the widgets, so it lives in the `Shared` string table.
+    func formattedSummary(
+        highFahrenheit: Double,
+        lowFahrenheit: Double,
+        precipitationProbability: Int,
+        uvIndex: Double,
+        locale: Locale = .autoupdatingCurrent
+    ) -> String {
+        let high = formatted(fahrenheit: highFahrenheit, locale: locale)
+        let low = formatted(fahrenheit: lowFahrenheit, locale: locale)
+        let rain = (Double(precipitationProbability) / 100).formatted(.percent.precision(.fractionLength(0)).locale(locale))
+        let uv = Int(uvIndex.rounded())
+        return String(
+            localized: "H:\(high) L:\(low)  •  \(rain) rain  •  UV \(uv)",
+            table: "Shared",
+            locale: locale,
+            comment: "One-line weather summary: high and low (each already formatted with its unit), chance of rain (already formatted as a percentage) and UV index"
         )
     }
 

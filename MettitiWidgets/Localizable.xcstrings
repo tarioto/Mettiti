@@ -2,31 +2,94 @@
   "sourceLanguage" : "en",
   "strings" : {
     "A quick emoji glance at what to wear and bring today." : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un colpo d'occhio con emoji su cosa indossare e portare oggi."
+          }
+        }
+      }
     },
     "A short text summary of what to wear and bring today." : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un breve riepilogo di cosa indossare e portare oggi."
+          }
+        }
+      }
     },
     "No outfit suggestions right now." : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nessun suggerimento per l'outfit al momento."
+          }
+        }
+      }
     },
     "Open Mettiti" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apri Mettiti"
+          }
+        }
+      }
     },
     "Open Mettiti to update" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apri Mettiti per aggiornare"
+          }
+        }
+      }
     },
     "Today's Emojis" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Emoji di oggi"
+          }
+        }
+      }
     },
     "Today's Full Plan" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Piano completo di oggi"
+          }
+        }
+      }
     },
     "Today's Summary" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Riepilogo di oggi"
+          }
+        }
+      }
     },
     "Weather, summary, and everything to wear and bring today." : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Meteo, riepilogo e tutto ciò che serve indossare e portare oggi."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
