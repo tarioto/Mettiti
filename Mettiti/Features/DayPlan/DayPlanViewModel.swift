@@ -66,9 +66,6 @@ final class DayPlanViewModel {
     /// refresh or GPS fix still replaces it in place. Cleared once a fresh plan is on screen or
     /// another selection or provider replaces it.
     @ObservationIgnored private var isShowingSavedPlan = false
-    /// True while the plan on screen is for the previous Plan Window and the new window's is on
-    /// its way (#100). Cleared once the new plan is on screen, or by a failure or another load.
-    @ObservationIgnored private var isSwitchingWindow = false
     /// When `planWindowOverride` was picked, so it can end on the next day.
     @ObservationIgnored private var planWindowOverrideDay: Date?
     /// Set while `loadTask` is fetching the weather; that load reads the Plan Window once the
@@ -128,7 +125,6 @@ final class DayPlanViewModel {
         appliedSelection = selection
         hasStarted = true
         isShowingSavedPlan = false
-        isSwitchingWindow = false
         state = .idle
         lastCoordinate = nil
         location = nil
@@ -144,7 +140,6 @@ final class DayPlanViewModel {
         guard hasStarted else { return }
         // The Saved Plan is for the old provider, so the new one loads in the open.
         isShowingSavedPlan = false
-        isSwitchingWindow = false
         outfitsByWindow = [:]
         // Cancelled now, not when the refresh starts, so the old provider's load can't write in between.
         loadTask?.cancel()
@@ -191,8 +186,9 @@ final class DayPlanViewModel {
     /// Shows the plan for the newly active Plan Window. The weather on screen is kept while it's
     /// still fresh for that window, and an outfit already made for that window comes back at once
     /// unless the weather has meaningfully changed since; otherwise the outfit is remade, or the
-    /// whole plan reloads with fresh weather. The outfit on screen stays, marked as updating,
-    /// until the new one is complete.
+    /// whole plan reloads with fresh weather. The old window's outfit is for the wrong
+    /// window, so the Plan and Wear & bring cards show the skeleton (the Weather card too when it
+    /// reloads) until the new one is complete.
     private func showPlanForActiveWindow() {
         guard hasStarted else { return }
         // The load fetching the weather reads the new window once it has it.
@@ -219,7 +215,7 @@ final class DayPlanViewModel {
         // The plan on screen (a Saved Plan included) is for the old window now.
         let wasShowingSavedPlan = isShowingSavedPlan
         isShowingSavedPlan = false
-        isSwitchingWindow = true
+        adviceBasis = nil
         // A Saved Plan's weather is stale whatever its age: it's not from the newest load.
         if wasShowingSavedPlan || isWeatherStale(for: activePlanWindow) {
             // Cancelled now, not when the refresh starts, so the old window's load can't write in between.
@@ -229,6 +225,9 @@ final class DayPlanViewModel {
             keepsUnchangedAdvice = true
             Task { await reload() }
             return
+        }
+        if case .loaded(let weather, let hourly, let span, let provider, _) = state {
+            state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .loading)
         }
         remakeRecommendationForWeatherOnScreen()
     }
@@ -254,7 +253,6 @@ final class DayPlanViewModel {
     /// Plan Window, so launch doesn't wait on the network and the on-device model.
     private func showSavedPlanIfCurrent() {
         isShowingSavedPlan = false
-        isSwitchingWindow = false
         adviceBasis = nil
         guard let snapshot = loadSnapshot(),
               snapshot.isFromToday(now: now(), calendar: calendar),
@@ -343,7 +341,6 @@ final class DayPlanViewModel {
                 // Keep today's Saved Plan on screen; its refresh starts with the next fix.
                 // Otherwise go .idle so handleGPSCoordinate loads the next fix.
                 if !isShowingSavedPlan {
-                    isSwitchingWindow = false
                     state = .idle
                 }
                 lastLoadRequestedAt = now()
@@ -424,7 +421,6 @@ final class DayPlanViewModel {
 
     /// Fails the plan, unless today's Saved Plan is on screen: that stays, with a notice.
     private func fail(_ message: String) {
-        isSwitchingWindow = false
         if isShowingSavedPlan {
             refreshFailureMessage = message
             // A Saved Plan without an outfit shows .loading; nothing is loading it any more. The
@@ -444,9 +440,8 @@ final class DayPlanViewModel {
         guard !Task.isCancelled else { return }
         // Read before the weather loading state replaces the outfit on screen.
         let adviceToKeep = keepingUnchangedAdvice ? currentAdvice : nil
-        // A Saved Plan, or the outfit for the window being switched from, stays on screen.
+        // A Saved Plan's outfit stays on screen.
         if !isShowingSavedPlan, !isHoldingOutfit {
-            isSwitchingWindow = false
             state = .loadingWeather
         }
         let provider = providerPreference.provider
@@ -496,13 +491,11 @@ final class DayPlanViewModel {
         if case .unavailable(let reason) = availability {
             recommendation = .unavailable(reason)
         } else {
-            // The Saved Plan's outfit, or the previous Plan Window's, stays on screen until the
-            // fresh one is complete. Anything else (including a Saved Plan without an outfit)
-            // gives way to the fresh weather and the outfit's skeleton, so the Saved Plan is no
+            // The Saved Plan's outfit stays on screen until the fresh one is complete. Anything
+            // else (including a Saved Plan without an outfit) gives way to the fresh weather and the outfit's skeleton, so the Saved Plan is no
             // longer what's on screen.
             if !isHoldingOutfit {
                 isShowingSavedPlan = false
-                isSwitchingWindow = false
                 showLocation(ofWeatherAt: coordinate)
                 state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .loading)
             }
@@ -519,7 +512,6 @@ final class DayPlanViewModel {
             return
         }
         isShowingSavedPlan = false
-        isSwitchingWindow = false
         refreshFailureMessage = nil
         adviceBasis = recommendation.outfit.map { _ in WindowSummary(weather: weather, hourly: hourly, span: span) }
         showLocation(ofWeatherAt: coordinate)
@@ -546,7 +538,6 @@ final class DayPlanViewModel {
     /// changes that add up across refreshes still count.
     private func showFreshWeather(weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, provider: WeatherProvider, keeping advice: Advice) {
         isShowingSavedPlan = false
-        isSwitchingWindow = false
         refreshFailureMessage = nil
         adviceBasis = advice.basis
         state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .ready(advice.outfit))
@@ -569,10 +560,9 @@ final class DayPlanViewModel {
         return true
     }
 
-    /// Whether an outfit on screen stays there until the fresh one is complete: today's Saved
-    /// Plan's, or the previous Plan Window's while switching windows.
+    /// Whether an outfit on screen stays there until the fresh one is complete: today's Saved Plan's.
     private var isHoldingOutfit: Bool {
-        guard isShowingSavedPlan || isSwitchingWindow, case .loaded(_, _, _, _, .ready) = state else { return false }
+        guard isShowingSavedPlan, case .loaded(_, _, _, _, .ready) = state else { return false }
         return true
     }
 

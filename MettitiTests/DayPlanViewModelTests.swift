@@ -1681,7 +1681,7 @@ struct DayPlanViewModelTests {
         #expect(await fetcher.requestedCoordinates.count == 2)
     }
 
-    @Test func theOutfitOnScreenStaysWhileTheNewWindowsOutfitIsMade() async throws {
+    @Test func theOutfitSkeletonShowsWhileTheNewWindowsOutfitIsMade() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = GatedRecommendationFetcher()
         let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
@@ -1695,14 +1695,16 @@ struct DayPlanViewModelTests {
         viewModel.selectPlanWindow(.sixHours)
         try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
 
-        #expect(viewModel.state.readySummary == "Three-hour outfit")
+        // The old window's outfit is gone; the weather stays since it's still fresh.
+        #expect(viewModel.state.isRecommendationLoading)
+        #expect(viewModel.state.loadedHigh != nil)
 
         await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "Six-hour outfit", items: [])))
         try await waitUntil { viewModel.state.readySummary == "Six-hour outfit" }
         #expect(viewModel.state.span?.window == .sixHours)
     }
 
-    @Test func theOutfitOnScreenStaysWhileTheWeatherIsRefetchedForTheNewWindow() async throws {
+    @Test func theWholePlanShowsTheSkeletonWhileTheWeatherIsRefetchedForTheNewWindow() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = GatedRecommendationFetcher()
         let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
@@ -1723,7 +1725,8 @@ struct DayPlanViewModelTests {
         recorder.stop()
 
         let duringSwitch = recorder.states.dropFirst(statesBeforeSwitch).dropLast()
-        #expect(duringSwitch.allSatisfy { $0.readySummary == "Rest-of-day outfit" })
+        #expect(duringSwitch.allSatisfy { $0.readySummary != "Rest-of-day outfit" })
+        #expect(duringSwitch.contains { if case .loadingWeather = $0 { true } else { false } })
     }
 
     @Test func switchingAgainWhileTheWeatherIsRefetchedKeepsThatRefetchAndUsesTheLatestWindow() async throws {
