@@ -1152,20 +1152,19 @@ struct DayPlanViewModelTests {
         #expect(snapshots.map(\.recommendation?.summary) == ["Bring a coat."])
     }
 
-    @Test func refreshBehindTheSavedPlansOutfitSaysItsUpdatingUntilItFinishes() async throws {
+    @Test func refreshBehindTheSavedPlansOutfitKeepsItOnScreenUntilTheNewPlanReplacesIt() async throws {
         let fetcher = GatedDayPlanFetcher()
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
 
         viewModel.start()
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
-        #expect(viewModel.isUpdatingSavedPlan)
+        #expect(viewModel.state.readySummary == "Saved outfit")
 
         await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
         try await waitUntil { viewModel.state.loadedHigh == 10 }
-        #expect(!viewModel.isUpdatingSavedPlan)
     }
 
-    @Test func failedRefreshBehindTheSavedPlansOutfitStopsSayingItsUpdating() async throws {
+    @Test func failedRefreshBehindTheSavedPlansOutfitKeepsItWithANotice() async throws {
         let fetcher = GatedDayPlanFetcher()
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
 
@@ -1174,18 +1173,16 @@ struct DayPlanViewModelTests {
         await fetcher.complete(latitude: 10, with: .failure(FakeFetchError()))
         try await waitUntil { viewModel.refreshFailureMessage != nil }
 
-        #expect(!viewModel.isUpdatingSavedPlan)
         #expect(viewModel.state.readySummary == "Saved outfit")
     }
 
-    @Test func savedPlanWithoutAnOutfitDoesNotSayItsUpdatingSinceTheOutfitShowsItsProgress() async throws {
+    @Test func savedPlanWithoutAnOutfitShowsTheOutfitSkeleton() async throws {
         let fetcher = GatedDayPlanFetcher()
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: nil, location: cityA))
 
         viewModel.start()
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
 
-        #expect(!viewModel.isUpdatingSavedPlan)
         #expect(viewModel.state.isRecommendationLoading)
     }
 
@@ -1220,21 +1217,20 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.loadedHigh == 47.6)
     }
 
-    @Test func savedPlansOutfitForCurrentLocationSaysItsUpdatingWhileWaitingForTheFirstFix() async throws {
+    @Test func savedPlansOutfitForCurrentLocationStaysWhileWaitingForTheFirstFix() async throws {
         let location = FakeLocationProvider()
         let fetcher = GatedDayPlanFetcher()
         let viewModel = makeCurrentLocationViewModel(location: location, fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: .currentLocation))
 
         viewModel.start()
-        #expect(viewModel.isUpdatingSavedPlan)
+        #expect(viewModel.state.readySummary == "Saved outfit")
 
         location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
         try await waitUntil { await fetcher.isWaiting(onLatitude: 47.6) }
-        #expect(viewModel.isUpdatingSavedPlan)
+        #expect(viewModel.state.readySummary == "Saved outfit")
 
         await fetcher.complete(latitude: 47.6, with: .success(.forecast(high: 10)))
         try await waitUntil { viewModel.state.loadedHigh == 10 }
-        #expect(!viewModel.isUpdatingSavedPlan)
         #expect(viewModel.location?.coordinate.latitude == 47.6)
     }
 
@@ -1254,25 +1250,15 @@ struct DayPlanViewModelTests {
         #expect(viewModel.location == nil)
     }
 
-    @Test func locationErrorWhileWaitingForTheFirstFixStopsSayingTheSavedPlanIsUpdating() async throws {
+    @Test func locationErrorWhileWaitingForTheFirstFixKeepsTheSavedPlanWithANotice() async throws {
         let location = FakeLocationProvider()
         let viewModel = makeCurrentLocationViewModel(location: location, fetcher: GatedDayPlanFetcher(), saved: .saved(high: 99, summary: "Saved outfit", location: .currentLocation))
 
         viewModel.start()
         location.fail("No location")
 
-        #expect(!viewModel.isUpdatingSavedPlan)
         #expect(viewModel.refreshFailureMessage == "No location")
         #expect(viewModel.state.readySummary == "Saved outfit")
-    }
-
-    @Test func refreshBehindTheSavedPlansOutfitSaysItsUpdatingBeforeTheLoadRuns() async throws {
-        let fetcher = GatedDayPlanFetcher()
-        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
-
-        viewModel.start()
-
-        #expect(viewModel.isUpdatingSavedPlan)
     }
 
     @Test func loadCancelledBeforeItRunsWritesNothingSoTheNextGPSFixLoads() async throws {
@@ -1359,7 +1345,6 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.readySummary == "Saved outfit")
         #expect(viewModel.state.loadedHigh == 99)
         #expect(viewModel.refreshFailureMessage == "Stale request failed")
-        #expect(!viewModel.isUpdatingSavedPlan)
         #expect(snapshots.isEmpty)
     }
 
@@ -1465,7 +1450,6 @@ struct DayPlanViewModelTests {
 
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
         #expect(viewModel.state.loadedHigh == 99)
-        #expect(viewModel.isUpdatingSavedPlan)
         await fetcher.complete(latitude: 10, with: .failure(FakeFetchError()))
         try await waitUntil { viewModel.refreshFailureMessage != nil }
         #expect(viewModel.state.loadedHigh == 99)
@@ -1697,7 +1681,7 @@ struct DayPlanViewModelTests {
         #expect(await fetcher.requestedCoordinates.count == 2)
     }
 
-    @Test func theOutfitOnScreenStaysWithUpdatingWhileTheNewWindowsOutfitIsMade() async throws {
+    @Test func theOutfitOnScreenStaysWhileTheNewWindowsOutfitIsMade() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = GatedRecommendationFetcher()
         let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
@@ -1712,15 +1696,13 @@ struct DayPlanViewModelTests {
         try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
 
         #expect(viewModel.state.readySummary == "Three-hour outfit")
-        #expect(viewModel.isUpdatingSavedPlan)
 
         await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "Six-hour outfit", items: [])))
         try await waitUntil { viewModel.state.readySummary == "Six-hour outfit" }
         #expect(viewModel.state.span?.window == .sixHours)
-        #expect(!viewModel.isUpdatingSavedPlan)
     }
 
-    @Test func theOutfitOnScreenStaysWithUpdatingWhileTheWeatherIsRefetchedForTheNewWindow() async throws {
+    @Test func theOutfitOnScreenStaysWhileTheWeatherIsRefetchedForTheNewWindow() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = GatedRecommendationFetcher()
         let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
@@ -1736,7 +1718,6 @@ struct DayPlanViewModelTests {
         viewModel.selectPlanWindow(.oneHour)
         try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
 
-        #expect(viewModel.isUpdatingSavedPlan)
         await fetcher.completeRecommendation(with: .success(OutfitRecommendation(summary: "One-hour outfit", items: [])))
         try await waitUntil { viewModel.state.readySummary == "One-hour outfit" }
         recorder.stop()
@@ -1787,7 +1768,6 @@ struct DayPlanViewModelTests {
         viewModel.selectPlanWindow(.threeHours)
         try await waitUntil { location.locationRequestCount == 3 }
         #expect(viewModel.state.readySummary == "Saved outfit")
-        #expect(viewModel.isUpdatingSavedPlan)
 
         location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
         try await waitUntil { await fetcher.isWaiting(onLatitude: 47.6) }
@@ -2143,7 +2123,6 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.span?.interval.start == date("2026-10-19T08:30:00-07:00"))
         #expect(await fetcher.recommendationRequestCount == 1)
         #expect(await fetcher.requestedCoordinates.count == 2)
-        #expect(!viewModel.isUpdatingSavedPlan)
         // Saved with the fresh weather, still compared with what the outfit was based on.
         #expect(store.published.map(\.weather.highTemperatureF) == [70, 72])
         #expect(store.published.last?.recommendation?.summary == "First outfit")

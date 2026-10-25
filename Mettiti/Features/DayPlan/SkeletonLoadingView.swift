@@ -5,6 +5,8 @@ struct SkeletonLoadingView: View {
         DayPlanView(weather: .placeholder, recommendation: .ready(Self.recommendation), hourly: Self.hourly)
             .redacted(reason: .placeholder)
             .disabled(true)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Loading")
     }
 }
 
