@@ -56,6 +56,16 @@ struct PlanSnapshotTests {
         #expect(snapshot.hourly == nil)
     }
 
+    @Test func snapshotSavedWithoutAPlaceDecodesAndPlaceRoundTrips() throws {
+        let old = try JSONDecoder().decode(PlanSnapshot.self, from: Data(savedBeforeWeatherOnlySnapshots.utf8))
+        #expect(old.place == nil)
+
+        var snapshot = old
+        snapshot.place = SavedPlace(name: "Seattle", latitude: 47.6, longitude: -122.3)
+        let decoded = try JSONDecoder().decode(PlanSnapshot.self, from: JSONEncoder().encode(snapshot))
+        #expect(decoded.place == SavedPlace(name: "Seattle", latitude: 47.6, longitude: -122.3))
+    }
+
     /// An hourly forecast as saved by the version that first stored it (#81): each point has an
     /// hour label and a plain-number chance of rain.
     private let savedWithFirstHourlyFormat = """

@@ -127,7 +127,7 @@ struct ContentView: View {
                 } else if viewModel.isUpdatingSavedPlan {
                     ProgressCaption("Updating…")
                 }
-                DayPlanView(weather: weather, recommendation: recommendation, hourly: hourly, span: span, provider: provider, location: viewModel.location) {
+                DayPlanView(weather: weather, recommendation: recommendation, hourly: hourly, span: span, provider: provider, location: viewModel.location, isLocationUnavailable: viewModel.isLocationUnavailable) {
                     viewModel.retryRecommendation()
                 }
             }
