@@ -119,8 +119,7 @@ struct ItalianLocalizationTests {
         #expect(text.hasPrefix("Mettiti uses your location"))
     }
 
-    @Test func homeTitleAndRefreshAreInItalian() {
-        #expect(localized("Today", table: nil, language: "it") == "Oggi")
+    @Test func refreshAndSettingsAreInItalian() {
         #expect(localized("Refresh", table: nil, language: "it") == "Aggiorna")
         #expect(localized("Settings", table: nil, language: "it") == "Impostazioni")
     }

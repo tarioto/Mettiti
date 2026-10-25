@@ -28,8 +28,6 @@ struct ContentView: View {
                 Task { await viewModel.refresh() }
             }
             .background(themeBackground)
-            .navigationTitle("Today")
-            .navigationBarTitleDisplayMode(.inline)
             .onGeometryChange(for: Bool.self) { proxy in
                 proxy.safeAreaInsets.trailing > proxy.safeAreaInsets.leading
             } action: { hasTrailingSideBar = $0 }
