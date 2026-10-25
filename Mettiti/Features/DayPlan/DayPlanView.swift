@@ -23,6 +23,8 @@ struct DayPlanView: View {
             WeatherAttributionView(provider: provider, includesOpenMeteoData: hourly?.hasSpread == true)
                 .modifier(PlaceholderShimmer())
         }
+        // Wider than any iPhone, so this only holds the columns in on a large iPad.
+        .readableColumn(maxWidth: 1200)
     }
 
     private static let cardSpacing: CGFloat = 20
