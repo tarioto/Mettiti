@@ -266,7 +266,7 @@ struct OutfitAdvisor: Sendable {
         \(currentTime)
 
         \(isDark ? "Today's forecast, including the hours that have passed:" : "Today's forecast:")
-        - Condition: \(weather.conditionDescription)
+        - Condition: \(weather.localizedConditionDescription)
         - High: \(temperature(weather.highTemperatureF)), Low: \(temperature(weather.lowTemperatureF))\(noWarmLayer.map { "\n\($0)" } ?? "")
         - Chance of precipitation: \(weather.precipitationProbability)%
         - Wind: \(wind(weather.windSpeedMph))

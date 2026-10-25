@@ -13,7 +13,7 @@ struct WeatherOnlyPlanView: View {
                 .font(.title2)
                 .symbolRenderingMode(.multicolor)
                 .accessibilityHidden(true)
-            Text(weather.conditionDescription)
+            Text(weather.localizedConditionDescription)
                 .font(.headline)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)

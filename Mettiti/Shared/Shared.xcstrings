@@ -44,10 +44,24 @@
       }
     },
     "Clear sky" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cielo sereno"
+          }
+        }
+      }
     },
     "Drizzle" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pioviggine"
+          }
+        }
+      }
     },
     "Fahrenheit" : {
       "localizations" : {
@@ -60,13 +74,34 @@
       }
     },
     "Foggy" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nebbia"
+          }
+        }
+      }
     },
     "Freezing drizzle" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pioviggine gelata"
+          }
+        }
+      }
     },
     "Freezing rain" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pioggia gelata"
+          }
+        }
+      }
     },
     "H:%@ L:%@" : {
       "comment" : "Today's high and low temperatures, each already formatted with its unit",
@@ -103,7 +138,14 @@
       }
     },
     "Mainly clear" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Prevalentemente sereno"
+          }
+        }
+      }
     },
     "Next 3 hours" : {
       "comment" : "Plan Window heading for a three-hour window",
@@ -150,16 +192,44 @@
       }
     },
     "Overcast" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Coperto"
+          }
+        }
+      }
     },
     "Partly cloudy" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Parzialmente nuvoloso"
+          }
+        }
+      }
     },
     "Rain" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pioggia"
+          }
+        }
+      }
     },
     "Rain showers" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rovesci di pioggia"
+          }
+        }
+      }
     },
     "Rest of day" : {
       "comment" : "Plan Window stop: from now until midnight",
@@ -173,13 +243,34 @@
       }
     },
     "Snow" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Neve"
+          }
+        }
+      }
     },
     "Snow grains" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Neve granulare"
+          }
+        }
+      }
     },
     "Snow showers" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rovesci di neve"
+          }
+        }
+      }
     },
     "System" : {
       "localizations" : {
@@ -192,13 +283,34 @@
       }
     },
     "Thunderstorm" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Temporale"
+          }
+        }
+      }
     },
     "Thunderstorm with hail" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Temporale con grandine"
+          }
+        }
+      }
     },
     "Unknown conditions" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Condizioni sconosciute"
+          }
+        }
+      }
     },
     "Weather data by Open-Meteo.com" : {
 

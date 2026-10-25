@@ -1,4 +1,5 @@
 import Foundation
+import WeatherKit
 
 struct DailyWeather: Sendable, Codable {
     let date: Date
@@ -8,7 +9,42 @@ struct DailyWeather: Sendable, Codable {
     let uvIndex: Double
     let windSpeedMph: Double
     let conditionCode: Int
+    /// The condition's English name as it was when the plan was fetched. Only for snapshots saved
+    /// before `condition` existed: new ones still fill it in, so an older widget keeps working.
+    /// Follow-up: remove it one release after `condition` ships.
     let conditionDescription: String
+    /// What kind of weather it is, named in the current language at render time. Nil in snapshots
+    /// saved before it was stored, which show `conditionDescription` until the next refresh.
+    var condition: WeatherConditionKind? = nil
+
+    /// The condition's name in the current language, or the stored text when there's no condition.
+    var localizedConditionDescription: String {
+        condition?.localizedDescription ?? conditionDescription
+    }
+}
+
+/// The kind of weather a provider reported, kept apart from its wording so the name is written
+/// in the current language when shown, not the one the plan was fetched in.
+enum WeatherConditionKind: Codable, Sendable, Equatable {
+    /// An Open-Meteo WMO weather code.
+    case wmo(Int)
+    /// A WeatherKit condition, by its raw value so a case this version doesn't know still decodes.
+    case weatherKit(String)
+
+    init(_ condition: WeatherCondition) {
+        self = .weatherKit(condition.rawValue)
+    }
+
+    /// The condition's name in the current language: our catalog for WMO codes, Apple's own
+    /// description for WeatherKit conditions. Nil for a WeatherKit condition this version doesn't know.
+    var localizedDescription: String? {
+        switch self {
+        case .wmo(let code):
+            return WMOWeatherCode.description(for: code)
+        case .weatherKit(let rawValue):
+            return WeatherCondition(rawValue: rawValue)?.description
+        }
+    }
 }
 
 extension DailyWeather {

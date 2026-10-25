@@ -61,7 +61,7 @@ struct DayPlanView: View {
 
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(weather.conditionDescription)
+                    Text(weather.localizedConditionDescription)
                         .font(.title2.bold())
                     Text(temperaturePreference.unit.formattedSummary(highFahrenheit: details.highF, lowFahrenheit: details.lowF, precipitationProbability: details.precipitationProbability, uvIndex: details.uvIndex))
                         .font(.subheadline)

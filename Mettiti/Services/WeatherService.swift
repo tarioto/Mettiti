@@ -97,7 +97,8 @@ struct WeatherService {
             uvIndex: uv,
             windSpeedMph: wind,
             conditionCode: code,
-            conditionDescription: WMOWeatherCode.description(for: code)
+            conditionDescription: WMOWeatherCode.description(for: code),
+            condition: .wmo(code)
         )
         return OpenMeteoForecast(daily: daily, hourly: hourlyForecast(from: decoded, timeZone: timeZone, now: now))
     }

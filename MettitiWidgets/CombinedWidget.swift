@@ -55,7 +55,7 @@ struct CombinedWidgetEntryView: View {
     private func header(for snapshot: PlanSnapshot) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(snapshot.weather.conditionDescription)
+                Text(snapshot.weather.localizedConditionDescription)
                     .font(.headline)
                 let unit = SharedStore.loadTemperatureUnit()
                 Text(unit.formattedHighLow(highFahrenheit: snapshot.weather.highTemperatureF, lowFahrenheit: snapshot.weather.lowTemperatureF))
