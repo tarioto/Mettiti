@@ -163,7 +163,7 @@ struct SettingsView: View {
     private var locationName: String {
         switch preference.selection {
         case .currentLocation: return String(localized: "Current Location")
-        case .custom(let name, _, _): return name
+        case .custom(let name, _, _, _): return name
         }
     }
 }
@@ -212,7 +212,7 @@ private struct LocationSettingsView: View {
                 }
                 .foregroundStyle(.primary)
 
-                if case .custom(let name, _, _) = preference.selection {
+                if case .custom(let name, _, _, _) = preference.selection {
                     locationRow(Label(name, systemImage: "mappin.and.ellipse"), isSelected: true)
                 }
             } footer: {
@@ -267,7 +267,8 @@ private struct LocationSettingsView: View {
                 preference.selection = .custom(
                     name: displayName,
                     latitude: location.coordinate.latitude,
-                    longitude: location.coordinate.longitude
+                    longitude: location.coordinate.longitude,
+                    timeZone: mapItem.timeZone
                 )
                 isSearching = false
                 dismiss()

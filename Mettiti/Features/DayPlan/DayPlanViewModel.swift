@@ -342,7 +342,7 @@ final class DayPlanViewModel {
                 lastLoadRequestedAt = now()
                 locationManager.requestLocation()
             }
-        case .custom(_, let latitude, let longitude):
+        case .custom(_, let latitude, let longitude, _):
             await startLoad(for: CLLocationCoordinate2D(latitude: latitude, longitude: longitude)).value
         }
     }
@@ -358,7 +358,7 @@ final class DayPlanViewModel {
             isUpdatingSavedPlan = isHoldingOutfit
             lastLoadRequestedAt = now()
             locationManager.requestLocation()
-        case .custom(let name, let latitude, let longitude):
+        case .custom(let name, let latitude, let longitude, _):
             let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
             location = PlanLocation(name: name, coordinate: coordinate, isCurrentLocation: false)
             startLoad(for: coordinate)

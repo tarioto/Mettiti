@@ -26,6 +26,6 @@ struct PlanTimelineProvider: TimelineProvider {
 
     /// Follows the Settings default Plan Window, never the main screen's override.
     private func currentTimeline(now: Date) -> WidgetPlanTimeline {
-        WidgetPlanTimeline(saved: SharedStore.load(), window: SharedStore.loadPlanWindow(), now: now, calendar: .current)
+        WidgetPlanTimeline(saved: SharedStore.load(), selection: SharedStore.loadLocationSelection(), window: SharedStore.loadPlanWindow(), now: now, calendar: .current)
     }
 }
