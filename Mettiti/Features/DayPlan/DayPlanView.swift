@@ -313,10 +313,12 @@ private struct CardTitle: View {
     }
 }
 
-/// The city the plan is for, on a map with a pin.
+/// The city the plan is for, on a map with a pin; until there is one, a desaturated map of
+/// roughly where the device is.
 private struct LocationCard: View {
     let location: PlanLocation?
     @ScaledMetric(relativeTo: .body) private var mapHeight: CGFloat = 160
+    @State private var placeholderRegion: MKCoordinateRegion?
 
     /// The map runs to the card's edges, so only the title is padded and the card clips the map
     /// to its corners.
@@ -334,16 +336,53 @@ private struct LocationCard: View {
         .clipShape(.rect(cornerRadius: 16))
     }
 
-    @ViewBuilder
+    /// The placeholder crossfades into the real map and pin when the location arrives.
     private var map: some View {
-        if let location {
-            let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 12_000, longitudinalMeters: 12_000)
-            Map(position: .constant(.region(region)), interactionModes: []) {
-                Marker("",systemImage: "mappin", coordinate: location.coordinate)
+        ZStack {
+            if let location {
+                let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 12_000, longitudinalMeters: 12_000)
+                Map(position: .constant(.region(region)), interactionModes: []) {
+                    Marker("",systemImage: "mappin", coordinate: location.coordinate)
+                }
+                .transition(.opacity)
+            } else {
+                placeholderMap
+                    .transition(.opacity)
             }
+        }
+        .animation(DayPlanView.crossfade, value: location != nil)
+    }
+
+    /// Roughly where the device is, desaturated and without a pin, shimmering like the rest of the
+    /// Skeleton.
+    private var placeholderMap: some View {
+        Group {
+            if let placeholderRegion {
+                Map(position: .constant(.region(placeholderRegion)), interactionModes: [])
+                    .saturation(0)
+            } else {
+                Rectangle()
+                    .fill(.quaternary)
+            }
+        }
+        .modifier(ShimmeringPlaceholder())
+        .task {
+            placeholderRegion = await PlaceholderMapRegion.resolveForDevice()
+        }
+    }
+}
+
+/// Makes a view shimmer as a placeholder, unless an ancestor's redaction already does.
+private struct ShimmeringPlaceholder: ViewModifier {
+    @Environment(\.redactionReasons) private var redactionReasons
+
+    func body(content: Content) -> some View {
+        if redactionReasons.contains(.placeholder) {
+            content
         } else {
-            Rectangle()
-                .fill(.quaternary)
+            content
+                .redacted(reason: .placeholder)
+                .modifier(PlaceholderShimmer())
         }
     }
 }

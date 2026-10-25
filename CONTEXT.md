@@ -41,7 +41,7 @@ The main screen's sections, which the user orders and turns on or off in Setting
 _Avoid_: Today's plan (the Plan card's old name), panels, sections
 
 **Location card**:
-A map of where the plan is for, with an unlabelled pin, under the header "Location". For Current Location it follows the GPS fix the weather on screen was loaded for, not every new fix, and the city's name is looked up from it (a fix within a kilometre keeps the name); for a searched city it's that city. The city's name is the Plan card's main title. While there's no location yet, the card shows a desaturated map of roughly where the device is, without a pin.
+A map of where the plan is for, with an unlabelled pin, under the header "Location". For Current Location it follows the GPS fix the weather on screen was loaded for, not every new fix, and the city's name is looked up from it (a fix within a kilometre keeps the name); for a searched city it's that city. The city's name is the Plan card's main title. While there's no location yet, the card shows a desaturated, shimmering map of roughly where the device is, without a pin: about 50 km across around the device's last known GPS fix, else around the Saved Plan's city, else the country of the device's Region setting. When the location arrives, the card crossfades to the real map and pin.
 _Avoid_: Map card, Current Location card
 
 **Skeleton**:
