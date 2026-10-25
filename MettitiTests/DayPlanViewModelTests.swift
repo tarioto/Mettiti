@@ -135,7 +135,7 @@ struct DayPlanViewModelTests {
         )
 
         viewModel.start()
-        try await waitUntil { viewModel.state.isLoaded }
+        try await waitUntil { viewModel.state.readySummary != nil }
 
         select(.currentLocation, in: locationPreference, for: viewModel)
         location.fail("Couldn't find your location right now.")
@@ -195,10 +195,10 @@ struct DayPlanViewModelTests {
 
         viewModel.start()
         location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
-        try await waitUntil { viewModel.state.isLoaded }
+        try await waitUntil { viewModel.state.readySummary != nil }
 
         select(.custom(name: "City A", latitude: 10, longitude: 10), in: locationPreference, for: viewModel)
-        try await waitUntil { viewModel.state.isLoaded }
+        try await waitUntil { viewModel.state.readySummary != nil }
 
         select(.currentLocation, in: locationPreference, for: viewModel)
         let requestsBeforeRefresh = location.locationRequestCount
