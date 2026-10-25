@@ -6,6 +6,8 @@ import Foundation
 ///   the window's end.
 /// - A plan from an earlier day whose window has ended is never shown as today's: the widgets
 ///   show their empty state.
+/// - A plan for another location than the selected one isn't shown either: the widgets ask to
+///   open the app, as below.
 /// - A plan from today whose window has ended, or that's for another window than the default,
 ///   isn't shown either: the widgets ask to open the app to update it. Background refresh
 ///   times are only hints, so this is the safety net.
@@ -34,22 +36,29 @@ struct WidgetPlanTimeline {
 
     /// In date order; the first is for `now`.
     let entries: [Entry]
-    /// An hour from now, or the next midnight (the plan's location's, else the device's) if sooner,
+    /// An hour from now, or the next midnight (the selection's, else the plan's location's, else the device's) if sooner,
     /// so a new day is picked up on time.
     let reloadDate: Date
 
     /// What to show now.
     var current: Entry { entries[0] }
 
-    /// `calendar` is the device's; a plan that recorded its location's time zone is judged in
-    /// that instead, so a city's day, midnight and window end match each other.
-    init(saved: PlanSnapshot?, window: PlanWindow, now: Date, calendar deviceCalendar: Calendar) {
-        let calendar = saved?.locationCalendar(fallback: deviceCalendar) ?? deviceCalendar
+    /// `calendar` is the device's. `selection` is the location chosen in Settings, nil when none
+    /// has been shared yet. A city's own time zone judges the day, midnight and window end, so
+    /// they match each other; otherwise the plan's recorded zone does, else the device's.
+    /// A plan recorded for another location than `selection` is never shown.
+    init(saved: PlanSnapshot?, selection: LocationSelection? = nil, window: PlanWindow, now: Date, calendar deviceCalendar: Calendar) {
+        let planCalendar = saved?.locationCalendar(fallback: deviceCalendar) ?? deviceCalendar
+        let calendar = selection?.calendar(fallback: planCalendar) ?? planCalendar
         let nextMidnight = calendar.dateInterval(of: .day, for: now)!.end
         reloadDate = min(now.addingTimeInterval(Self.reloadInterval), nextMidnight)
 
         guard let saved else {
             entries = [Entry(date: now, state: .empty)]
+            return
+        }
+        if let selection, let savedLocation = saved.location, savedLocation != selection {
+            entries = [Entry(date: now, state: .needsUpdate)]
             return
         }
         /// What to show once the plan is no longer shown at `date`.

@@ -477,7 +477,7 @@ struct BackgroundPlanRefreshTests {
     @Test func quietHoursAreTheCitys() async {
         // 11:30 PM in Tokyo is 7:30 AM on the Pacific device.
         let harness = Harness(now: date("2026-10-08T23:30:00+09:00"))
-        harness.selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7)
+        harness.selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
         harness.snapshot = .generated(at: date("2026-10-08T15:00:00+09:00"), window: .restOfDay, in: tokyo, location: harness.selection)
 
         #expect(await harness.refresher.refreshIfStale() == .skippedQuietHours)
@@ -487,7 +487,7 @@ struct BackgroundPlanRefreshTests {
     @Test func deviceNightIsNoQuietHoursForACityWhereItIsDay() async {
         // 11:30 PM on the Pacific device is 3:30 PM in Tokyo.
         let harness = Harness(now: date("2026-10-08T23:30:00-07:00"))
-        harness.selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7)
+        harness.selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
         harness.snapshot = .generated(at: date("2026-10-09T09:00:00+09:00"), window: .restOfDay, in: tokyo, location: harness.selection)
 
         #expect(await harness.refresher.refreshIfStale() == .refreshed)
@@ -496,7 +496,7 @@ struct BackgroundPlanRefreshTests {
     @Test func cityPlanGoingStaleOvernightThereWaitsForTheCitysSixAM() {
         // Stale at midnight in Tokyo, which is 8 AM on the Pacific device.
         let harness = Harness(now: date("2026-10-08T21:00:00+09:00"))
-        harness.selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7)
+        harness.selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
         harness.snapshot = .generated(at: date("2026-10-08T21:00:00+09:00"), window: .restOfDay, in: tokyo, location: harness.selection)
 
         #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:00:00+09:00"))
@@ -509,6 +509,57 @@ struct BackgroundPlanRefreshTests {
         harness.snapshot = .generated(at: date("2026-10-08T15:00:00+09:00"), window: .restOfDay, in: tokyo, location: .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7))
 
         #expect(await harness.refresher.refreshIfStale() == .refreshed)
+    }
+
+    @Test func newCityInAnotherZoneIsQuietWithNoSavedPlan() async {
+        // Device in Rome, 2 AM in Tokyo is 7 PM there.
+        let harness = Harness(now: date("2026-10-09T02:00:00+09:00"))
+        harness.timeZone = rome
+        harness.selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
+        harness.snapshot = nil
+
+        #expect(await harness.refresher.refreshIfStale() == .skippedQuietHours)
+        #expect(await harness.fetcher.weatherRequests.isEmpty)
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:00:00+09:00"))
+    }
+
+    @Test func newCityInAnotherZoneIsNotQuietWhenItIsDayThereButNightOnTheDevice() async {
+        // 11:30 PM in Rome is 6:30 AM in Tokyo.
+        let harness = Harness(now: date("2026-10-08T23:30:00+02:00"))
+        harness.timeZone = rome
+        harness.selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
+        harness.snapshot = nil
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+    }
+
+    @Test func quietHoursAreTheCitysWhenTheSavedPlanIsForAnotherLocation() async {
+        // 2 AM in Tokyo is 7 PM in Rome, where the saved plan is from.
+        let harness = Harness(now: date("2026-10-09T02:00:00+09:00"))
+        harness.timeZone = rome
+        harness.selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
+        harness.snapshot = .generated(at: date("2026-10-08T09:00:00+02:00"), window: .restOfDay, in: rome, location: .custom(name: "Rome", latitude: 41.9, longitude: 12.5))
+
+        #expect(await harness.refresher.refreshIfStale() == .skippedQuietHours)
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:00:00+09:00"))
+    }
+
+    @Test func publishedPlanSpanPrefersTheForecastsTimeZoneOverTheSelections() async {
+        let harness = Harness(now: date("2026-10-08T12:00:00-07:00"))
+        harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3, timeZone: rome)
+        await harness.fetcher.returnHourly(HourlyForecast(timeZone: pacific, points: []))
+
+        _ = await harness.refresher.refreshIfStale()
+
+        #expect(harness.published.first?.span?.timeZone == pacific)
+    }
+
+    @Test func nextRequestDateUsesTheSelectionsZoneWithoutASavedPlan() {
+        let harness = Harness(now: date("2026-10-08T23:30:00+09:00"))
+        harness.timeZone = rome
+        harness.selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
+
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:00:00+09:00"))
     }
 
     @Test func nextRequestAfterMidnightWithYesterdaysPlanWaitsUntilAboutSixAM() {

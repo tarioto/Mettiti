@@ -4,6 +4,7 @@ import Testing
 
 let pacific = TimeZone(identifier: "America/Los_Angeles")!
 let tokyo = TimeZone(identifier: "Asia/Tokyo")!
+let rome = TimeZone(identifier: "Europe/Rome")!
 
 func date(_ iso: String) -> Date {
     try! Date(iso, strategy: .iso8601)

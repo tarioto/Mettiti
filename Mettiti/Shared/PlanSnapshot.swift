@@ -89,6 +89,21 @@ enum SharedStore {
         UserDefaults(suiteName: appGroupID).map { .rawValue("temperatureUnit", in: $0) }
     }
 
+    /// A copy of the location chosen in Settings, which the widgets can't read from the app's own
+    /// defaults. `LocationPreferenceStore` keeps the original.
+    static func storedLocationSelection(in defaults: UserDefaults) -> StoredPreference<LocationSelection> {
+        .json("locationSelection", in: defaults)
+    }
+
+    static func saveLocationSelection(_ selection: LocationSelection, to defaults: UserDefaults = appGroupDefaults) {
+        storedLocationSelection(in: defaults).save(selection)
+    }
+
+    /// Nil until the app has shared one.
+    static func loadLocationSelection(from defaults: UserDefaults = appGroupDefaults) -> LocationSelection? {
+        storedLocationSelection(in: defaults).load()
+    }
+
     /// The Plan Window chosen in Settings, stored in `defaults` (the App Group's in production).
     static func storedPlanWindow(in defaults: UserDefaults) -> StoredPreference<PlanWindow> {
         .rawValue("planWindow", in: defaults)

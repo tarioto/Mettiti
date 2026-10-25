@@ -239,6 +239,62 @@ struct WidgetPlanTimelineTests {
         #expect(timeline.reloadDate == date("2026-10-09T00:00:00+09:00"))
     }
 
+    @Test func planForThePreviousLocationIsNotShownAfterSwitchingToACityInAnotherZone() {
+        // Device in Rome; the plan is Rome's, the selection is now Tokyo.
+        let seattleToTokyo = LocationSelection.custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: date("2026-10-08T09:00:00+02:00"), window: .restOfDay, in: rome, location: .custom(name: "Rome", latitude: 41.9, longitude: 12.5)),
+            selection: seattleToTokyo,
+            window: .restOfDay,
+            now: date("2026-10-08T16:30:00+02:00"),
+            calendar: gregorianCalendar(in: rome)
+        )
+
+        #expect(timeline.entries.map(\.content) == [.needsUpdate])
+        // 11:30 PM in Tokyo: the reload is at Tokyo's midnight, half an hour away.
+        #expect(timeline.reloadDate == date("2026-10-09T00:00:00+09:00"))
+    }
+
+    @Test func reloadMidnightIsTheSelectedCitysEvenWithoutASavedPlan() {
+        let timeline = WidgetPlanTimeline(
+            saved: nil,
+            selection: .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo),
+            window: .restOfDay,
+            now: date("2026-10-08T23:30:00+09:00"),
+            calendar: gregorianCalendar(in: rome)
+        )
+
+        #expect(timeline.reloadDate == date("2026-10-09T00:00:00+09:00"))
+    }
+
+    @Test func planForTheSelectedLocationIsShownAndJudgedInTheCitysZone() {
+        let tokyoSelection = LocationSelection.custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
+        let generatedAt = date("2026-10-08T08:00:00+09:00")
+        let timeline = WidgetPlanTimeline(
+            saved: PlanSnapshot(weather: .placeholder, recommendation: .placeholder, generatedAt: generatedAt, provider: .apple, location: tokyoSelection),
+            selection: tokyoSelection,
+            window: .restOfDay,
+            now: date("2026-10-08T20:00:00+09:00"),
+            calendar: gregorianCalendar(in: rome)
+        )
+
+        #expect(timeline.entries.map(\.content).first == .plan(generatedAt))
+        #expect(timeline.entries.map(\.date).last == date("2026-10-09T00:00:00+09:00"))
+    }
+
+    @Test func planSavedWithoutALocationIsJudgedAsBefore() {
+        let generatedAt = date("2026-10-08T08:00:00-07:00")
+        let timeline = WidgetPlanTimeline(
+            saved: .generated(at: generatedAt),
+            selection: .custom(name: "Seattle", latitude: 47.6, longitude: -122.3),
+            window: .restOfDay,
+            now: date("2026-10-08T09:00:00-07:00"),
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        #expect(timeline.current.snapshot?.generatedAt == generatedAt)
+    }
+
     @Test func planSavedBeforePlanWindowsCountsAsRestOfDay() {
         let generatedAt = date("2026-10-08T09:00:00-07:00")
         let timeline = WidgetPlanTimeline(saved: .generated(at: generatedAt), window: .restOfDay, now: date("2026-10-08T15:00:00-07:00"), calendar: gregorianCalendar(in: pacific))
