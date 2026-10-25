@@ -48,7 +48,6 @@
 		5B796F5B3DD68C30DE055DA3 /* TemperaturePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40DE379AB97AB9FDA3A80A43 /* TemperaturePreferenceStore.swift */; };
 		5DA8990F438756DEBDBF53E7 /* WeatherProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */; };
 		63362059EA03E0DAF5BAE972 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = ADEA5799FEB7436C7B5F740E /* Localizable.xcstrings */; };
-		A1B2C3D4E5F60718293A4B1 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B2 /* InfoPlist.xcstrings */; };
 		A1B2C3D4E5F60718293A4B3 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B4 /* InfoPlist.xcstrings */; };
 		63C183FEFA6926EE48AE78BA /* LocationSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29FB3179D1A9209D11E4326B /* LocationSelection.swift */; };
 		677C0D2B5F5B8BBB6D583649 /* MettitiWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575110F1EA9D7D74E3B5734A /* MettitiWidgetsBundle.swift */; };
@@ -236,7 +235,6 @@
 		B46F8D422DBEF88B22C30973 /* AppIcon-Dev.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Dev.icon"; sourceTree = "<group>"; };
 		B550D55202482A729D01EB75 /* WeatherAttributionLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAttributionLabel.swift; sourceTree = "<group>"; };
 		B779A919D42BE0083E906105 /* ForecastWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastWindow.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B2 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B4 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		B8CBF1CA95D1465FC193EAD3 /* Shared.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Shared.xcstrings; sourceTree = "<group>"; };
 		B90AF9EEE8B2D9DE7ACE94F9 /* WindowSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSummaryTests.swift; sourceTree = "<group>"; };
@@ -385,7 +383,6 @@
 				3370B4271C590694D37B1BEC /* EmojiWidget.swift */,
 				26083B123692217C0408627C /* EmptyPlanView.swift */,
 				409CA5998A0FD530AFD3E822 /* Info.plist */,
-				A1B2C3D4E5F60718293A4B2 /* InfoPlist.xcstrings */,
 				ADEA5799FEB7436C7B5F740E /* Localizable.xcstrings */,
 				E7EFC7F301A8CE94B52D797E /* MettitiWidgets.entitlements */,
 				575110F1EA9D7D74E3B5734A /* MettitiWidgetsBundle.swift */,
@@ -598,7 +595,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1B2C3D4E5F60718293A4B1 /* InfoPlist.xcstrings in Resources */,
 				63362059EA03E0DAF5BAE972 /* Localizable.xcstrings in Resources */,
 				67C2327FD9155B0E2A455FFC /* PrivacyInfo.xcprivacy in Resources */,
 				9241D2998D3FB0C8981FD7A3 /* Shared.xcstrings in Resources */,
