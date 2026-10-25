@@ -664,17 +664,6 @@
         }
       }
     },
-    "Today" : {
-      "comment" : "Title of the main screen",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Oggi"
-          }
-        }
-      }
-    },
     "Try Again" : {
       "localizations" : {
         "it" : {
