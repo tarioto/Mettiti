@@ -8,7 +8,7 @@ struct DescriptionWidgetEntryView: View {
         PlanStateView(state: entry.state) { snapshot in
             VStack(alignment: .leading, spacing: 6) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(snapshot.weather.conditionDescription)
+                    Text(snapshot.weather.localizedConditionDescription)
                         .font(.caption.bold())
                         .foregroundStyle(.secondary)
                     PlanWindowTimesLabel(span: snapshot.span)

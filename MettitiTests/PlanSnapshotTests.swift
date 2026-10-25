@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import WeatherKit
 @testable import Mettiti
 
 struct PlanSnapshotTests {
@@ -119,6 +120,42 @@ struct PlanSnapshotTests {
         let decoded = try JSONDecoder().decode(PlanSnapshot.self, from: JSONEncoder().encode(snapshot))
 
         #expect(decoded.adviceBasis == basis)
+    }
+
+    @Test func snapshotSavedByEarlierVersionHasNoConditionAndShowsItsStoredText() throws {
+        let snapshot = try JSONDecoder().decode(PlanSnapshot.self, from: Data(savedBeforeWeatherOnlySnapshots.utf8))
+
+        #expect(snapshot.weather.condition == nil)
+        #expect(snapshot.weather.localizedConditionDescription == "Rain")
+    }
+
+    @Test func wmoConditionRoundTripsAndIsDescribedFromTheCatalog() throws {
+        var weather = DailyWeather.placeholder
+        weather.condition = .wmo(61)
+        let snapshot = PlanSnapshot(weather: weather, recommendation: nil, generatedAt: Date(timeIntervalSinceReferenceDate: 0), provider: .openMeteo)
+
+        let decoded = try JSONDecoder().decode(PlanSnapshot.self, from: JSONEncoder().encode(snapshot))
+
+        #expect(decoded.weather.condition == .wmo(61))
+        #expect(decoded.weather.localizedConditionDescription == WMOWeatherCode.description(for: 61))
+    }
+
+    @Test func weatherKitConditionRoundTripsAndIsDescribedByApple() throws {
+        var weather = DailyWeather.placeholder
+        weather.condition = WeatherConditionKind(.heavyRain)
+        let snapshot = PlanSnapshot(weather: weather, recommendation: nil, generatedAt: Date(timeIntervalSinceReferenceDate: 0), provider: .apple)
+
+        let decoded = try JSONDecoder().decode(PlanSnapshot.self, from: JSONEncoder().encode(snapshot))
+
+        #expect(decoded.weather.condition == WeatherConditionKind(.heavyRain))
+        #expect(decoded.weather.localizedConditionDescription == WeatherCondition.heavyRain.description)
+    }
+
+    @Test func unknownWeatherKitConditionFallsBackToTheStoredText() {
+        var weather = DailyWeather.placeholder
+        weather.condition = .weatherKit("somethingNew")
+
+        #expect(weather.localizedConditionDescription == weather.conditionDescription)
     }
 
     @Test func snapshotSavedByEarlierVersionHasNoAdviceBasis() throws {

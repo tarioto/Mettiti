@@ -44,7 +44,8 @@ struct AppleWeatherService {
             uvIndex: Double(today.uvIndex.value),
             windSpeedMph: (today.highWindSpeed ?? today.wind.speed).converted(to: .milesPerHour).value,
             conditionCode: code,
-            conditionDescription: today.condition.description
+            conditionDescription: today.condition.description,
+            condition: WeatherConditionKind(today.condition)
         )
 
         let timeZone = await timeZoneTask

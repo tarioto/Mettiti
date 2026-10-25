@@ -100,6 +100,13 @@ struct ItalianLocalizationTests {
         #expect(localized("Next 3 hours", table: "Shared", language: "it") == "Prossime 3 ore")
     }
 
+    @Test(arguments: [0, 1, 2, 3, 45, 51, 56, 61, 66, 71, 77, 80, 85, 95, 96, 999])
+    func everyWeatherConditionNameIsInItalian(_ code: Int) {
+        let english = WMOWeatherCode.description(for: code)
+        let text = localized(english, table: "Shared", language: "it")
+        #expect(text != "<missing>" && text != english, "\(english) has no Italian translation")
+    }
+
     @Test func alternateIconIdentifiersStayEnglish() {
         #expect(ThemeIcon.ocean.alternateIconName == "AppIcon-Ocean")
         #expect(ThemeIcon.ocean.thumbnailName == "IconThumbnail-Ocean")
