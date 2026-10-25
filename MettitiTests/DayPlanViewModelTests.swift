@@ -1429,7 +1429,7 @@ struct DayPlanViewModelTests {
         viewModel.start()
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
         await fetcher.complete(latitude: 10, with: .success(.forecast(high: 99)))
-        try await waitUntil { viewModel.state.loadedHigh == 99 }
+        try await waitUntil { viewModel.state.readySummary != nil }
 
         clock.now = date("2026-10-19T07:00:00-07:00")
         viewModel.refreshIfStale()
@@ -1468,7 +1468,7 @@ struct DayPlanViewModelTests {
         viewModel.start()
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
         await fetcher.complete(latitude: 10, with: .success(.forecast(high: 99)))
-        try await waitUntil { viewModel.state.loadedHigh == 99 }
+        try await waitUntil { viewModel.state.readySummary != nil }
 
         clock.now = date("2026-10-19T11:00:00-07:00")
         viewModel.refreshIfStale()
