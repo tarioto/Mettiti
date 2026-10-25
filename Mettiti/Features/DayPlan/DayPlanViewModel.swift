@@ -9,6 +9,16 @@ enum LoadState {
     /// `span` is what the plan covers.
     case loaded(weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, provider: WeatherProvider, recommendation: RecommendationState)
     case failed(String)
+
+    /// Changes when the screen moves between the first-load skeleton, the plan and the error, so
+    /// they crossfade. Stays the same while the plan's outfit comes and goes inside the loaded plan.
+    var crossfadeID: String {
+        switch self {
+        case .idle, .loadingWeather: return "skeleton"
+        case .loaded: return "plan"
+        case .failed: return "error"
+        }
+    }
 }
 
 @MainActor
@@ -502,8 +512,8 @@ final class DayPlanViewModel {
         } else {
             // The Saved Plan's outfit, or the previous Plan Window's, stays on screen until the
             // fresh one is complete. Anything else (including a Saved Plan without an outfit)
-            // gives way to the fresh weather and the suggestion as it streams in, so the Saved
-            // Plan is no longer what's on screen.
+            // gives way to the fresh weather and the outfit's skeleton, so the Saved Plan is no
+            // longer what's on screen.
             if !isHoldingOutfit {
                 isShowingSavedPlan = false
                 isSwitchingWindow = false
@@ -511,10 +521,7 @@ final class DayPlanViewModel {
                 state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .loading)
             }
             do {
-                recommendation = .ready(try await fetcher.recommendation(for: weather, hourly: hourly, span: span) { [weak self] partial in
-                    guard let self, !Task.isCancelled, !self.isHoldingOutfit else { return }
-                    self.state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .generating(partial))
-                })
+                recommendation = .ready(try await fetcher.recommendation(for: weather, hourly: hourly, span: span))
             } catch {
                 recommendation = .failed(UserFacingMessage.describing(error))
             }
@@ -572,8 +579,8 @@ final class DayPlanViewModel {
         publishSnapshot(PlanSnapshot(weather: weather, recommendation: advice?.outfit, generatedAt: now(), provider: provider, location: locationPreference.selection, hourly: hourly, span: span, adviceBasis: advice?.basis))
     }
 
-    /// Whether today's Saved Plan is on screen with its outfit, which partial suggestions
-    /// mustn't replace. Stays true after a failed refresh, so the next one holds partials back too.
+    /// Whether today's Saved Plan is on screen with its outfit. Stays true after a failed refresh,
+    /// so a fresh plan without an outfit still doesn't replace it.
     private var isShowingSavedPlanOutfit: Bool {
         guard isShowingSavedPlan, case .loaded(_, _, _, _, .ready) = state else { return false }
         return true

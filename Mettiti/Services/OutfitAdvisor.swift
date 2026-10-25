@@ -17,11 +17,14 @@ struct OutfitAdvisor: Sendable {
     var unitProvider: @Sendable () -> TemperatureUnit = { SharedStore.loadTemperatureUnit() }
     private let preparedSession = PreparedSession()
 
+    /// The whole recommendation, once the model has finished it. Uses the session from
+    /// `prewarm()` if there is one.
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation {
         try Self.checkAvailability()
         let language = Self.responseLanguage()
+        let session = preparedSession.take() ?? Self.makeSession(language: language)
         let request = Self.request(for: weather, hourly: hourly, span: span, unit: unitProvider(), language: language)
-        let response = try await Self.makeSession(language: language).respond(to: request.prompt, generating: OutfitRecommendation.self)
+        let response = try await session.respond(to: request.prompt, generating: OutfitRecommendation.self)
         return request.droppingWarmLayersIfWarmThroughout(response.content)
     }
 
@@ -32,20 +35,6 @@ struct OutfitAdvisor: Sendable {
         let session = Self.makeSession(language: Self.responseLanguage())
         session.prewarm()
         preparedSession.store(session)
-    }
-
-    /// Streams the recommendation, reporting the suggestion so far after each update. Uses the
-    /// session from `prewarm()` if there is one.
-    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
-        try Self.checkAvailability()
-        let language = Self.responseLanguage()
-        let session = preparedSession.take() ?? Self.makeSession(language: language)
-        let request = Self.request(for: weather, hourly: hourly, span: span, unit: unitProvider(), language: language)
-        let stream = session.streamResponse(to: request.prompt, generating: OutfitRecommendation.self)
-        for try await partial in stream {
-            await onPartial(request.draft(from: partial.content))
-        }
-        return request.droppingWarmLayersIfWarmThroughout(try await stream.collect().content)
     }
 
     /// What to ask the model about the plan, and whether to drop warm layers from its answer.
@@ -62,20 +51,6 @@ struct OutfitAdvisor: Sendable {
         let window = hourly.map { ForecastWindow(forecast: $0, span: span.interval) }
         let coldestF = window?.low?.meanF ?? weather.lowTemperatureF
         return TemperatureFeel(fahrenheit: coldestF, in: unit).isWarm
-    }
-
-    /// The suggestion so far: fields the model hasn't reached are empty, and items appear once
-    /// they have an emoji and a name. With `waitingForWholeNames`, items wait for the model to
-    /// start their reason, which comes after the name.
-    static func draft(from partial: OutfitRecommendation.PartiallyGenerated, waitingForWholeNames: Bool = false) -> OutfitRecommendation {
-        OutfitRecommendation(
-            summary: partial.summary ?? "",
-            items: (partial.items ?? []).compactMap { item in
-                guard let emoji = item.emoji, let name = item.name else { return nil }
-                if waitingForWholeNames && item.reason == nil { return nil }
-                return RecommendedItem(emoji: emoji, name: name, reason: item.reason ?? "")
-            }
-        )
     }
 
     private static func makeSession(language: String) -> LanguageModelSession {
@@ -302,12 +277,6 @@ struct OutfitRequest: Sendable {
     /// suggested a heavy jacket for a Bangkok evening that only "cooled off" to warm.
     func droppingWarmLayersIfWarmThroughout(_ recommendation: OutfitRecommendation) -> OutfitRecommendation {
         isWarmThroughout ? recommendation.withoutWarmLayers() : recommendation
-    }
-
-    /// The suggestion so far, without warm layers if it's warm throughout. Then items wait until
-    /// their name is written, so "Heavy" doesn't show before it becomes "Heavy jacket" and goes.
-    func draft(from partial: OutfitRecommendation.PartiallyGenerated) -> OutfitRecommendation {
-        droppingWarmLayersIfWarmThroughout(OutfitAdvisor.draft(from: partial, waitingForWholeNames: isWarmThroughout))
     }
 }
 
