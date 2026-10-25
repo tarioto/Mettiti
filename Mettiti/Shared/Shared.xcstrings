@@ -79,6 +79,23 @@
         }
       }
     },
+    "H:%@ L:%@  •  %@ rain  •  UV %lld" : {
+      "comment" : "One-line weather summary: high and low (each already formatted with its unit), chance of rain (already formatted as a percentage) and UV index",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "H:%1$@ L:%2$@  •  %3$@ rain  •  UV %4$lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Max %1$@ Min %2$@  •  pioggia %3$@  •  UV %4$lld"
+          }
+        }
+      }
+    },
     "Mainly clear" : {
 
     },

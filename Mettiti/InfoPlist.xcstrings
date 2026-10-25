@@ -1,22 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "CFBundleDisplayName" : {
-      "comment" : "The app's name on the Home Screen",
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Mettiti"
-          }
-        }
-      }
-    },
     "NSLocationWhenInUseUsageDescription" : {
       "comment" : "Location permission prompt",
       "extractionState" : "manual",
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mettiti uses your location to check today's weather and recommend what to wear and bring."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
