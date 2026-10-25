@@ -76,6 +76,12 @@
             "state" : "new",
             "value" : "H:%1$@ L:%2$@"
           }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Max %1$@ Min %2$@"
+          }
         }
       }
     },

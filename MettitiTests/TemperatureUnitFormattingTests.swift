@@ -91,6 +91,11 @@ struct DayPlanLocaleFormattingTests {
         #expect(String(format: format, "22 °C", "14 °C", rain, 5) == "Max 22 °C Min 14 °C  •  pioggia 30%  •  UV 5")
     }
 
+    @Test func highLowLineIsItalianWithLocaleFormattedTemperatures() throws {
+        let format = try italianBundle().localizedString(forKey: "H:%@ L:%@", value: "<missing>", table: "Shared")
+        #expect(String(format: format, "22 °C", "14 °C") == "Max 22 °C Min 14 °C")
+    }
+
     @Test func chartLegendAndAxisLabelsAreInItalian() throws {
         let bundle = try italianBundle()
         let keys = [
