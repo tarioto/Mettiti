@@ -83,9 +83,9 @@ private struct ColumnsLayout: Layout {
 
 extension View {
     /// Centers the view in a column capped at a comfortable reading width, for a lone card or the
-    /// error state on a wide display.
-    func readableColumn() -> some View {
-        frame(maxWidth: 670)
+    /// error state on a wide display, or wider for the Wide layout's columns.
+    func readableColumn(maxWidth: CGFloat = 670) -> some View {
+        frame(maxWidth: maxWidth)
             .frame(maxWidth: .infinity)
     }
 }

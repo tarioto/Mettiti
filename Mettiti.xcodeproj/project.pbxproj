@@ -29,7 +29,7 @@
 		24EBF2BC5713E761CFF7F218 /* WeatherAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D53059B3E838014506476E /* WeatherAttributionView.swift */; };
 		26F4E4AFBD0C174C2C5B9B06 /* OutfitAdvisorPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */; };
 		292FE55023362D9859EB24EF /* AppIcon-Dev.icon in Resources */ = {isa = PBXBuildFile; fileRef = B46F8D422DBEF88B22C30973 /* AppIcon-Dev.icon */; };
-		A1B2C3D4E5F60718293A4B5 /* ItalianLocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B6 /* ItalianLocalizationTests.swift */; };
+		2C46A406BC2D0B99C04BB444 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0EC75C76301E85D1C745F84E /* InfoPlist.xcstrings */; };
 		3533EBA6BC20AD4A42072179 /* UserFacingMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 476D98985B1F9B6F6500A58A /* UserFacingMessageTests.swift */; };
 		3B9811EDD4A40B3EE05D8F07 /* OpenMeteoFixtureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40F9E19950E9B566A883A1BE /* OpenMeteoFixtureTests.swift */; };
 		3BB994CD41FE5F2A161CD27C /* PlanSpan.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8F8B6F2167522C4461A5460 /* PlanSpan.swift */; };
@@ -48,7 +48,6 @@
 		5B796F5B3DD68C30DE055DA3 /* TemperaturePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40DE379AB97AB9FDA3A80A43 /* TemperaturePreferenceStore.swift */; };
 		5DA8990F438756DEBDBF53E7 /* WeatherProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB1952B7CBB70A709210A1A /* WeatherProvider.swift */; };
 		63362059EA03E0DAF5BAE972 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = ADEA5799FEB7436C7B5F740E /* Localizable.xcstrings */; };
-		A1B2C3D4E5F60718293A4B3 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B4 /* InfoPlist.xcstrings */; };
 		63C183FEFA6926EE48AE78BA /* LocationSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29FB3179D1A9209D11E4326B /* LocationSelection.swift */; };
 		677C0D2B5F5B8BBB6D583649 /* MettitiWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575110F1EA9D7D74E3B5734A /* MettitiWidgetsBundle.swift */; };
 		67C2327FD9155B0E2A455FFC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2C6B6873D8C963511DAA0426 /* PrivacyInfo.xcprivacy */; };
@@ -81,6 +80,7 @@
 		9786136362046F55E19CD33D /* OpenMeteoHourlyTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F76D0918FE0A1D37C2D7998 /* OpenMeteoHourlyTime.swift */; };
 		9E08C22ABFCD699A8D0DEC0A /* DayPlanFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF23CE9FF292FD88C50E38B1 /* DayPlanFetcher.swift */; };
 		A4C2474336FE84EE971C7385 /* DailyWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17648820A03F760374204482 /* DailyWeather.swift */; };
+		AF2D6244236B7DC65FC59946 /* ItalianLocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CEB7696C06470E0554F15D8 /* ItalianLocalizationTests.swift */; };
 		AF8C4F88C4648F53F7C3847B /* ThemePreferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E787563EF8DF959D3C92ED1C /* ThemePreferenceStore.swift */; };
 		B69899D02EFFBE322436659C /* ForecastWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1263095AB21CA4F12F64B9 /* ForecastWindowTests.swift */; };
 		B6BD349BDFFFE31F5A8DE84E /* AppIcon-Midnight.icon in Resources */ = {isa = PBXBuildFile; fileRef = FD224A43A8B46F4476BE1E4D /* AppIcon-Midnight.icon */; };
@@ -167,6 +167,7 @@
 		074BBF182DDA9275E9C601F9 /* HourlyForecast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyForecast.swift; sourceTree = "<group>"; };
 		08EA644C285F1FF3E8588F11 /* PlanSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanSnapshotTests.swift; sourceTree = "<group>"; };
 		0E2BDCAC60095BEEC4EB01B7 /* TemperatureUnitFormattingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperatureUnitFormattingTests.swift; sourceTree = "<group>"; };
+		0EC75C76301E85D1C745F84E /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		1169A0DDECF191A9E6DAD135 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		17648820A03F760374204482 /* DailyWeather.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyWeather.swift; sourceTree = "<group>"; };
 		1911B207E85E261EB49A38A2 /* RefreshFailureNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshFailureNotice.swift; sourceTree = "<group>"; };
@@ -196,7 +197,6 @@
 		41FBE461298259E491C0C9F4 /* DayPlanViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanViewModelTests.swift; sourceTree = "<group>"; };
 		4258A411E1AD84FABBC377ED /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		463C9BDC2137A1A038617881 /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B6 /* ItalianLocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItalianLocalizationTests.swift; sourceTree = "<group>"; };
 		476D98985B1F9B6F6500A58A /* UserFacingMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserFacingMessageTests.swift; sourceTree = "<group>"; };
 		47811AB898629A8110268D01 /* AppIconPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconPreferenceStore.swift; sourceTree = "<group>"; };
 		547C0A75E924593B5A7D7C23 /* OutfitAdvisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitAdvisor.swift; sourceTree = "<group>"; };
@@ -218,6 +218,7 @@
 		75914F126959B2AAE4ABEDF2 /* DayPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanViewModel.swift; sourceTree = "<group>"; };
 		852D5E1ACBDA922E732AC39F /* WidgetPlanTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPlanTimeline.swift; sourceTree = "<group>"; };
 		88158BB15FF22E7B4D23559A /* WidgetPlanTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPlanTimelineTests.swift; sourceTree = "<group>"; };
+		8CEB7696C06470E0554F15D8 /* ItalianLocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItalianLocalizationTests.swift; sourceTree = "<group>"; };
 		92C815EC1354B32244BE0D5A /* CardColumnArrangementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardColumnArrangementTests.swift; sourceTree = "<group>"; };
 		95F18E599EE20967D179339D /* CardPreferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardPreferenceStore.swift; sourceTree = "<group>"; };
 		992D6EDE75226790FB26579A /* WMOWeatherCodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WMOWeatherCodeTests.swift; sourceTree = "<group>"; };
@@ -235,7 +236,6 @@
 		B46F8D422DBEF88B22C30973 /* AppIcon-Dev.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "AppIcon-Dev.icon"; sourceTree = "<group>"; };
 		B550D55202482A729D01EB75 /* WeatherAttributionLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAttributionLabel.swift; sourceTree = "<group>"; };
 		B779A919D42BE0083E906105 /* ForecastWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastWindow.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B4 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		B8CBF1CA95D1465FC193EAD3 /* Shared.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Shared.xcstrings; sourceTree = "<group>"; };
 		B90AF9EEE8B2D9DE7ACE94F9 /* WindowSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSummaryTests.swift; sourceTree = "<group>"; };
 		BB6085AF3D8BC6D121CADB83 /* PlanWindowTimesLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanWindowTimesLabel.swift; sourceTree = "<group>"; };
@@ -315,6 +315,7 @@
 				DD1263095AB21CA4F12F64B9 /* ForecastWindowTests.swift */,
 				6E72CE62D40BB1122CBF98F3 /* HourlyForecastTests.swift */,
 				239B073054ECD22EBF022A34 /* HourlyTemperatureChartTests.swift */,
+				8CEB7696C06470E0554F15D8 /* ItalianLocalizationTests.swift */,
 				40F9E19950E9B566A883A1BE /* OpenMeteoFixtureTests.swift */,
 				030820C24BA9ED9108C38C47 /* OutfitAdvisorDraftTests.swift */,
 				58DBD93EB3B39FD77485D4CF /* OutfitAdvisorPromptTests.swift */,
@@ -327,7 +328,6 @@
 				C856B8066B3ADAA4063A8F89 /* TemperatureUnitConversionTests.swift */,
 				0E2BDCAC60095BEEC4EB01B7 /* TemperatureUnitFormattingTests.swift */,
 				463C9BDC2137A1A038617881 /* TestSupport.swift */,
-				A1B2C3D4E5F60718293A4B6 /* ItalianLocalizationTests.swift */,
 				476D98985B1F9B6F6500A58A /* UserFacingMessageTests.swift */,
 				E484B9C754A9D0352D3955D8 /* WeatherAPIQueryItemsTests.swift */,
 				F735BBDBE3437765D0A5EC9B /* WeatherServiceTests.swift */,
@@ -430,7 +430,7 @@
 				4258A411E1AD84FABBC377ED /* Assets.xcassets */,
 				1169A0DDECF191A9E6DAD135 /* ContentView.swift */,
 				FEECD4FFD7DFA7C252C5E5B6 /* Info.plist */,
-				A1B2C3D4E5F60718293A4B4 /* InfoPlist.xcstrings */,
+				0EC75C76301E85D1C745F84E /* InfoPlist.xcstrings */,
 				EB654C66EED1B5B2B071D576 /* Localizable.xcstrings */,
 				C4DE16260E778FDBF15A4462 /* Mettiti.entitlements */,
 				9E29684554562655E6B0531E /* MettitiApp.swift */,
@@ -622,7 +622,7 @@
 				78F692245C9F0A44CA2CF188 /* AppIcon-Sunset.icon in Resources */,
 				F88E043A4EBCB5898A727211 /* AppIcon.icon in Resources */,
 				0F822D916C91828ED8587D1D /* Assets.xcassets in Resources */,
-				A1B2C3D4E5F60718293A4B3 /* InfoPlist.xcstrings in Resources */,
+				2C46A406BC2D0B99C04BB444 /* InfoPlist.xcstrings in Resources */,
 				BA73ACC3E1F155D24545A953 /* Localizable.xcstrings in Resources */,
 				E9922BA1EEE0B6016DE4E02B /* PrivacyInfo.xcprivacy in Resources */,
 				91B547C912731BA0CBDFC645 /* Shared.xcstrings in Resources */,
@@ -643,6 +643,7 @@
 				B69899D02EFFBE322436659C /* ForecastWindowTests.swift in Sources */,
 				961B270CF8434ABE5CAB501C /* HourlyForecastTests.swift in Sources */,
 				D73324A0AA0E6FF613BC582B /* HourlyTemperatureChartTests.swift in Sources */,
+				AF2D6244236B7DC65FC59946 /* ItalianLocalizationTests.swift in Sources */,
 				3B9811EDD4A40B3EE05D8F07 /* OpenMeteoFixtureTests.swift in Sources */,
 				8E82577FEFB8D8795FF81690 /* OutfitAdvisorDraftTests.swift in Sources */,
 				26F4E4AFBD0C174C2C5B9B06 /* OutfitAdvisorPromptTests.swift in Sources */,
@@ -655,7 +656,6 @@
 				0221DC86CA132013722F846C /* TemperatureUnitConversionTests.swift in Sources */,
 				14D0E398FCCE85E120A31C8D /* TemperatureUnitFormattingTests.swift in Sources */,
 				694C9D37714DDF5BEDD8BE26 /* TestSupport.swift in Sources */,
-				A1B2C3D4E5F60718293A4B5 /* ItalianLocalizationTests.swift in Sources */,
 				3533EBA6BC20AD4A42072179 /* UserFacingMessageTests.swift in Sources */,
 				CC565D9F4EB262B22011BAD3 /* WMOWeatherCodeTests.swift in Sources */,
 				184C4A8F9D1398F5E48FC71B /* WeatherAPIQueryItemsTests.swift in Sources */,
@@ -807,6 +807,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Mettiti uses your location to check today's weather and recommend what to wear and bring.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsMultipleScenes = NO;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -817,7 +818,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.timarioto.Mettiti$(BUNDLE_ID_SUFFIX)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -969,6 +970,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Mettiti uses your location to check today's weather and recommend what to wear and bring.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsMultipleScenes = NO;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -979,7 +981,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.timarioto.Mettiti$(BUNDLE_ID_SUFFIX)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};

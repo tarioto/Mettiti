@@ -38,6 +38,15 @@ struct MettitiApp: App {
             .environment(appIconPreference)
             .task { await appIconPreference.applyAtLaunch() }
         }
+        // ⌘R on a hardware keyboard, such as an iPad's. Settings' ⌘, sits on its toolbar button.
+        .commands {
+            CommandGroup(after: .toolbar) {
+                Button("Refresh") {
+                    Task { await viewModel.refresh() }
+                }
+                .keyboardShortcut("r")
+            }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background {
                 BackgroundPlanRefresh.schedule()

@@ -93,6 +93,7 @@ struct ContentView: View {
         } label: {
             Label("Settings", systemImage: "gearshape.fill")
         }
+        .keyboardShortcut(",")
         .tint(.primary)
     }
 
