@@ -365,6 +365,7 @@ private struct LocationCard: View {
                     .fill(.quaternary)
             }
         }
+        .animation(DayPlanView.crossfade, value: placeholderRegion != nil)
         .modifier(ShimmeringPlaceholder())
         .task {
             placeholderRegion = await PlaceholderMapRegion.resolveForDevice()
