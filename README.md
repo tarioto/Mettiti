@@ -69,6 +69,22 @@ Without `ASC_KEY_P8`, the workflow skips the upload with a warning. It can also 
 
 TestFlight and App Store installs run the same binary. The app tells them apart at runtime (that's how TestFlight installs get `AppIcon-Beta`), so any other TestFlight-only behavior has to be decided the same way.
 
+### Localization
+
+The app is localized in English (source) and Italian through String Catalogs (`Localizable.xcstrings`, `InfoPlist.xcstrings`, `Shared.xcstrings`, and the widget's `Localizable.xcstrings`).
+
+**Adding strings**
+
+1. Use the string in code or UI as usual; Xcode adds the key to the catalog when you build.
+2. Add an Italian entry for it in the catalog editor. A machine translation is fine; mark it **Needs Review**.
+3. Remove keys Xcode marks **Stale** once the code no longer uses them.
+
+CI runs `scripts/check-translations.sh` (you can run it locally too) and fails when a key has no Italian entry, is stale, or is still untranslated (state `new`). **Needs Review** entries do not fail CI, so machine-translated Italian ships in TestFlight builds, which upload on every merge to `main`.
+
+**Review workflow and App Store gate**
+
+Before an App Store submission, a fluent Italian speaker reviews every **Needs Review** entry in each catalog and marks it **Translated**. Filter the catalog editor by Needs Review to find them. Don't submit while any remain. This gate is manual; CI doesn't enforce it. App Store metadata and screenshots are not covered by this process.
+
 ### Secret scanning
 
 Pushes and PRs are scanned for secrets with [gitleaks](https://github.com/gitleaks/gitleaks) in CI, and GitHub push protection rejects known token formats. To also catch secrets before they leave your machine, enable the local pre-push hook:
