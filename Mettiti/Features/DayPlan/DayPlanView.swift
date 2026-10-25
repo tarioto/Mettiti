@@ -345,6 +345,7 @@ private struct LocationCard: View {
         VStack(spacing: 8) {
             Image(systemName: "location.slash")
                 .font(.title2)
+                .accessibilityHidden(true)
             Text(isUnavailable ? "Location unavailable" : "Finding your location…")
                 .font(.subheadline)
         }

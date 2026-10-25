@@ -138,6 +138,7 @@ final class DayPlanViewModel {
         state = .idle
         lastCoordinate = nil
         location = nil
+        lookupInFlight = nil
         locationRequestFailed = false
         keepsUnchangedAdvice = false
         outfitsByWindow = [:]
