@@ -47,9 +47,7 @@ struct ItalianLocalizationTests {
         "Try Again",
         "Showing the plan saved earlier today.",
         "No outfit suggestions right now.",
-        "Checking today's weather…",
-        "Putting together today's outfit…",
-        "Updating…",
+        "Loading",
     ]
 
     @Test(arguments: errorAndStatusMessages)

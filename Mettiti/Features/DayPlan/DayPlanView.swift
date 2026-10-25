@@ -112,7 +112,6 @@ struct DayPlanView: View {
                 Text(city)
                     .font(.title2.bold())
             }
-            progressCaption(for: .plan)
             crossfading {
                 switch recommendation {
                 case .ready(let outfit):
@@ -124,6 +123,8 @@ struct DayPlanView: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
                         .redacted(reason: .placeholder)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Loading")
                 case .unavailable, .failed:
                     recommendationNotice(for: .plan)
                 }
@@ -137,7 +138,6 @@ struct DayPlanView: View {
     private var wearAndBringCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             CardTitle(type: .wearAndBring)
-            progressCaption(for: .wearAndBring)
 
             crossfading {
                 switch recommendation {
@@ -146,6 +146,8 @@ struct DayPlanView: View {
                 case .loading:
                     itemList(SkeletonLoadingView.recommendation.items)
                         .redacted(reason: .placeholder)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Loading")
                 case .unavailable, .failed:
                     recommendationNotice(for: .wearAndBring)
                 }
@@ -177,14 +179,6 @@ struct DayPlanView: View {
     }
 
     static let crossfade = Animation.easeInOut(duration: 0.3)
-
-    /// While the outfit is on its way, only the first visible suggestion card says so, so it isn't repeated.
-    @ViewBuilder
-    private func progressCaption(for card: CardType) -> some View {
-        if recommendation.isInProgress, card == firstSuggestionCard {
-            ProgressCaption("Putting together today's outfit…")
-        }
-    }
 
     private var firstSuggestionCard: CardType? {
         cardPreference.visibleOrderedTypes.first(where: \.showsSuggestion)
