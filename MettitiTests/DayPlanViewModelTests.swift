@@ -733,7 +733,9 @@ struct DayPlanViewModelTests {
         let location = FakeLocationProvider()
         let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
         locationPreference.selection = .currentLocation
-        let lookups = Mutex(0)
+        // Lookups for the first fix fail however often they're tried: the load itself may retry
+        // one that finished before the outfit did, so only the nearby fix's lookup succeeds.
+        let lookups = Mutex((started: 0, finished: 0))
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
@@ -742,22 +744,25 @@ struct DayPlanViewModelTests {
             fetcher: FakeDayPlanFetcher(),
             loadSnapshot: { nil },
             publishSnapshot: { _ in },
-            lookUpCityName: { _ in
-                let attempt = lookups.withLock { count -> Int in count += 1; return count }
-                return attempt == 1 ? nil : "Bangkok"
+            lookUpCityName: { coordinate in
+                lookups.withLock { $0.started += 1 }
+                defer { lookups.withLock { $0.finished += 1 } }
+                return coordinate.latitude == 13.75 ? nil : "Bangkok"
             }
         )
 
         viewModel.start()
         location.deliver(CLLocationCoordinate2D(latitude: 13.75, longitude: 100.5))
-        try await waitUntil { viewModel.state.isLoaded && lookups.withLock { $0 } == 1 }
+        try await waitUntil {
+            viewModel.state.recommendationState != nil && !viewModel.state.isRecommendationLoading
+                && lookups.withLock { $0.started > 0 && $0.started == $0.finished }
+        }
         #expect(viewModel.location?.name == nil)
 
         location.deliver(CLLocationCoordinate2D(latitude: 13.752, longitude: 100.501))
         await viewModel.refresh()
 
         try await waitUntil { viewModel.location?.name == "Bangkok" }
-        #expect(lookups.withLock { $0 } == 2)
     }
 
     @Test func locationIsUnavailableOnlyOnceGettingOneFailed() {
