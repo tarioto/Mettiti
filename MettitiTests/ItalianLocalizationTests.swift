@@ -28,6 +28,7 @@ struct ItalianLocalizationTests {
         "Couldn't reach Apple Weather. Check your connection, or switch to Open-Meteo in Settings.",
         "Apple Weather didn't return a forecast for today.",
         "Location access is off. Enable it in Settings to get weather for your area.",
+        "Location unavailable",
         "Couldn't determine your location. Check your connection and try again.",
         "Couldn't find your location right now. Try again, or set a location in Settings.",
         "Something went wrong. Try again.",

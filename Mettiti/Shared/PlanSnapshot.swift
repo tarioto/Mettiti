@@ -20,6 +20,16 @@ struct PlanSnapshot: Codable, Sendable {
     /// refresh keeps the outfit, so small changes that add up still count. Nil without a
     /// recommendation, and in plans saved before it was stored, which are always remade.
     var adviceBasis: WindowSummary?
+    /// Where the plan was made, so a Current Location plan shown at launch has its map and city
+    /// before a new fix arrives. Nil when saved before it was stored.
+    var place: SavedPlace?
+}
+
+/// The coordinate a plan was made for and its city's name, if it was known.
+struct SavedPlace: Codable, Equatable, Sendable {
+    var name: String?
+    var latitude: Double
+    var longitude: Double
 }
 
 extension PlanSnapshot {

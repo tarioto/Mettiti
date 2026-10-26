@@ -10,6 +10,8 @@ struct DayPlanView: View {
     var provider: WeatherProvider = .openMeteo
     /// Where the plan is for; nil while Current Location waits for a fix, and in previews.
     var location: PlanLocation? = nil
+    /// Whether getting Current Location failed, as opposed to still waiting for it.
+    var isLocationUnavailable = false
     var onRetryRecommendation: () -> Void = {}
     @Environment(TemperaturePreferenceStore.self) private var temperaturePreference
     @Environment(CardPreferenceStore.self) private var cardPreference
@@ -53,7 +55,7 @@ struct DayPlanView: View {
         case .wearAndBring:
             wearAndBringCard
         case .location:
-            LocationCard(location: location)
+            LocationCard(location: location, isUnavailable: isLocationUnavailable)
         }
     }
 
@@ -308,9 +310,10 @@ private struct CardTitle: View {
 }
 
 /// The city the plan is for, on a map with a pin; until there is one, a desaturated map of
-/// roughly where the device is.
+/// roughly where the device is, or a message once getting the location failed.
 private struct LocationCard: View {
     let location: PlanLocation?
+    let isUnavailable: Bool
     @ScaledMetric(relativeTo: .body) private var mapHeight: CGFloat = 160
     @State private var placeholderRegion: MKCoordinateRegion?
 
@@ -321,13 +324,34 @@ private struct LocationCard: View {
             CardTitle(type: .location)
                 .padding()
 
-            map
-                .frame(height: mapHeight)
-                .accessibilityHidden(true)
+            if location == nil && isUnavailable {
+                unavailableMessage
+                    .frame(maxWidth: .infinity)
+                    .frame(height: mapHeight)
+                    .background(.quaternary)
+                    .accessibilityElement(children: .combine)
+            } else {
+                map
+                    .frame(height: mapHeight)
+                    .accessibilityHidden(true)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardBackground()
         .clipShape(.rect(cornerRadius: 16))
+    }
+
+    private var unavailableMessage: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "location.slash")
+                .font(.title2)
+                .accessibilityHidden(true)
+            Text("Location unavailable")
+                .font(.subheadline)
+        }
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+        .padding()
     }
 
     /// The placeholder crossfades into the real map and pin when the location arrives.

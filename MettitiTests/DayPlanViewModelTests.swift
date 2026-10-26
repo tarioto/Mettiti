@@ -643,6 +643,150 @@ struct DayPlanViewModelTests {
         #expect(snapshots.map(\.weather.highTemperatureF) == [10])
     }
 
+    @Test func currentLocationSavedPlanShowsItsMapAndCityAtLaunchAndMovesWithTheRefreshedWeather() async throws {
+        let location = FakeLocationProvider()
+        let fetcher = GatedDayPlanFetcher()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        var saved = PlanSnapshot.saved(high: 99, summary: "Saved outfit", location: .currentLocation)
+        saved.place = SavedPlace(name: "Seattle", latitude: 47.6, longitude: -122.3)
+        let lookups = Mutex(0)
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { saved },
+            publishSnapshot: { _ in },
+            lookUpCityName: { _ in
+                lookups.withLock { $0 += 1 }
+                return "Elsewhere"
+            }
+        )
+
+        viewModel.start()
+        #expect(viewModel.location == PlanLocation(name: "Seattle", coordinate: CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3), isCurrentLocation: true))
+
+        // A fix within a kilometre keeps the saved name without a lookup.
+        location.deliver(CLLocationCoordinate2D(latitude: 47.601, longitude: -122.301))
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 47.601) }
+        await fetcher.complete(latitude: 47.601, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.state.loadedHigh == 10 }
+        #expect(viewModel.location?.name == "Seattle")
+        #expect(lookups.withLock { $0 } == 0)
+    }
+
+    @Test func savedPlanLocationMovesToTheFixTheRefreshedWeatherLoadedFor() async throws {
+        let location = FakeLocationProvider()
+        let fetcher = GatedDayPlanFetcher()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        var saved = PlanSnapshot.saved(high: 99, summary: "Saved outfit", location: .currentLocation)
+        saved.place = SavedPlace(name: "Seattle", latitude: 47.6, longitude: -122.3)
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { saved },
+            publishSnapshot: { _ in },
+            lookUpCityName: { _ in "Portland" }
+        )
+
+        viewModel.start()
+        location.deliver(CLLocationCoordinate2D(latitude: 45.5, longitude: -122.6))
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 45.5) }
+        #expect(viewModel.location?.name == "Seattle")
+
+        await fetcher.complete(latitude: 45.5, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.location?.name == "Portland" }
+        #expect(viewModel.location?.latitude == 45.5)
+    }
+
+    @Test func savedPlanRecordsWhereItWasMade() async throws {
+        let location = FakeLocationProvider()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        var snapshots: [PlanSnapshot] = []
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: FakeDayPlanFetcher(),
+            loadSnapshot: { nil },
+            publishSnapshot: { snapshots.append($0) },
+            lookUpCityName: { _ in "Bangkok" }
+        )
+
+        viewModel.start()
+        location.deliver(CLLocationCoordinate2D(latitude: 13.75, longitude: 100.5))
+        try await waitUntil { viewModel.state.isLoaded }
+
+        #expect(snapshots.last?.place?.latitude == 13.75)
+        #expect(snapshots.last?.place?.longitude == 100.5)
+    }
+
+    @Test func failedCityLookupIsRetriedByALaterLoadNearby() async throws {
+        let location = FakeLocationProvider()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        // Lookups for the first fix fail however often they're tried: the load itself may retry
+        // one that finished before the outfit did, so only the nearby fix's lookup succeeds.
+        let lookups = Mutex((started: 0, finished: 0))
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: FakeDayPlanFetcher(),
+            loadSnapshot: { nil },
+            publishSnapshot: { _ in },
+            lookUpCityName: { coordinate in
+                lookups.withLock { $0.started += 1 }
+                defer { lookups.withLock { $0.finished += 1 } }
+                return coordinate.latitude == 13.75 ? nil : "Bangkok"
+            }
+        )
+
+        viewModel.start()
+        location.deliver(CLLocationCoordinate2D(latitude: 13.75, longitude: 100.5))
+        try await waitUntil {
+            viewModel.state.recommendationState != nil && !viewModel.state.isRecommendationLoading
+                && lookups.withLock { $0.started > 0 && $0.started == $0.finished }
+        }
+        #expect(viewModel.location?.name == nil)
+
+        location.deliver(CLLocationCoordinate2D(latitude: 13.752, longitude: 100.501))
+        await viewModel.refresh()
+
+        try await waitUntil { viewModel.location?.name == "Bangkok" }
+    }
+
+    @Test func locationIsUnavailableOnlyOnceGettingOneFailed() {
+        let location = FakeLocationProvider()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        locationPreference.selection = .currentLocation
+        let viewModel = DayPlanViewModel(
+            locationManager: location,
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: FakeDayPlanFetcher(),
+            loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
+            publishSnapshot: { _ in }
+        )
+
+        viewModel.start()
+        #expect(viewModel.location == nil)
+        #expect(!viewModel.isLocationUnavailable)
+
+        location.fail("Location access is off.")
+        #expect(viewModel.isLocationUnavailable)
+    }
+
     @Test func choosingAnotherCityAfterAFailedRefreshShowsItsWeatherBeforeTheOutfit() async throws {
         let fetcher = GatedRecommendationFetcher(failingLatitudes: [10])
         let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())

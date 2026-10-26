@@ -41,6 +41,13 @@ final class DayPlanViewModel {
     /// Current Location once weather for a fix has arrived, with its city name filled in once it's
     /// looked up. A later fix moves it only when a load brings weather for that fix.
     private(set) var location: PlanLocation?
+    /// True when Current Location has no location to show because getting one failed (permission
+    /// denied, or a GPS error). Without a location and not failed, it's still being found.
+    var isLocationUnavailable: Bool {
+        guard case .currentLocation = locationPreference.selection, location == nil else { return false }
+        if case .failed = state { return true }
+        return locationRequestFailed
+    }
 
     private let locationManager: LocationProviding
     private let locationPreference: LocationPreferenceStore
@@ -58,6 +65,10 @@ final class DayPlanViewModel {
     private var calendar: Calendar { locationPreference.selection.calendar(fallback: deviceCalendar) }
     private let lookUpCityName: @Sendable (CLLocationCoordinate2D) async -> String?
     @ObservationIgnored private var hasStarted = false
+    /// Whether the newest location request failed; cleared when another is made or a fix arrives.
+    private var locationRequestFailed = false
+    /// The location whose city name is being looked up, so a load meanwhile doesn't start a second lookup.
+    @ObservationIgnored private var lookupInFlight: PlanLocation?
     /// Last GPS fix; only Current Location refreshes reuse it, so custom-city loads never set it.
     /// Cleared on every selection change so returning to Current Location waits for a fresh fix.
     @ObservationIgnored private var lastCoordinate: CLLocationCoordinate2D?
@@ -128,6 +139,8 @@ final class DayPlanViewModel {
         state = .idle
         lastCoordinate = nil
         location = nil
+        lookupInFlight = nil
+        locationRequestFailed = false
         keepsUnchangedAdvice = false
         outfitsByWindow = [:]
         beginLoading(for: selection)
@@ -261,6 +274,9 @@ final class DayPlanViewModel {
               snapshot.planWindow == activePlanWindow else { return }
         isShowingSavedPlan = true
         adviceBasis = snapshot.adviceBasis
+        if location == nil, case .currentLocation = locationPreference.selection, let place = snapshot.place {
+            location = PlanLocation(name: place.name, coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude), isCurrentLocation: true)
+        }
         let recommendation: RecommendationState = snapshot.recommendation.map { .ready($0) } ?? .loading
         let span = snapshot.span ?? PlanSpan(window: .restOfDay, startingAt: snapshot.generatedAt, timeZone: snapshot.hourly?.timeZone ?? deviceCalendar.timeZone)
         state = .loaded(weather: snapshot.weather, hourly: snapshot.hourly, span: span, provider: providerPreference.provider, recommendation: recommendation)
@@ -344,6 +360,7 @@ final class DayPlanViewModel {
                     state = .idle
                 }
                 lastLoadRequestedAt = now()
+                locationRequestFailed = false
                 locationManager.requestLocation()
             }
         case .custom(_, let latitude, let longitude, _):
@@ -359,6 +376,7 @@ final class DayPlanViewModel {
             inFlightWeatherFetchID = nil
             refreshFailureMessage = nil
             lastLoadRequestedAt = now()
+            locationRequestFailed = false
             locationManager.requestLocation()
         case .custom(let name, let latitude, let longitude, _):
             let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
@@ -385,6 +403,7 @@ final class DayPlanViewModel {
     private func handleGPSCoordinate(_ coordinate: CLLocationCoordinate2D) {
         guard case .currentLocation = locationPreference.selection else { return }
         lastCoordinate = coordinate
+        locationRequestFailed = false
         // A Saved Plan on screen isn't .idle, but the first fix still has to start its refresh.
         let savedPlanAwaitsFix = isShowingSavedPlan && loadTask == nil
         guard case .idle = state else {
@@ -401,13 +420,17 @@ final class DayPlanViewModel {
         showCurrentLocation(at: coordinate)
     }
 
-    /// A fix near the one already shown keeps its name, so small moves don't look it up again.
+    /// A fix near the one already shown keeps its name, so small moves don't look it up again,
+    /// unless the name isn't known and no lookup for it is under way: then it's looked up again.
     private func showCurrentLocation(at coordinate: CLLocationCoordinate2D) {
-        if let location, location.isCurrentLocation, location.isNear(coordinate) { return }
+        if let location, location.isCurrentLocation, location.isNear(coordinate),
+           location.name != nil || location == lookupInFlight { return }
         let shown = PlanLocation(name: nil, coordinate: coordinate, isCurrentLocation: true)
         location = shown
+        lookupInFlight = shown
         Task {
             let name = await lookUpCityName(coordinate)
+            if lookupInFlight == shown { lookupInFlight = nil }
             // A later load's fix or another selection has replaced it meanwhile.
             guard location == shown else { return }
             location?.name = name
@@ -416,6 +439,7 @@ final class DayPlanViewModel {
 
     private func handleGPSError(_ message: String) {
         guard case .currentLocation = locationPreference.selection else { return }
+        locationRequestFailed = true
         fail(message)
     }
 
@@ -550,7 +574,7 @@ final class DayPlanViewModel {
     /// the widgets and the next launch follow that, never the Window Override.
     private func publishIfSettingsDefault(weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, provider: WeatherProvider, advice: Advice?) {
         guard span.window == planWindowPreference.window else { return }
-        publishSnapshot(PlanSnapshot(weather: weather, recommendation: advice?.outfit, generatedAt: now(), provider: provider, location: locationPreference.selection, hourly: hourly, span: span, adviceBasis: advice?.basis))
+        publishSnapshot(PlanSnapshot(weather: weather, recommendation: advice?.outfit, generatedAt: now(), provider: provider, location: locationPreference.selection, hourly: hourly, span: span, adviceBasis: advice?.basis, place: location.map { SavedPlace(name: $0.name, latitude: $0.latitude, longitude: $0.longitude) }))
     }
 
     /// Whether today's Saved Plan is on screen with its outfit. Stays true after a failed refresh,

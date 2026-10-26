@@ -133,7 +133,7 @@ struct ContentView: View {
                 if let message = viewModel.refreshFailureMessage {
                     RefreshFailureNotice(message: message)
                 }
-                DayPlanView(weather: weather, recommendation: recommendation, hourly: hourly, span: span, provider: provider, location: viewModel.location) {
+                DayPlanView(weather: weather, recommendation: recommendation, hourly: hourly, span: span, provider: provider, location: viewModel.location, isLocationUnavailable: viewModel.isLocationUnavailable) {
                     viewModel.retryRecommendation()
                 }
             }

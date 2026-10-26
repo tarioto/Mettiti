@@ -41,7 +41,7 @@ The main screen's sections, which the user orders and turns on or off in Setting
 _Avoid_: Today's plan (the Plan card's old name), panels, sections
 
 **Location card**:
-A map of where the plan is for, with an unlabelled pin, under the header "Location". For Current Location it follows the GPS fix the weather on screen was loaded for, not every new fix, and the city's name is looked up from it (a fix within a kilometre keeps the name); for a searched city it's that city. The city's name is the Plan card's main title. While there's no location yet, the card shows a desaturated, shimmering map of roughly where the device is, without a pin: about 50 km across around the device's last known GPS fix, else around the Saved Plan's city, else the country of the device's Region setting. When the location arrives, the card crossfades to the real map and pin.
+A map of where the plan is for, with an unlabelled pin, under the header "Location". For Current Location it follows the GPS fix the weather on screen was loaded for, not every new fix, and the city's name is looked up from it (a fix within a kilometre keeps the name); for a searched city it's that city. The city's name is the Plan card's main title. While there's no location yet, the card shows a desaturated, shimmering map of roughly where the device is, without a pin: about 50 km across around the device's last known GPS fix, else around the Saved Plan's city, else the country of the device's Region setting. When the location arrives, the card crossfades to the real map and pin. If getting the location failed (permission denied, or a GPS error), the card instead shows a centred "Location unavailable" message in place of the map. A name that couldn't be looked up is looked up again by the next load, even within a kilometre.
 _Avoid_: Map card, Current Location card
 
 **Skeleton**:
@@ -59,7 +59,7 @@ A **Plan Window** picked with the control on the main screen, e.g. "I'm only goi
 _Avoid_: Temporary window, quick window
 
 **Saved Plan**:
-The last day plan the app or the background refresh produced, shared with the widgets (`PlanSnapshot` in code). On launch, a Saved Plan from today for the same location and weather source is shown right away while a fresh one loads. Returning to the app on a later day, or once the plan is stale for the **Plan Window** (30 minutes after the last load for 1h, 1 hour for 3h, 2 hours for 6h, 3 hours for 12h and Rest of day), refetches the weather and remakes the outfit by the same rule. Apart from a new day, automatic refreshes never come closer together than 30 minutes; pull-to-refresh and the Refresh button always refetch.
+The last day plan the app or the background refresh produced, shared with the widgets (`PlanSnapshot` in code). On launch, a Saved Plan from today for the same location and weather source is shown right away while a fresh one loads; it also records where it was made (coordinate and city name, if known), so a Current Location one shows its map and city on the **Location card** right away. Returning to the app on a later day, or once the plan is stale for the **Plan Window** (30 minutes after the last load for 1h, 1 hour for 3h, 2 hours for 6h, 3 hours for 12h and Rest of day), refetches the weather and remakes the outfit by the same rule. Apart from a new day, automatic refreshes never come closer together than 30 minutes; pull-to-refresh and the Refresh button always refetch.
 _Avoid_: Cached plan, snapshot (outside code)
 
 **Meaningful Change**:

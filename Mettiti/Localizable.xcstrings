@@ -357,6 +357,16 @@
         }
       }
     },
+    "Location unavailable" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Posizione non disponibile"
+          }
+        }
+      }
+    },
     "Low" : {
 
     },
