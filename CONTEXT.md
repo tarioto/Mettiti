@@ -33,7 +33,7 @@ _Avoid_: Icon theme, icon setting
 ### Main screen
 
 **Wide layout**:
-The arrangement of the main screen when it's wide enough to show the cards side by side instead of in one column, such as on the iPhone Duo's open display, a large iPhone turned sideways, or an iPad. Only the width of the app's window decides, never the device: an iPad window made narrow by multitasking gets one column. The last card in the user's order takes the right column and the ones before it stack in order on the left; with only one card shown it sits alone in a centred column. Settings sits in the bottom-right corner instead of the header. Anywhere narrower, the cards stay in one column.
+The arrangement of the main screen when it's wide enough to show the cards side by side instead of in one column, such as on the iPhone Duo's open display, a large iPhone turned sideways, or an iPad. Only the width of the app's window decides, never the device: an iPad window made narrow by multitasking gets one column. The last card in the user's order takes the right column and the ones before it stack in order on the left; with only one card shown it sits alone in a centred column. On the widest windows, such as a large iPad in full screen, the two columns stop growing and stay centred. Settings sits in the bottom-right corner instead of the header. Anywhere narrower, the cards stay in one column.
 _Avoid_: Duo layout, tablet layout, landscape layout
 
 **Cards**:
@@ -41,8 +41,12 @@ The main screen's sections, which the user orders and turns on or off in Setting
 _Avoid_: Today's plan (the Plan card's old name), panels, sections
 
 **Location card**:
-A map of where the plan is for, with an unlabelled pin, under the header "Location". For Current Location it follows the GPS fix the weather on screen was loaded for, not every new fix, and the city's name is looked up from it (a fix within a kilometre keeps the name); for a searched city it's that city. The city's name is the Plan card's main title. Without a location the card keeps its size and shows a centred message instead of the map: "Finding your location…" while Current Location waits for its first fix and weather, "Location unavailable" once getting one failed (permission denied, or a GPS error). A name that couldn't be looked up is looked up again by the next load, even within a kilometre.
+A map of where the plan is for, with an unlabelled pin, under the header "Location". For Current Location it follows the GPS fix the weather on screen was loaded for, not every new fix, and the city's name is looked up from it (a fix within a kilometre keeps the name); for a searched city it's that city. The city's name is the Plan card's main title. While there's no location yet, the card shows a desaturated, shimmering map of roughly where the device is, without a pin: about 50 km across around the device's last known GPS fix, else around the Saved Plan's city, else the country of the device's Region setting. When the location arrives, the card crossfades to the real map and pin. If getting the location failed (permission denied, or a GPS error), the card instead shows a centred "Location unavailable" message in place of the map. A name that couldn't be looked up is looked up again by the next load, even within a kilometre.
 _Avoid_: Map card, Current Location card
+
+**Skeleton**:
+The main screen's only loading state: a card's shapes shimmering where its content will go, until all of that card's content is ready and fades in at once. Shown on the first load, while an outfit is made, and when switching to a **Plan Window** whose outfit has to be made. A refresh behind a plan already on screen never shows it; the plan stays until the new one replaces it.
+_Avoid_: Loading state, spinner, placeholder (for the whole state)
 
 ### Day plan
 
@@ -51,7 +55,7 @@ How far ahead from now the outfit advice covers: 1h, 3h, 6h, 12h or Rest of day,
 _Avoid_: Time range, horizon, span (outside code)
 
 **Window Override**:
-A **Plan Window** picked with the control on the main screen, e.g. "I'm only going out for an hour". It replaces the Settings default on the main screen until the next launch or the next day, and never changes the default. Switching keeps the weather on screen if it's still fresh for the new window (by the **Saved Plan** staleness rule) and refetches first otherwise; an outfit already made for a window comes back at once while that window's weather has had no **Meaningful Change** since it was made. Those outfits are dropped when a refetch remakes the outfit (a refetch that keeps it keeps them too) or the location or weather source changes. Plans for an overriding window are never saved as the **Saved Plan**, so widgets and background refresh keep following the Settings default.
+A **Plan Window** picked with the control on the main screen, e.g. "I'm only going out for an hour". It replaces the Settings default on the main screen until the next launch or the next day, and never changes the default. Switching keeps the weather on screen if it's still fresh for the new window (by the **Saved Plan** staleness rule) and refetches first otherwise. The previous window's outfit is never kept on screen: the Plan and Wear & bring cards show the **Skeleton** while the new one is made (the Weather card too when it refetches). An outfit already made for a window comes back at once, with no skeleton, while that window's weather has had no **Meaningful Change** since it was made. Those outfits are dropped when a refetch remakes the outfit (a refetch that keeps it keeps them too) or the location or weather source changes. Plans for an overriding window are never saved as the **Saved Plan**, so widgets and background refresh keep following the Settings default.
 _Avoid_: Temporary window, quick window
 
 **Saved Plan**:

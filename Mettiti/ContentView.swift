@@ -93,6 +93,7 @@ struct ContentView: View {
         } label: {
             Label("Settings", systemImage: "gearshape.fill")
         }
+        .keyboardShortcut(",")
         .tint(.primary)
     }
 
@@ -112,20 +113,25 @@ struct ContentView: View {
         }
     }
 
-    @ViewBuilder
+    /// The first-load skeleton crossfades into the weather as soon as it's ready.
     private var content: some View {
+        ZStack(alignment: .top) {
+            stateContent
+                .id(viewModel.state.crossfadeID)
+                .transition(.opacity)
+        }
+        .animation(DayPlanView.crossfade, value: viewModel.state.crossfadeID)
+    }
+
+    @ViewBuilder
+    private var stateContent: some View {
         switch viewModel.state {
         case .idle, .loadingWeather:
-            VStack(spacing: 12) {
-                ProgressCaption("Checking today's weather…")
-                SkeletonLoadingView()
-            }
+            SkeletonLoadingView()
         case .loaded(let weather, let hourly, let span, let provider, let recommendation):
             VStack(spacing: 12) {
                 if let message = viewModel.refreshFailureMessage {
                     RefreshFailureNotice(message: message)
-                } else if viewModel.isUpdatingSavedPlan {
-                    ProgressCaption("Updating…")
                 }
                 DayPlanView(weather: weather, recommendation: recommendation, hourly: hourly, span: span, provider: provider, location: viewModel.location, isLocationUnavailable: viewModel.isLocationUnavailable) {
                     viewModel.retryRecommendation()

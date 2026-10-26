@@ -8,8 +8,6 @@ protocol DayPlanFetching: Sendable {
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation
     /// Starts loading the on-device model so a recommendation requested soon after starts faster.
     func prewarmRecommendation()
-    /// Like `recommendation(for:hourly:span:)`, but reports the suggestion so far as the model writes it.
-    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation
 }
 
 struct DayPlanFetcher: DayPlanFetching {
@@ -65,9 +63,5 @@ struct DayPlanFetcher: DayPlanFetching {
 
     func prewarmRecommendation() {
         outfitAdvisor.prewarm()
-    }
-
-    func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, onPartial: @MainActor (OutfitRecommendation) -> Void) async throws -> OutfitRecommendation {
-        try await outfitAdvisor.recommendation(for: weather, hourly: hourly, span: span, onPartial: onPartial)
     }
 }

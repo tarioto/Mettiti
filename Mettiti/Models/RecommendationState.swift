@@ -3,8 +3,6 @@ import Foundation
 /// The outfit suggestion's progress for weather that has already loaded.
 enum RecommendationState {
     case loading
-    /// The suggestion so far while the model is still writing it; fields fill in as it streams.
-    case generating(OutfitRecommendation)
     case ready(OutfitRecommendation)
     case unavailable(UnavailableReason)
     case failed(String)
@@ -16,11 +14,21 @@ enum RecommendationState {
         case modelNotReady
     }
 
-    /// Whether the model is still working on the suggestion, before or while it streams in.
+    /// Whether the model is still working on the suggestion.
     var isInProgress: Bool {
         switch self {
-        case .loading, .generating: return true
+        case .loading: return true
         case .ready, .unavailable, .failed: return false
+        }
+    }
+
+    /// Changes whenever what a card shows for this state changes, so the card can crossfade:
+    /// skeleton, notice, or a particular outfit.
+    var crossfadeID: String {
+        switch self {
+        case .loading: return "loading"
+        case .ready(let outfit): return "ready:" + outfit.summary + outfit.items.map { "\($0.emoji)\($0.name)\($0.reason)" }.joined(separator: "|")
+        case .unavailable, .failed: return "notice"
         }
     }
 
@@ -40,7 +48,7 @@ enum RecommendationState {
             return String(localized: "Apple Intelligence is still getting ready. Try again soon.")
         case .failed(let message):
             return message
-        case .loading, .generating, .ready:
+        case .loading, .ready:
             return nil
         }
     }

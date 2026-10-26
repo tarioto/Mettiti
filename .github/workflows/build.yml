@@ -38,30 +38,32 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             | xcbeautify --renderer github-actions
 
-      # Tests need a concrete simulator, and which iPhones exist depends on the runner's Xcode,
-      # so pick an available one rather than naming a model: an iPhone on the newest iOS runtime
-      # that meets the deployment target (runners also carry older runtimes, listed in no set order).
+      # Tests need a concrete simulator, and which devices exist depends on the runner's Xcode,
+      # so pick available ones rather than naming models: an iPhone and an iPad on the newest iOS
+      # runtime that meets the deployment target (runners also carry older runtimes, listed in no set order).
       - name: Test
         run: |
           set -o pipefail
-          simulator=$(xcrun simctl list devices available --json | jq -r '
-            [.devices | to_entries[]
-              | select(.key | test("SimRuntime\\.iOS-[0-9]+(-[0-9]+)*$"))
-              | (.key | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber)) as $version
-              | select($version[0] >= 26)
-              | .value[] | select(.name | startswith("iPhone"))
-              | {udid, version: $version}]
-            | sort_by(.version) | last | .udid // empty')
-          if [[ -z "$simulator" ]]; then
-            echo "::error::No iPhone simulator on iOS 26 or later is available on this runner."
-            xcrun simctl list devices available
-            exit 1
-          fi
-          echo "Testing on simulator $simulator"
-          xcodebuild test \
-            -project Mettiti.xcodeproj \
-            -scheme Mettiti \
-            -configuration Debug \
-            -destination "id=$simulator" \
-            CODE_SIGNING_ALLOWED=NO \
-            | xcbeautify --renderer github-actions
+          for family in iPhone iPad; do
+            simulator=$(xcrun simctl list devices available --json | jq -r --arg family "$family" '
+              [.devices | to_entries[]
+                | select(.key | test("SimRuntime\\.iOS-[0-9]+(-[0-9]+)*$"))
+                | (.key | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber)) as $version
+                | select($version[0] >= 26)
+                | .value[] | select(.name | startswith($family))
+                | {udid, version: $version}]
+              | sort_by(.version) | last | .udid // empty')
+            if [[ -z "$simulator" ]]; then
+              echo "::error::No $family simulator on iOS 26 or later is available on this runner."
+              xcrun simctl list devices available
+              exit 1
+            fi
+            echo "Testing on $family simulator $simulator"
+            xcodebuild test \
+              -project Mettiti.xcodeproj \
+              -scheme Mettiti \
+              -configuration Debug \
+              -destination "id=$simulator" \
+              CODE_SIGNING_ALLOWED=NO \
+              | xcbeautify --renderer github-actions
+          done

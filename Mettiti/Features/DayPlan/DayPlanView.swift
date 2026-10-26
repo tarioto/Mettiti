@@ -25,6 +25,8 @@ struct DayPlanView: View {
             WeatherAttributionView(provider: provider, includesOpenMeteoData: hourly?.hasSpread == true)
                 .modifier(PlaceholderShimmer())
         }
+        // Wider than any iPhone, so this only holds the columns in on a large iPad.
+        .readableColumn(maxWidth: 1200)
     }
 
     private static let cardSpacing: CGFloat = 20
@@ -112,23 +114,22 @@ struct DayPlanView: View {
                 Text(city)
                     .font(.title2.bold())
             }
-            progressCaption(for: .plan)
-            switch recommendation {
-            case .ready(let outfit):
-                Text(outfit.summary)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            case .generating(let partial) where !partial.summary.isEmpty:
-                Text(partial.summary)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            case .loading, .generating:
-                Text(SkeletonLoadingView.recommendation.summary)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .redacted(reason: .placeholder)
-            case .unavailable, .failed:
-                recommendationNotice(for: .plan)
+            crossfading {
+                switch recommendation {
+                case .ready(let outfit):
+                    Text(outfit.summary)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                case .loading:
+                    Text(SkeletonLoadingView.recommendation.summary)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .redacted(reason: .placeholder)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Loading")
+                case .unavailable, .failed:
+                    recommendationNotice(for: .plan)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -139,17 +140,19 @@ struct DayPlanView: View {
     private var wearAndBringCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             CardTitle(type: .wearAndBring)
-            progressCaption(for: .wearAndBring)
 
-            switch recommendation {
-            case .ready(let outfit):
-                itemList(outfit.items)
-            case .generating(let partial):
-                itemList(partial.items, paddedWithPlaceholders: true)
-            case .loading:
-                itemList([], paddedWithPlaceholders: true)
-            case .unavailable, .failed:
-                recommendationNotice(for: .wearAndBring)
+            crossfading {
+                switch recommendation {
+                case .ready(let outfit):
+                    itemList(outfit.items)
+                case .loading:
+                    itemList(SkeletonLoadingView.recommendation.items)
+                        .redacted(reason: .placeholder)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Loading")
+                case .unavailable, .failed:
+                    recommendationNotice(for: .wearAndBring)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -157,28 +160,27 @@ struct DayPlanView: View {
         .cardBackground()
     }
 
-    /// With `paddedWithPlaceholders`, placeholder rows fill in up to the skeleton's count, so the
-    /// card doesn't change height as streamed items arrive.
-    private func itemList(_ items: [RecommendedItem], paddedWithPlaceholders: Bool = false) -> some View {
-        let placeholders = paddedWithPlaceholders ? Array(SkeletonLoadingView.recommendation.items.dropFirst(items.count)) : []
-        return VStack(spacing: 12) {
+    private func itemList(_ items: [RecommendedItem]) -> some View {
+        VStack(spacing: 12) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 ItemRow(item: item)
-            }
-            ForEach(Array(placeholders.enumerated()), id: \.offset) { _, item in
-                ItemRow(item: item)
-                    .redacted(reason: .placeholder)
             }
         }
     }
 
-    /// While the outfit is on its way, only the first visible suggestion card says so, so it isn't repeated.
-    @ViewBuilder
-    private func progressCaption(for card: CardType) -> some View {
-        if recommendation.isInProgress, card == firstSuggestionCard {
-            ProgressCaption("Putting together today's outfit…")
+    /// Lets a card's skeleton, outfit or notice crossfade into the next as the recommendation
+    /// changes, including a refresh swapping in a new outfit. Stacked in a ZStack so the old and
+    /// new content don't both take up height while they fade.
+    private func crossfading<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        ZStack(alignment: .top) {
+            content()
+                .id(recommendation.crossfadeID)
+                .transition(.opacity)
         }
+        .animation(Self.crossfade, value: recommendation.crossfadeID)
     }
+
+    static let crossfade = Animation.easeInOut(duration: 0.3)
 
     private var firstSuggestionCard: CardType? {
         cardPreference.visibleOrderedTypes.first(where: \.showsSuggestion)
@@ -250,7 +252,7 @@ private struct RecommendationNoticeView: View {
                 Label("Try Again", systemImage: "arrow.clockwise")
             }
             .buttonStyle(.bordered)
-        case .unavailable(.deviceNotEligible), .loading, .generating, .ready:
+        case .unavailable(.deviceNotEligible), .loading, .ready:
             EmptyView()
         }
     }
@@ -274,10 +276,6 @@ private struct RecommendationNoticeView: View {
 
 #Preview("Suggestions loading") {
     DayPlanPreview(recommendation: .loading)
-}
-
-#Preview("Suggestions streaming") {
-    DayPlanPreview(recommendation: .generating(OutfitRecommendation(summary: "Expect mild temperatures with a chance", items: [OutfitRecommendation.placeholder.items[0]])))
 }
 
 private struct DayPlanPreview: View {
@@ -311,11 +309,13 @@ private struct CardTitle: View {
     }
 }
 
-/// The city the plan is for, on a map with a pin.
+/// The city the plan is for, on a map with a pin; until there is one, a desaturated map of
+/// roughly where the device is, or a message once getting the location failed.
 private struct LocationCard: View {
     let location: PlanLocation?
     let isUnavailable: Bool
     @ScaledMetric(relativeTo: .body) private var mapHeight: CGFloat = 160
+    @State private var placeholderRegion: MKCoordinateRegion?
 
     /// The map runs to the card's edges, so only the title is padded and the card clips the map
     /// to its corners.
@@ -324,8 +324,8 @@ private struct LocationCard: View {
             CardTitle(type: .location)
                 .padding()
 
-            if location == nil {
-                noLocationMessage
+            if location == nil && isUnavailable {
+                unavailableMessage
                     .frame(maxWidth: .infinity)
                     .frame(height: mapHeight)
                     .background(.quaternary)
@@ -341,12 +341,12 @@ private struct LocationCard: View {
         .clipShape(.rect(cornerRadius: 16))
     }
 
-    private var noLocationMessage: some View {
+    private var unavailableMessage: some View {
         VStack(spacing: 8) {
             Image(systemName: "location.slash")
                 .font(.title2)
                 .accessibilityHidden(true)
-            Text(isUnavailable ? "Location unavailable" : "Finding your location…")
+            Text("Location unavailable")
                 .font(.subheadline)
         }
         .foregroundStyle(.secondary)
@@ -354,13 +354,54 @@ private struct LocationCard: View {
         .padding()
     }
 
-    @ViewBuilder
+    /// The placeholder crossfades into the real map and pin when the location arrives.
     private var map: some View {
-        if let location {
-            let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 12_000, longitudinalMeters: 12_000)
-            Map(position: .constant(.region(region)), interactionModes: []) {
-                Marker("",systemImage: "mappin", coordinate: location.coordinate)
+        ZStack {
+            if let location {
+                let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 12_000, longitudinalMeters: 12_000)
+                Map(position: .constant(.region(region)), interactionModes: []) {
+                    Marker("",systemImage: "mappin", coordinate: location.coordinate)
+                }
+                .transition(.opacity)
+            } else {
+                placeholderMap
+                    .transition(.opacity)
             }
+        }
+        .animation(DayPlanView.crossfade, value: location != nil)
+    }
+
+    /// Roughly where the device is, desaturated and without a pin, shimmering like the rest of the
+    /// Skeleton.
+    private var placeholderMap: some View {
+        Group {
+            if let placeholderRegion {
+                Map(position: .constant(.region(placeholderRegion)), interactionModes: [])
+                    .saturation(0)
+            } else {
+                Rectangle()
+                    .fill(.quaternary)
+            }
+        }
+        .animation(DayPlanView.crossfade, value: placeholderRegion != nil)
+        .modifier(ShimmeringPlaceholder())
+        .task {
+            placeholderRegion = await PlaceholderMapRegion.resolveForDevice()
+        }
+    }
+}
+
+/// Makes a view shimmer as a placeholder, unless an ancestor's redaction already does.
+private struct ShimmeringPlaceholder: ViewModifier {
+    @Environment(\.redactionReasons) private var redactionReasons
+
+    func body(content: Content) -> some View {
+        if redactionReasons.contains(.placeholder) {
+            content
+        } else {
+            content
+                .redacted(reason: .placeholder)
+                .modifier(PlaceholderShimmer())
         }
     }
 }
