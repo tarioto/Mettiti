@@ -39,19 +39,14 @@ struct CombinedWidgetEntryView: View {
                             .lineLimit(summaryLineLimit)
                     }
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(recommendation.displayedItems(limit: itemLimit)) { row in
-                            HStack(spacing: 8) {
-                                Text(row.item.emoji)
-                                Text(row.item.name)
-                                    .font(.caption)
-                                Spacer()
-                            }
-                        }
+                    if isExtraLargePortrait {
+                        // A very long plan is cut off at the bottom so the header and attribution stay visible.
+                        itemList(for: recommendation)
+                            .frame(maxHeight: .infinity, alignment: .top)
+                            .clipped()
+                    } else {
+                        itemList(for: recommendation)
                     }
-                    // A very long plan is cut off at the bottom so the header and attribution stay visible.
-                    .frame(maxHeight: isExtraLargePortrait ? .infinity : nil, alignment: .top)
-                    .clipped()
                 } else {
                     NoSuggestionsNote()
                 }
@@ -65,6 +60,19 @@ struct CombinedWidgetEntryView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .containerBackground(.fill.tertiary, for: .widget)
+        }
+    }
+
+    private func itemList(for recommendation: OutfitRecommendation) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(recommendation.displayedItems(limit: itemLimit)) { row in
+                HStack(spacing: 8) {
+                    Text(row.item.emoji)
+                    Text(row.item.name)
+                        .font(.caption)
+                    Spacer()
+                }
+            }
         }
     }
 
