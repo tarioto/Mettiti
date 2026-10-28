@@ -92,6 +92,27 @@ struct PreferenceStoreTests {
         #expect(decoded == .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7))
     }
 
+    @Test func fillingAMissingTimeZoneOnlyChangesAZonelessCity() {
+        let zoneless = LocationSelection.custom(name: "Rome", latitude: 41.9, longitude: 12.5)
+        let device = gregorianCalendar(in: pacific)
+
+        #expect(zoneless.fillingMissingTimeZone(with: rome).calendar(fallback: device).timeZone == rome)
+        #expect(LocationSelection.custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo).fillingMissingTimeZone(with: rome).calendar(fallback: device).timeZone == tokyo)
+        #expect(LocationSelection.currentLocation.fillingMissingTimeZone(with: rome) == .currentLocation)
+        #expect(LocationSelection.currentLocation.fillingMissingTimeZone(with: rome).calendar(fallback: device).timeZone == pacific)
+    }
+
+    @Test func zonelessCityUsesASavedPlanForTheSameLocationBeforeTheDevice() {
+        let zoneless = LocationSelection.custom(name: "Rome", latitude: 41.9, longitude: 12.5)
+        let device = gregorianCalendar(in: pacific)
+        let romePlan = PlanSnapshot.generated(at: date("2026-10-08T14:00:00-07:00"), window: .restOfDay, in: rome, location: zoneless)
+        let tokyoPlan = PlanSnapshot.generated(at: date("2026-10-08T14:00:00-07:00"), window: .restOfDay, in: tokyo, location: .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7))
+
+        #expect(zoneless.calendar(fallback: device, savedPlan: romePlan).timeZone == rome)
+        #expect(zoneless.calendar(fallback: device, savedPlan: tokyoPlan).timeZone == pacific)
+        #expect(zoneless.calendar(fallback: device, savedPlan: nil).timeZone == pacific)
+    }
+
     @Test func selectionIsSharedWithTheWidgetsWhenItChangesAndAtLaunch() {
         let defaults = isolatedDefaults()
         let shared = isolatedDefaults()

@@ -2116,6 +2116,109 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.span?.window == .restOfDay)
     }
 
+    // MARK: - Backfilling a city's missing time zone
+
+    @Test func loadingAZonelessCityStoresAndSharesTheForecastsZoneAndJudgesTimeThere() async throws {
+        let clock = FakeClock(date("2026-10-19T14:30:00-07:00")) // 23:30 in Rome
+        let fetcher = FakeDayPlanFetcher(hourly: HourlyForecast(timeZone: rome, points: []))
+        let shared = isolatedDefaults()
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults(), sharedDefaults: shared, reloadWidgets: {})
+        locationPreference.selection = romeCityWithoutZone
+        let store = FakeSnapshotStore()
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { store.saved },
+            publishSnapshot: { store.publish($0) },
+            now: { clock.now },
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        #expect(locationPreference.selection.calendar(fallback: gregorianCalendar(in: pacific)).timeZone == rome)
+        #expect(SharedStore.loadLocationSelection(from: shared)?.calendar(fallback: gregorianCalendar(in: pacific)).timeZone == rome)
+        #expect(locationPreference.selection == romeCityWithoutZone)
+
+        // Past midnight in Rome, still the same day on the device.
+        clock.now = date("2026-10-19T15:05:00-07:00")
+        let requests = await fetcher.requestedCoordinates.count
+        viewModel.refreshIfStale()
+        try await waitUntil { await fetcher.requestedCoordinates.count > requests }
+    }
+
+    @Test func aZonelessCityUsesTheZoneOfItsSavedPlanBeforeAnyLoad() async throws {
+        // Made at 23:30 in Rome; at 00:05 there it's a new day, though still the same day on the device.
+        let clock = FakeClock(date("2026-10-19T15:05:00-07:00"))
+        let saved = PlanSnapshot.generated(at: date("2026-10-19T14:30:00-07:00"), window: .restOfDay, in: rome, location: romeCityWithoutZone)
+        let viewModel = makeCityViewModel(romeCityWithoutZone, fetcher: GatedDayPlanFetcher(), saved: saved, clock: clock)
+
+        viewModel.start()
+
+        #expect(viewModel.state.readySummary == nil)
+    }
+
+    @Test func aZonelessCityWhoseSavedPlanRecordsNoZoneUsesTheDevicesZone() async throws {
+        let clock = FakeClock(date("2026-10-19T15:05:00-07:00"))
+        let saved = PlanSnapshot.saved(high: 99, summary: "Saved outfit", location: romeCityWithoutZone, generatedAt: date("2026-10-19T14:30:00-07:00"))
+        let viewModel = makeCityViewModel(romeCityWithoutZone, fetcher: GatedDayPlanFetcher(), saved: saved, clock: clock)
+
+        viewModel.start()
+
+        #expect(viewModel.state.readySummary == "Saved outfit")
+    }
+
+    @Test func aCityThatHasAZoneKeepsItWhenTheForecastReportsAnother() async throws {
+        let fetcher = FakeDayPlanFetcher(hourly: HourlyForecast(timeZone: rome, points: []))
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults(), sharedDefaults: isolatedDefaults(), reloadWidgets: {})
+        locationPreference.selection = tokyoCity
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { nil },
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
+        )
+
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        #expect(locationPreference.selection.calendar(fallback: gregorianCalendar(in: pacific)).timeZone == tokyo)
+    }
+
+    @Test func aLoadForACityTheUserHasLeftDoesNotWriteItsZoneOntoTheNewSelection() async throws {
+        let fetcher = GatedDayPlanFetcher(hourly: HourlyForecast(timeZone: rome, points: []))
+        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults(), sharedDefaults: isolatedDefaults(), reloadWidgets: {})
+        locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
+        let viewModel = DayPlanViewModel(
+            locationManager: FakeLocationProvider(),
+            locationPreference: locationPreference,
+            providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            fetcher: fetcher,
+            loadSnapshot: { nil },
+            publishSnapshot: { _ in }
+        )
+        let loadA = Task { await viewModel.refresh() }
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+
+        select(.custom(name: "City B", latitude: 20, longitude: 20), in: locationPreference, for: viewModel)
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 20) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
+        await loadA.value
+
+        let zone = locationPreference.selection.calendar(fallback: gregorianCalendar(in: pacific)).timeZone
+        #expect(zone == pacific)
+        await fetcher.complete(latitude: 20, with: .success(.forecast(high: 20)))
+    }
+
     @Test func aSavedPlanFromBeforeTokyosMidnightIsNotShownAfterIt() async throws {
         // 07:30 PDT is 23:30 in Tokyo; at 08:30 PDT it's the next day in Tokyo, the same day on the device.
         let clock = FakeClock(date("2026-10-19T08:30:00-07:00"))
@@ -2495,6 +2598,25 @@ private func makePlanWindowViewModel(fetcher: DayPlanFetching, planWindowPrefere
     )
 }
 
+private let romeCityWithoutZone = LocationSelection.custom(name: "Rome", latitude: 41.9, longitude: 12.5)
+
+@MainActor
+private func makeCityViewModel(_ city: LocationSelection, fetcher: DayPlanFetching, saved: PlanSnapshot?, clock: FakeClock) -> DayPlanViewModel {
+    let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults(), sharedDefaults: isolatedDefaults(), reloadWidgets: {})
+    locationPreference.selection = city
+    return DayPlanViewModel(
+        locationManager: FakeLocationProvider(),
+        locationPreference: locationPreference,
+        providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
+        planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+        fetcher: fetcher,
+        loadSnapshot: { saved },
+        publishSnapshot: { _ in },
+        now: { clock.now },
+        calendar: gregorianCalendar(in: pacific)
+    )
+}
+
 private let tokyoCity = LocationSelection.custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: TimeZone(identifier: "Asia/Tokyo")!)
 
 /// A Tokyo view model on a Pacific device calendar.
@@ -2775,15 +2897,18 @@ private actor FakeDayPlanFetcher: WholeRecommendationFetching {
     private var weatherResult: Result<DailyWeather, Error>
     private var recommendationResult: Result<OutfitRecommendation, Error>
     private let availability: RecommendationAvailability
+    private let hourly: HourlyForecast?
 
     init(
         weather: Result<DailyWeather, Error> = .success(.placeholder),
         recommendation: Result<OutfitRecommendation, Error> = .success(.placeholder),
-        availability: RecommendationAvailability = .available
+        availability: RecommendationAvailability = .available,
+        hourly: HourlyForecast? = nil
     ) {
         weatherResult = weather
         recommendationResult = recommendation
         self.availability = availability
+        self.hourly = hourly
     }
 
     func setRecommendation(_ result: Result<OutfitRecommendation, Error>) {
@@ -2800,7 +2925,7 @@ private actor FakeDayPlanFetcher: WholeRecommendationFetching {
 
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?) {
         requestedCoordinates.append(coordinate)
-        return (try weatherResult.get(), nil)
+        return (try weatherResult.get(), hourly)
     }
 
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation {
@@ -2816,9 +2941,11 @@ private actor GatedDayPlanFetcher: DayPlanFetching {
     private let availability: RecommendationAvailability
     private let recommendationResult: Result<OutfitRecommendation, Error>
     private let prewarms = Mutex(0)
+    private let hourly: HourlyForecast?
 
-    init(availability: RecommendationAvailability = .available, recommendation: Result<OutfitRecommendation, Error> = .success(.placeholder)) {
+    init(availability: RecommendationAvailability = .available, hourly: HourlyForecast? = nil, recommendation: Result<OutfitRecommendation, Error> = .success(.placeholder)) {
         self.availability = availability
+        self.hourly = hourly
         recommendationResult = recommendation
     }
 
@@ -2840,7 +2967,7 @@ private actor GatedDayPlanFetcher: DayPlanFetching {
         let weather = try await withCheckedThrowingContinuation { continuation in
             pending[coordinate.latitude] = continuation
         }
-        return (weather, nil)
+        return (weather, hourly)
     }
 
     func recommendationAvailability() async -> RecommendationAvailability {

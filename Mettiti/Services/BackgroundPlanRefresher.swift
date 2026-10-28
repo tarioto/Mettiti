@@ -37,6 +37,8 @@ struct BackgroundPlanRefresher {
     let loadSnapshot: () -> PlanSnapshot?
     let publish: (PlanSnapshot) -> Void
     let selection: () -> LocationSelection
+    /// Stores a selection that gained its time zone from a forecast (see `fillingMissingTimeZone`).
+    let saveSelection: (LocationSelection) -> Void
     let lastKnownGPSCoordinate: () -> CLLocationCoordinate2D?
     let provider: () -> WeatherProvider
     /// The Settings default Plan Window; background refresh never follows the main screen's override.
@@ -54,12 +56,12 @@ struct BackgroundPlanRefresher {
         let availability = await fetcher.recommendationAvailability()
         let savedSnapshot = loadSnapshot()
         let window = planWindow()
-        let locationCalendar = selection().calendar(fallback: calendar)
+        var locationCalendar = selection().calendar(fallback: calendar, savedPlan: savedSnapshot)
         guard !hasCurrentSnapshot(savedSnapshot, window: window, now: now(), calendar: locationCalendar, availability: availability) else { return .alreadyCurrent }
         // iOS can run a request late; `nextRequestDate` then asks for the morning.
         guard !Self.isQuietHour(now(), in: locationCalendar) else { return .skippedQuietHours }
 
-        let selection = selection()
+        var selection = selection()
         let coordinate: CLLocationCoordinate2D
         switch selection {
         case .custom(_, let latitude, let longitude, _):
@@ -71,6 +73,12 @@ struct BackgroundPlanRefresher {
 
         let provider = provider()
         guard let (weather, hourly) = try? await fetcher.fetchWeather(for: coordinate, from: provider) else { return .failed }
+        // A city saved without a time zone gains the forecast's, unless the user picked another city meanwhile.
+        if let zone = hourly?.timeZone, case .custom(_, _, _, nil) = selection, self.selection() == selection {
+            selection = selection.fillingMissingTimeZone(with: zone)
+            saveSelection(selection)
+        }
+        locationCalendar = selection.calendar(fallback: calendar, savedPlan: savedSnapshot)
         let span = PlanSpan(window: window, startingAt: now(), timeZone: hourly?.timeZone ?? locationCalendar.timeZone)
         let freshSummary = WindowSummary(weather: weather, hourly: hourly, span: span)
         let recommendation: OutfitRecommendation?
@@ -136,7 +144,7 @@ struct BackgroundPlanRefresher {
         let now = now()
         let window = planWindow()
         let snapshot = loadSnapshot()
-        let locationCalendar = selection().calendar(fallback: calendar)
+        let locationCalendar = selection().calendar(fallback: calendar, savedPlan: loadSnapshot())
         let floor = now.addingTimeInterval(PlanWindow.minimumRefreshInterval)
         guard let snapshot, hasCurrentSnapshot(snapshot, window: window, now: now, calendar: locationCalendar, availability: availability) else {
             if Self.isQuietHour(now, in: locationCalendar) {
