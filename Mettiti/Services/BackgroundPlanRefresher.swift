@@ -74,7 +74,9 @@ struct BackgroundPlanRefresher {
         let provider = provider()
         guard let (weather, hourly) = try? await fetcher.fetchWeather(for: coordinate, from: provider) else { return .failed }
         // A city saved without a time zone gains the forecast's, unless the user picked another city meanwhile.
-        if let zone = hourly?.timeZone, case .custom(_, _, _, nil) = selection, self.selection() == selection {
+        // Read again: the user may have re-picked this city, with a zone, while we were fetching.
+        let current = self.selection()
+        if let zone = hourly?.timeZone, case .custom(_, _, _, nil) = current, current == selection {
             selection = selection.fillingMissingTimeZone(with: zone)
             saveSelection(selection)
         }
@@ -144,7 +146,7 @@ struct BackgroundPlanRefresher {
         let now = now()
         let window = planWindow()
         let snapshot = loadSnapshot()
-        let locationCalendar = selection().calendar(fallback: calendar, savedPlan: loadSnapshot())
+        let locationCalendar = selection().calendar(fallback: calendar, savedPlan: snapshot)
         let floor = now.addingTimeInterval(PlanWindow.minimumRefreshInterval)
         guard let snapshot, hasCurrentSnapshot(snapshot, window: window, now: now, calendar: locationCalendar, availability: availability) else {
             if Self.isQuietHour(now, in: locationCalendar) {
