@@ -118,7 +118,7 @@ struct OutfitAdvisor: Sendable {
 
     /// Covers `span`, hour by hour, or the whole day when there's no hourly forecast for it.
     ///
-    /// `locale` only decides what `.system` means. Temperatures are always written in a fixed form with an
+    /// `locale` only decides what `.system` means, and the wind unit follows the resulting temperature unit. Temperatures are always written in a fixed form with an
     /// explicit unit and how they feel ("72°F (warm)"), and times in English ("4 PM"), because the model
     /// reads them, not the user. Conditions are in the user's language, like the weather provider's own
     /// descriptions. Times are in the span's time zone.

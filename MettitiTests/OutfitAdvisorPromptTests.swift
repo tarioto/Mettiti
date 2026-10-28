@@ -306,7 +306,7 @@ struct OutfitAdvisorPromptTests {
         #expect(OutfitAdvisor.sessionInstructions(language: "Italian").contains("Respond in Italian"))
     }
 
-    @Test func windSpeedIsInKilometersPerHourWhereTheLocaleDoesntUseMiles() {
+    @Test func systemUnitWindSpeedIsInKilometersPerHourInAMetricLocale() {
         let prompt = OutfitAdvisor.prompt(for: weather, hourly: hourly, span: restOfDay(from: afternoon), unit: .system, locale: Locale(identifier: "it_IT"))
 
         // 6 mph = 9.7 km/h; 11 mph = 17.7 km/h
