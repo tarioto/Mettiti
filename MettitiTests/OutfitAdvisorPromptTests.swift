@@ -178,7 +178,7 @@ struct OutfitAdvisorPromptTests {
     }
 
     @Test func italianRecommendationForAWarmEveningDropsWarmLayersByNameButKeepsRainGear() {
-        let names = ["Giacca leggera", "Felpa", "Cappotto", "Maglione", "Giacca impermeabile", "Impermeabile", "Ombrello", "K-way", "Mantella", "Maglia termica", "Maniche lunghe", "Piumini", "Occhiali da sole", "Pilentro"]
+        let names = ["Giacca leggera", "Felpa", "Cappotto", "Maglione", "Giacca impermeabile", "Impermeabile", "Ombrello", "K-way", "Mantella", "Maglia termica", "Maglie termiche", "Maniche lunghe", "Long-sleeved shirt", "Piumini", "Occhiali da sole", "Pilentro"]
         let suggested = OutfitRecommendation(summary: "", items: names.map { RecommendedItem(emoji: "🧥", name: $0, reason: "") })
 
         let checked = OutfitAdvisor.request(for: weather, hourly: bangkokEvening, span: restOfDay(from: evening), unit: .fahrenheit).droppingWarmLayersIfWarmThroughout(suggested)
