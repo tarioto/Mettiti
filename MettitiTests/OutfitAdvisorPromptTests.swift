@@ -177,6 +177,38 @@ struct OutfitAdvisorPromptTests {
         #expect(checked.summary == "Stormy and warm.")
     }
 
+    @Test func italianRecommendationForAWarmEveningDropsWarmLayersByNameButKeepsRainGear() {
+        let names = ["Giacca leggera", "Felpa", "Cappotto", "Maglione", "Giacca impermeabile", "Impermeabile", "Ombrello", "K-way", "Mantella", "Maglia termica", "Maniche lunghe", "Piumini", "Occhiali da sole", "Pilentro"]
+        let suggested = OutfitRecommendation(summary: "", items: names.map { RecommendedItem(emoji: "🧥", name: $0, reason: "") })
+
+        let checked = OutfitAdvisor.request(for: weather, hourly: bangkokEvening, span: restOfDay(from: evening), unit: .fahrenheit).droppingWarmLayersIfWarmThroughout(suggested)
+
+        #expect(checked.items.map(\.name) == ["Giacca impermeabile", "Impermeabile", "Ombrello", "K-way", "Mantella", "Occhiali da sole", "Pilentro"])
+    }
+
+    @Test func modelKindDecidesWhateverTheNameSaysButRainGearWins() {
+        let suggested = OutfitRecommendation(summary: "", items: [
+            RecommendedItem(emoji: "🧥", name: "Zorp", reason: "", kind: .warmLayer),
+            RecommendedItem(emoji: "☔", name: "Zorp", reason: "", kind: .rainGear),
+            RecommendedItem(emoji: "🧥", name: "Light jacket", reason: "", kind: .rainGear),
+            RecommendedItem(emoji: "🧥", name: "Raincoat", reason: "", kind: .warmLayer),
+            RecommendedItem(emoji: "🧥", name: "Light jacket", reason: "", kind: .other),
+        ])
+
+        let checked = OutfitAdvisor.request(for: weather, hourly: bangkokEvening, span: restOfDay(from: evening), unit: .fahrenheit).droppingWarmLayersIfWarmThroughout(suggested)
+
+        #expect(checked.items.map(\.emoji) == ["☔", "🧥", "🧥"])
+        #expect(checked.items.map(\.kind) == [.rainGear, .rainGear, .warmLayer])
+    }
+
+    @Test func italianWarmLayersStayWhenNotWarmThroughout() {
+        let suggested = OutfitRecommendation(summary: "", items: [RecommendedItem(emoji: "🧥", name: "Giacca leggera", reason: "")])
+
+        let checked = OutfitAdvisor.request(for: weather, hourly: hourly, span: restOfDay(from: afternoon), unit: .fahrenheit).droppingWarmLayersIfWarmThroughout(suggested)
+
+        #expect(checked.items.map(\.name) == ["Giacca leggera"])
+    }
+
     @Test func recommendationForACoolEveningKeepsItsJacket() {
         let suggested = OutfitRecommendation(summary: "", items: [
             RecommendedItem(emoji: "🧥", name: "Light jacket", reason: "Cooler after sunset."),
