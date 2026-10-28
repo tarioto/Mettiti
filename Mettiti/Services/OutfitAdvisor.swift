@@ -128,10 +128,9 @@ struct OutfitAdvisor: Sendable {
             "\(unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)) (\(TemperatureFeel(fahrenheit: fahrenheit, in: unit).rawValue))"
         }
         let warmThroughout = isWarmThroughout(weather, hourly: hourly, span: span, unit: unit)
-        // The weather is stored in mph; the model gets km/h where the locale doesn't use miles.
+        // The weather is stored in mph; the wind unit follows the temperature unit: °F gives mph, °C km/h.
         func wind(_ mph: Double) -> String {
-            let usesMiles = locale.measurementSystem == .us || locale.measurementSystem == .uk
-            return usesMiles ? "\(Int(mph.rounded())) mph" : "\(Int((mph * 1.609344).rounded())) km/h"
+            unit == .fahrenheit ? "\(Int(mph.rounded())) mph" : "\(Int((mph * 1.609344).rounded())) km/h"
         }
         let now = span.interval.start
         let timeZone = span.timeZone
