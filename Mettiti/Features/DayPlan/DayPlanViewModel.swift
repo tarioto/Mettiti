@@ -281,14 +281,14 @@ final class DayPlanViewModel {
             location = PlanLocation(name: place.name, coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude), isCurrentLocation: true)
         }
         let recommendation: RecommendationState = snapshot.recommendation.map { .ready($0) } ?? .loading
-        let span = snapshot.span ?? PlanSpan(window: .restOfDay, startingAt: snapshot.generatedAt, timeZone: snapshot.hourly?.timeZone ?? deviceCalendar.timeZone)
+        let span = snapshot.span ?? PlanSpan(window: .restOfDay, startingAt: snapshot.generatedAt, timeZone: snapshot.hourly?.timeZone ?? calendar.timeZone)
         state = .loaded(weather: snapshot.weather, hourly: snapshot.hourly, span: span, provider: providerPreference.provider, recommendation: recommendation)
     }
 
     /// The active Plan Window's span from now (the Window Override's, if any), in the forecast location's time zone (the
-    /// device's without an hourly forecast).
+    /// location's calendar without an hourly forecast).
     private func currentSpan(for hourly: HourlyForecast?) -> PlanSpan {
-        PlanSpan(window: activePlanWindow, startingAt: now(), timeZone: hourly?.timeZone ?? deviceCalendar.timeZone)
+        PlanSpan(window: activePlanWindow, startingAt: now(), timeZone: hourly?.timeZone ?? calendar.timeZone)
     }
 
     /// Refreshes a plan left in memory once it's stale for the current Plan Window: from an
