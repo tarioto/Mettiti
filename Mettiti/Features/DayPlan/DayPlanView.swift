@@ -124,7 +124,7 @@ struct DayPlanView: View {
                     Text(SkeletonLoadingView.recommendation.summary)
                         .font(.body)
                         .foregroundStyle(.secondary)
-                        .redacted(reason: .placeholder)
+                        .shimmeringPlaceholder()
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel("Loading")
                 case .unavailable, .failed:
@@ -147,7 +147,7 @@ struct DayPlanView: View {
                     itemList(outfit.items)
                 case .loading:
                     itemList(SkeletonLoadingView.recommendation.items)
-                        .redacted(reason: .placeholder)
+                        .shimmeringPlaceholder()
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel("Loading")
                 case .unavailable, .failed:
@@ -384,24 +384,9 @@ private struct LocationCard: View {
             }
         }
         .animation(DayPlanView.crossfade, value: placeholderRegion != nil)
-        .modifier(ShimmeringPlaceholder())
+        .shimmeringPlaceholder()
         .task {
             placeholderRegion = await PlaceholderMapRegion.resolveForDevice()
-        }
-    }
-}
-
-/// Makes a view shimmer as a placeholder, unless an ancestor's redaction already does.
-private struct ShimmeringPlaceholder: ViewModifier {
-    @Environment(\.redactionReasons) private var redactionReasons
-
-    func body(content: Content) -> some View {
-        if redactionReasons.contains(.placeholder) {
-            content
-        } else {
-            content
-                .redacted(reason: .placeholder)
-                .modifier(PlaceholderShimmer())
         }
     }
 }
