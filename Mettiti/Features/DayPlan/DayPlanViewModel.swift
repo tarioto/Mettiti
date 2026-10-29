@@ -72,8 +72,9 @@ final class DayPlanViewModel {
     /// Last GPS fix; only Current Location refreshes reuse it, so custom-city loads never set it.
     /// Cleared on every selection change so returning to Current Location waits for a fresh fix.
     @ObservationIgnored private var lastCoordinate: CLLocationCoordinate2D?
-    /// True while today's Saved Plan is on screen in place of a fresh one (#22): while the fresh
-    /// one loads in the background, and after that failed (with `refreshFailureMessage`) so a later
+    /// True while a plan on screen stays in place of a fresh one: today's Saved Plan (#22), or
+    /// the loaded plan a pull-to-refresh was made behind (#160). It stays while the fresh one loads
+    /// in the background, and after that failed (with `refreshFailureMessage`) so a later
     /// refresh or GPS fix still replaces it in place. Cleared once a fresh plan is on screen or
     /// another selection or provider replaces it.
     @ObservationIgnored private var isShowingSavedPlan = false
@@ -156,7 +157,9 @@ final class DayPlanViewModel {
         outfitsByWindow = [:]
         // Cancelled now, not when the refresh starts, so the old provider's load can't write in between.
         loadTask?.cancel()
-        Task { await refresh() }
+        // The plan on screen is for the old provider, so unlike a pull-to-refresh this one shows the skeleton.
+        keepsUnchangedAdvice = false
+        Task { await reload() }
     }
 
     /// Switches the plan to the Plan Window preference's new window, unless it's the one already
@@ -336,9 +339,11 @@ final class DayPlanViewModel {
         loadTask = Task { await loadRecommendation(weather: weather, hourly: hourly, span: span, provider: provider) }
     }
 
-    /// Refetches the weather and remakes the outfit, e.g. on pull-to-refresh.
+    /// Refetches the weather and remakes the outfit, e.g. on pull-to-refresh. A plan already on
+    /// screen stays until the new one is complete, and stays with a notice if the refresh fails.
     func refresh() async {
         keepsUnchangedAdvice = false
+        if case .loaded = state { isShowingSavedPlan = true }
         await reload()
     }
 
@@ -577,14 +582,14 @@ final class DayPlanViewModel {
         publishSnapshot(PlanSnapshot(weather: weather, recommendation: advice?.outfit, generatedAt: now(), provider: provider, location: locationPreference.selection, hourly: hourly, span: span, adviceBasis: advice?.basis, place: location.map { SavedPlace(name: $0.name, latitude: $0.latitude, longitude: $0.longitude) }))
     }
 
-    /// Whether today's Saved Plan is on screen with its outfit. Stays true after a failed refresh,
-    /// so a fresh plan without an outfit still doesn't replace it.
+    /// Whether a kept plan (today's Saved Plan or a pull-to-refreshed one) is on screen with its
+    /// outfit. Stays true after a failed refresh, so a fresh plan without an outfit still doesn't replace it.
     private var isShowingSavedPlanOutfit: Bool {
         guard isShowingSavedPlan, case .loaded(_, _, _, _, .ready) = state else { return false }
         return true
     }
 
-    /// Whether an outfit on screen stays there until the fresh one is complete: today's Saved Plan's.
+    /// Whether an outfit on screen stays there until the fresh one is complete: a kept plan's (see `isShowingSavedPlan`).
     private var isHoldingOutfit: Bool {
         guard isShowingSavedPlan, case .loaded(_, _, _, _, .ready) = state else { return false }
         return true

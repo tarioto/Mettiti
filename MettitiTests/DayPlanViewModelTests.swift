@@ -1178,6 +1178,77 @@ struct DayPlanViewModelTests {
         #expect(snapshots.map(\.provider) == [.openMeteo])
     }
 
+    // MARK: Pull-to-refresh behind a loaded plan (#160)
+
+    /// A custom-city plan with no Saved Plan, loaded with "First outfit" and ready to refresh.
+    private func loadedPlanReadyToRefresh(_ fetcher: HeldRecommendationFetcher) async throws -> DayPlanViewModel {
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher)
+        viewModel.start()
+        try await waitUntil { fetcher.isGenerating }
+        fetcher.finish(with: .success(OutfitRecommendation(summary: "First outfit", items: [])))
+        try await waitUntil { viewModel.state.readySummary == "First outfit" }
+        return viewModel
+    }
+
+    @Test func pullToRefreshBehindALoadedPlanNeverShowsTheSkeleton() async throws {
+        let fetcher = HeldRecommendationFetcher()
+        let viewModel = try await loadedPlanReadyToRefresh(fetcher)
+        let recorder = StateRecorder(viewModel)
+        defer { recorder.stop() }
+
+        let refresh = Task { await viewModel.refresh() }
+        try await waitUntil { fetcher.isGenerating }
+        fetcher.finish(with: .success(OutfitRecommendation(summary: "Fresh outfit", items: [])))
+        await refresh.value
+
+        #expect(viewModel.state.readySummary == "Fresh outfit")
+        #expect(recorder.states.dropLast().allSatisfy { $0.readySummary == "First outfit" })
+    }
+
+    @Test func pullToRefreshWhoseWeatherFetchFailsKeepsThePlanWithTheNotice() async throws {
+        let fetcher = HeldRecommendationFetcher()
+        let viewModel = try await loadedPlanReadyToRefresh(fetcher)
+        let recorder = StateRecorder(viewModel)
+        defer { recorder.stop() }
+
+        fetcher.failNextWeatherRequests(1)
+        await viewModel.refresh()
+
+        #expect(viewModel.refreshFailureMessage == FakeFetchError().errorDescription)
+        #expect(!recorder.states.contains { $0.isFailed })
+        #expect(recorder.states.allSatisfy { $0.readySummary == "First outfit" })
+    }
+
+    @Test func pullToRefreshWhoseModelFailsKeepsTheExistingOutfitWithTheNotice() async throws {
+        let fetcher = HeldRecommendationFetcher()
+        let viewModel = try await loadedPlanReadyToRefresh(fetcher)
+        let recorder = StateRecorder(viewModel)
+        defer { recorder.stop() }
+
+        let refresh = Task { await viewModel.refresh() }
+        try await waitUntil { fetcher.isGenerating }
+        fetcher.finish(with: .failure(FakeFetchError()))
+        await refresh.value
+
+        #expect(viewModel.refreshFailureMessage != nil)
+        #expect(recorder.states.allSatisfy { $0.readySummary == "First outfit" })
+    }
+
+    @Test func aRefreshAfterAFailedPullToRefreshReplacesThePlanAndClearsTheNotice() async throws {
+        let fetcher = HeldRecommendationFetcher()
+        let viewModel = try await loadedPlanReadyToRefresh(fetcher)
+        fetcher.failNextWeatherRequests(1)
+        await viewModel.refresh()
+
+        let refresh = Task { await viewModel.refresh() }
+        try await waitUntil { fetcher.isGenerating }
+        fetcher.finish(with: .success(OutfitRecommendation(summary: "Fresh outfit", items: [])))
+        await refresh.value
+
+        #expect(viewModel.state.readySummary == "Fresh outfit")
+        #expect(viewModel.refreshFailureMessage == nil)
+    }
+
     // MARK: Perceived latency (#23)
 
     @Test func modelIsPrewarmedWhileWeatherIsStillLoading() async throws {
@@ -2930,6 +3001,11 @@ private final class HeldRecommendationFetcher: DayPlanFetching {
 
     /// Whether a recommendation is waiting for the test to finish it.
     var isGenerating: Bool { generating.withLock { $0 } }
+
+    /// Makes the next `count` weather requests fail, e.g. to fail a refresh behind a loaded plan.
+    func failNextWeatherRequests(_ count: Int) {
+        weatherFailuresLeft.withLock { $0 = count }
+    }
 
     func finish(with result: Result<OutfitRecommendation, Error>) {
         continuation.yield(result)
