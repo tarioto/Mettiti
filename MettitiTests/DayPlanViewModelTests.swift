@@ -2349,6 +2349,59 @@ struct DayPlanViewModelTests {
         #expect(await fetcher.recommendationRequestCount == 1)
     }
 
+    @Test(arguments: ["French", nil] as [String?])
+    func savedPlanWrittenInAnotherOrNoLanguageIsRemadeOnLaunchButItsWeatherShowsAtOnce(savedLanguage: String?) async throws {
+        let clock = FakeClock(date("2026-10-19T08:30:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)))
+        let store = FakeSnapshotStore()
+        var saved = PlanSnapshot.saved(high: 70, summary: "Saved outfit", location: cityA, generatedAt: date("2026-10-19T08:00:00-07:00"))
+            .basedOn(.forecast(high: 70), from: date("2026-10-19T08:00:00-07:00"))
+        saved.adviceLanguage = savedLanguage
+        store.saved = saved
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock)
+
+        viewModel.start()
+        #expect(viewModel.state.loadedHigh == 70)
+
+        try await waitUntil { viewModel.state.readySummary == OutfitRecommendation.placeholder.summary }
+        #expect(await fetcher.recommendationRequestCount == 1)
+        #expect(store.published.last?.adviceLanguage == testResponseLanguage)
+    }
+
+    @Test func savedPlanWrittenInTheCurrentLanguageKeepsItsOutfitOnLaunch() async throws {
+        let clock = FakeClock(date("2026-10-19T08:30:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)))
+        let store = FakeSnapshotStore()
+        store.saved = .saved(high: 70, summary: "Saved outfit", location: cityA, generatedAt: date("2026-10-19T08:00:00-07:00"))
+            .basedOn(.forecast(high: 70), from: date("2026-10-19T08:00:00-07:00"))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, language: { testResponseLanguage })
+
+        viewModel.start()
+
+        try await waitUntil { store.published.last != nil }
+        #expect(viewModel.state.readySummary == "Saved outfit")
+        #expect(await fetcher.recommendationRequestCount == 0)
+        #expect(store.published.last?.adviceLanguage == testResponseLanguage)
+    }
+
+    @Test func outfitCachedForAWindowInAnotherLanguageIsNotBroughtBack() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)))
+        var language = "English"
+        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        planWindowPreference.window = .oneHour
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference, language: { language })
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        language = "French"
+        select(.restOfDay, in: planWindowPreference, for: viewModel)
+        try await waitUntil { await fetcher.recommendationRequestCount == 2 }
+        select(.oneHour, in: planWindowPreference, for: viewModel)
+
+        try await waitUntil { await fetcher.recommendationRequestCount == 3 }
+    }
+
     @Test func pullToRefreshRegeneratesTheOutfitEvenWithoutAMeaningfulChange() async throws {
         let fetcher = FakeDayPlanFetcher(recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: FakeClock(date("2026-10-19T08:00:00-07:00")))
@@ -2457,12 +2510,13 @@ private func makeCurrentLocationViewModel(location: FakeLocationProvider, fetche
         planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
         fetcher: fetcher,
         loadSnapshot: { saved },
-        publishSnapshot: { _ in }
+        publishSnapshot: { _ in },
+        responseLanguage: { testResponseLanguage }
     )
 }
 
 @MainActor
-private func makeCustomCityViewModel(fetcher: DayPlanFetching, saved: PlanSnapshot? = nil, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
+private func makeCustomCityViewModel(fetcher: DayPlanFetching, saved: PlanSnapshot? = nil, language: String = testResponseLanguage, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
     let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
     locationPreference.selection = cityA
     return DayPlanViewModel(
@@ -2472,14 +2526,15 @@ private func makeCustomCityViewModel(fetcher: DayPlanFetching, saved: PlanSnapsh
         planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
         fetcher: fetcher,
         loadSnapshot: { saved },
-        publishSnapshot: publishSnapshot
+        publishSnapshot: publishSnapshot,
+        responseLanguage: { language }
     )
 }
 
 /// A custom-city view model with a Plan Window store the test controls, at 2:20 PM PDT unless
 /// the test moves `clock` on.
 @MainActor
-private func makePlanWindowViewModel(fetcher: DayPlanFetching, planWindowPreference: PlanWindowPreferenceStore, saved: PlanSnapshot? = nil, clock: FakeClock = FakeClock(planWindowClock), publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
+private func makePlanWindowViewModel(fetcher: DayPlanFetching, planWindowPreference: PlanWindowPreferenceStore, saved: PlanSnapshot? = nil, clock: FakeClock = FakeClock(planWindowClock), language: String = testResponseLanguage, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
     let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
     locationPreference.selection = cityA
     return DayPlanViewModel(
@@ -2491,7 +2546,8 @@ private func makePlanWindowViewModel(fetcher: DayPlanFetching, planWindowPrefere
         loadSnapshot: { saved },
         publishSnapshot: publishSnapshot,
         now: { clock.now },
-        calendar: gregorianCalendar(in: pacific)
+        calendar: gregorianCalendar(in: pacific),
+        responseLanguage: { language }
     )
 }
 
@@ -2511,7 +2567,8 @@ private func makeTokyoViewModel(fetcher: DayPlanFetching, saved: PlanSnapshot?, 
         loadSnapshot: { saved },
         publishSnapshot: { _ in },
         now: { clock.now },
-        calendar: gregorianCalendar(in: pacific)
+        calendar: gregorianCalendar(in: pacific),
+        responseLanguage: { testResponseLanguage }
     )
 }
 
@@ -2519,7 +2576,7 @@ private let planWindowClock = date("2026-10-09T21:20:00Z")
 
 /// A view model whose Saved Plan store and clock the test controls, for tests that move time on.
 @MainActor
-private func makeCustomCityViewModel(fetcher: DayPlanFetching, store: FakeSnapshotStore, clock: FakeClock, planWindowPreference: PlanWindowPreferenceStore? = nil) -> DayPlanViewModel {
+private func makeCustomCityViewModel(fetcher: DayPlanFetching, store: FakeSnapshotStore, clock: FakeClock, planWindowPreference: PlanWindowPreferenceStore? = nil, language: @escaping @MainActor () -> String = { testResponseLanguage }) -> DayPlanViewModel {
     let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
     locationPreference.selection = cityA
     return DayPlanViewModel(
@@ -2531,7 +2588,8 @@ private func makeCustomCityViewModel(fetcher: DayPlanFetching, store: FakeSnapsh
         loadSnapshot: { store.saved },
         publishSnapshot: { store.publish($0) },
         now: { clock.now },
-        calendar: gregorianCalendar(in: pacific)
+        calendar: gregorianCalendar(in: pacific),
+        responseLanguage: language
     )
 }
 
@@ -2573,6 +2631,7 @@ private extension PlanSnapshot {
     func basedOn(_ weather: DailyWeather, from start: Date) -> PlanSnapshot {
         var snapshot = self
         snapshot.adviceBasis = WindowSummary(weather: weather, hourly: nil, span: PlanSpan(window: .restOfDay, startingAt: start, timeZone: pacific))
+        snapshot.adviceLanguage = testResponseLanguage
         return snapshot
     }
 

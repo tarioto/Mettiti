@@ -375,6 +375,35 @@ struct BackgroundPlanRefreshTests {
         #expect(harness.published.first?.adviceBasis != nil)
     }
 
+    @Test func staleTodaysPlanWrittenInTheCurrentLanguageKeepsItsOutfitAndLanguage() async {
+        let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
+        staleSeattlePlan(in: harness, basisHighOffBy: 0)
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshedKeepingOutfit)
+        #expect(harness.published.first?.adviceLanguage == testResponseLanguage)
+    }
+
+    @Test(arguments: ["French", nil] as [String?])
+    func staleTodaysPlanWrittenInAnotherOrNoLanguageIsRemade(savedLanguage: String?) async {
+        let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
+        staleSeattlePlan(in: harness, basisHighOffBy: 0)
+        harness.snapshot?.adviceLanguage = savedLanguage
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+        #expect(await harness.fetcher.recommendationRequestCount == 1)
+        #expect(harness.published.first?.adviceLanguage == testResponseLanguage)
+    }
+
+    @Test func freshPlanWithAnOutfitInAnotherLanguageIsStillRefreshed() async {
+        let harness = Harness(now: date("2026-10-08T09:00:00-07:00"))
+        harness.snapshot = .generated(at: date("2026-10-08T08:30:00-07:00"))
+        harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
+        harness.language = "French"
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+        #expect(harness.published.first?.adviceLanguage == "French")
+    }
+
     @Test func planForAnotherLocationIsRemadeEvenWithoutAMeaningfulChange() async {
         // The outfit was written for Seattle; Portland's weather may look the same but isn't.
         let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
@@ -624,6 +653,7 @@ private final class Harness {
     var lastKnownGPSCoordinate: CLLocationCoordinate2D?
     var provider: WeatherProvider = .apple
     var planWindow: PlanWindow = .restOfDay
+    var language = testResponseLanguage
     private(set) var published: [PlanSnapshot] = []
 
     init(now: Date) {
@@ -640,7 +670,8 @@ private final class Harness {
             selection: { [unowned self] in selection },
             lastKnownGPSCoordinate: { [unowned self] in lastKnownGPSCoordinate },
             provider: { [unowned self] in provider },
-            planWindow: { [unowned self] in planWindow }
+            planWindow: { [unowned self] in planWindow },
+            responseLanguage: { [unowned self] in language }
         )
     }
 }
