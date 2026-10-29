@@ -45,7 +45,7 @@ A map of where the plan is for, with an unlabelled pin, under the header "Locati
 _Avoid_: Map card, Current Location card
 
 **Skeleton**:
-The main screen's only loading state: a card's shapes shimmering where its content will go, until all of that card's content is ready and fades in at once. Shown on the first load, while an outfit is made, and when switching to a **Plan Window** whose outfit has to be made. A refresh behind a plan already on screen never shows it; the plan stays until the new one replaces it.
+The main screen's only loading state: a card's shapes shimmering where its content will go (a still dim instead, with Reduce Motion on), until all of that card's content is ready and fades in at once. Shown on the first load, while an outfit is made, and when switching to a **Plan Window** whose outfit has to be made. A refresh behind a plan already on screen never shows it; the plan stays until the new one replaces it.
 _Avoid_: Loading state, spinner, placeholder (for the whole state)
 
 ### Day plan

@@ -1,6 +1,6 @@
 import Foundation
 
-struct HourlyTemperaturePoint: Identifiable, Codable, Sendable {
+struct HourlyTemperaturePoint: Identifiable, Codable, Sendable, Hashable {
     let date: Date
     let meanF: Double
     let minF: Double
@@ -27,8 +27,8 @@ struct HourlyTemperaturePoint: Identifiable, Codable, Sendable {
 }
 
 /// A sunrise or sunset.
-struct SunEvent: Codable, Sendable, Equatable {
-    enum Kind: String, Codable, Sendable {
+struct SunEvent: Codable, Sendable, Hashable {
+    enum Kind: String, Codable, Sendable, Hashable {
         case sunrise
         case sunset
     }
@@ -37,7 +37,7 @@ struct SunEvent: Codable, Sendable, Equatable {
     let date: Date
 }
 
-struct HourlyForecast: Codable, Sendable {
+struct HourlyForecast: Codable, Sendable, Hashable {
     let timeZone: TimeZone
     let points: [HourlyTemperaturePoint]
     /// Sunrises and sunsets around the points. Nil in plans saved before they were stored.

@@ -1965,7 +1965,75 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.span?.window == .threeHours)
     }
 
-    @Test func switchingBeforeTheFirstGPSFixKeepsTodaysPlanAndTheFixLoadsTheNewWindow() async throws {
+    @Test func switchingWhileASavedPlansRefreshIsInFlightShowsTheSkeletonAndTheFetchMakesTheNewWindowsOutfit() async throws {
+        let fetcher = GatedDayPlanFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
+        let recorder = StateRecorder(viewModel, skippingCurrent: true)
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        #expect(viewModel.state.readySummary == "Saved outfit")
+
+        viewModel.selectPlanWindow(.threeHours)
+
+        #expect(viewModel.state.isRecommendationLoading)
+        #expect(viewModel.state.loadedHigh == 99)
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 70)))
+        try await waitUntil { viewModel.state.loadedHigh == 70 && viewModel.state.readySummary != nil }
+        recorder.stop()
+
+        #expect(viewModel.state.span?.window == .threeHours)
+        #expect(await !fetcher.isWaiting(onLatitude: 10))
+        #expect(recorder.states.dropFirst().allSatisfy { $0.readySummary != "Saved outfit" })
+    }
+
+    @Test func switchingWhileAnOverridePlanIsRefreshingShowsTheSkeletonAndTheFetchMakesTheNewWindowsOutfit() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = GatedDayPlanFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock)
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 60)))
+        try await waitUntil { viewModel.state.readySummary != nil }
+        viewModel.selectPlanWindow(.oneHour)
+        try await waitUntil { viewModel.state.span?.window == .oneHour && viewModel.state.readySummary != nil }
+
+        // The override's plan is put back up while its weather is refetched.
+        clock.now = date("2026-10-19T08:30:00-07:00")
+        viewModel.refreshIfStale()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        #expect(viewModel.state.span?.window == .oneHour)
+        #expect(viewModel.state.readySummary != nil)
+
+        viewModel.selectPlanWindow(.threeHours)
+
+        #expect(viewModel.state.isRecommendationLoading)
+        #expect(viewModel.state.loadedHigh == 60)
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 70)))
+        try await waitUntil { viewModel.state.loadedHigh == 70 && viewModel.state.readySummary != nil }
+        #expect(viewModel.state.span?.window == .threeHours)
+        #expect(await !fetcher.isWaiting(onLatitude: 10))
+    }
+
+    @Test func aLoadThatFailsAfterSwitchingKeepsTheWeatherWithANoticeAndNeverBecomesTheErrorScreen() async throws {
+        let fetcher = GatedDayPlanFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
+        let recorder = StateRecorder(viewModel, skippingCurrent: true)
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+
+        viewModel.selectPlanWindow(.threeHours)
+        await fetcher.complete(latitude: 10, with: .failure(URLError(.timedOut)))
+
+        try await waitUntil { viewModel.refreshFailureMessage != nil }
+        recorder.stop()
+        #expect(viewModel.state.loadedHigh == 99)
+        // The Wear & bring card shows its no-suggestion state, not a skeleton.
+        #expect(!viewModel.state.isRecommendationLoading)
+        #expect(viewModel.state.recommendationFailureMessage != nil)
+        #expect(recorder.states.allSatisfy { !$0.isFailed })
+    }
+
+    @Test func switchingBeforeTheFirstGPSFixKeepsTodaysWeatherDropsItsOutfitAndTheFixLoadsTheNewWindow() async throws {
         let location = FakeLocationProvider()
         let fetcher = GatedDayPlanFetcher()
         let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
@@ -1979,20 +2047,26 @@ struct DayPlanViewModelTests {
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
             publishSnapshot: { _ in }
         )
+        let recorder = StateRecorder(viewModel, skippingCurrent: true)
         viewModel.start()
 
         viewModel.selectPlanWindow(.oneHour)
         try await waitUntil { location.locationRequestCount == 2 }
         viewModel.selectPlanWindow(.threeHours)
         try await waitUntil { location.locationRequestCount == 3 }
-        #expect(viewModel.state.readySummary == "Saved outfit")
+        #expect(viewModel.state.loadedHigh == 99)
+        #expect(viewModel.state.isRecommendationLoading)
 
         location.deliver(CLLocationCoordinate2D(latitude: 47.6, longitude: -122.3))
         try await waitUntil { await fetcher.isWaiting(onLatitude: 47.6) }
+        #expect(viewModel.state.loadedHigh == 99)
+        #expect(viewModel.state.isRecommendationLoading)
         await fetcher.complete(latitude: 47.6, with: .success(.forecast(high: 70)))
 
         try await waitUntil { viewModel.state.loadedHigh == 70 && viewModel.state.readySummary != nil }
         #expect(viewModel.state.span?.window == .threeHours)
+        recorder.stop()
+        #expect(recorder.states.dropFirst().allSatisfy { $0.readySummary != "Saved outfit" })
     }
 
     @Test func aRefetchThatKeepsTheOutfitKeepsOtherWindowsOutfitsWithTheirOwnBasis() async throws {
