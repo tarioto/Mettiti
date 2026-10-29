@@ -24,30 +24,30 @@ struct PreferenceStoreTests {
     }
 
     @Test func planWindowDefaultsToRestOfDay() {
-        #expect(PlanWindowPreferenceStore(defaults: isolatedDefaults()).window == .restOfDay)
+        #expect(testPlanWindowStore().window == .restOfDay)
     }
 
     @Test func planWindowIsRememberedAcrossLaunches() {
         let defaults = isolatedDefaults()
-        let store = PlanWindowPreferenceStore(defaults: defaults)
+        let store = testPlanWindowStore(defaults: defaults)
 
         store.window = .threeHours
 
-        #expect(PlanWindowPreferenceStore(defaults: defaults).window == .threeHours)
+        #expect(testPlanWindowStore(defaults: defaults).window == .threeHours)
     }
 
     @Test func widgetsReadThePlanWindowChosenInSettings() {
         let defaults = isolatedDefaults()
         #expect(SharedStore.loadPlanWindow(from: defaults) == .restOfDay)
 
-        PlanWindowPreferenceStore(defaults: defaults, reloadWidgets: {}).window = .sixHours
+        testPlanWindowStore(defaults: defaults).window = .sixHours
 
         #expect(SharedStore.loadPlanWindow(from: defaults) == .sixHours)
     }
 
     @Test func changingThePlanWindowReloadsTheWidgets() {
         var reloads = 0
-        let store = PlanWindowPreferenceStore(defaults: isolatedDefaults(), reloadWidgets: { reloads += 1 })
+        let store = testPlanWindowStore(reloadWidgets: { reloads += 1 })
 
         store.window = .oneHour
         store.window = .oneHour
@@ -57,18 +57,22 @@ struct PreferenceStoreTests {
 
     @Test func customLocationIsRememberedAcrossLaunches() {
         let defaults = isolatedDefaults()
-        let store = LocationPreferenceStore(defaults: defaults)
+        let store = testLocationStore(defaults: defaults)
 
-        store.selection = .custom(name: "Lisbon", latitude: 38.7, longitude: -9.1)
+        let lisbon = TimeZone(identifier: "Europe/Lisbon")!
+        store.selection = .custom(name: "Lisbon", latitude: 38.7, longitude: -9.1, timeZone: lisbon)
 
-        #expect(LocationPreferenceStore(defaults: defaults).selection == .custom(name: "Lisbon", latitude: 38.7, longitude: -9.1))
+        let relaunched = testLocationStore(defaults: defaults).selection
+        #expect(relaunched == .custom(name: "Lisbon", latitude: 38.7, longitude: -9.1))
+        // Equality ignores the zone, so check it survived explicitly.
+        #expect(relaunched.calendar(fallback: gregorianCalendar(in: pacific)).timeZone == lisbon)
     }
 
     @Test func customLocationKeepsItsTimeZoneAcrossLaunches() {
         let defaults = isolatedDefaults()
-        LocationPreferenceStore(defaults: defaults, sharedDefaults: isolatedDefaults(), reloadWidgets: {}).selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
+        testLocationStore(defaults: defaults).selection = .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
 
-        let relaunched = LocationPreferenceStore(defaults: defaults, sharedDefaults: isolatedDefaults(), reloadWidgets: {})
+        let relaunched = testLocationStore(defaults: defaults)
 
         #expect(relaunched.selection.calendar(fallback: gregorianCalendar(in: pacific)).timeZone == tokyo)
     }
@@ -122,7 +126,7 @@ struct PreferenceStoreTests {
         StoredPreference<LocationSelection>.json("locationSelection", in: defaults).save(tokyoSelection)
         #expect(SharedStore.loadLocationSelection(from: shared) == nil)
 
-        let store = LocationPreferenceStore(defaults: defaults, sharedDefaults: shared, reloadWidgets: { reloads += 1 })
+        let store = testLocationStore(defaults: defaults, sharedDefaults: shared, reloadWidgets: { reloads += 1 })
         #expect(SharedStore.loadLocationSelection(from: shared) == tokyoSelection)
 
         store.selection = .currentLocation
