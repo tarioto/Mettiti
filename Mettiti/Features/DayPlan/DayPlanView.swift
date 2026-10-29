@@ -360,7 +360,7 @@ private struct LocationCard: View {
             if let location {
                 let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 12_000, longitudinalMeters: 12_000)
                 Map(position: .constant(.region(region)), interactionModes: []) {
-                    Marker("",systemImage: "mappin", coordinate: location.coordinate)
+                    Marker("", systemImage: "mappin", coordinate: location.coordinate)
                 }
                 .transition(.opacity)
             } else {
