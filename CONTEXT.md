@@ -73,7 +73,7 @@ _Avoid_: Significant change, weather diff
 - With no **Icon Choice**, the shown icon is the **Build Icon** for the current **Install Source**
 - Each **Saved Plan** covers one **Plan Window**; on launch it's only shown when that's still the chosen one, and changing the Plan Window remakes the plan (or brings back one already made for that window, if it has had no **Meaningful Change** since)
 - A **Window Override** never becomes the **Saved Plan**'s window; changing the Settings default ends it
-- The widgets and the background refresh follow the **Plan Window** chosen in Settings. The widgets show the **Saved Plan** only while its window runs and it matches that choice, then ask to open the app to update it. The background refresh makes plans by the same staleness rule, but never between 11 PM and 6 AM; it waits until 6 AM instead. Both go by the time where the plan's location is
+- The widgets and the background refresh follow the **Plan Window** chosen in Settings. The widgets show the **Saved Plan** only while its window runs and it matches that choice, then ask to open the app to update it. The background refresh makes plans by the same staleness rule, but never between 11 PM and 6 AM; it waits until 6 AM instead. Both go by the time where the plan's location is. The main screen goes by the selected location's time zone too: for the **Saved Plan**'s "today", for staleness, and for a **Window Override** ending on the next day
 
 ## Flagged ambiguities
 
