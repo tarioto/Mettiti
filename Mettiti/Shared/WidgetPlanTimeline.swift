@@ -36,7 +36,7 @@ struct WidgetPlanTimeline {
 
     /// In date order; the first is for `now`.
     let entries: [Entry]
-    /// An hour from now, or the next midnight (the selection's, else the plan's location's, else the device's) if sooner,
+    /// An hour from now, or the next midnight (in the zone `LocationSelection.calendar(fallback:savedPlan:)` picks) if sooner,
     /// so a new day is picked up on time.
     let reloadDate: Date
 
@@ -44,12 +44,16 @@ struct WidgetPlanTimeline {
     var current: Entry { entries[0] }
 
     /// `calendar` is the device's. `selection` is the location chosen in Settings, nil when none
-    /// has been shared yet. A city's own time zone judges the day, midnight and window end, so
-    /// they match each other; otherwise the plan's recorded zone does, else the device's.
+    /// has been shared yet. `LocationSelection.calendar(fallback:savedPlan:)` judges the day, midnight
+    /// and window end, so they match the app and the background refresh; with no selection, the
+    /// plan's recorded zone does, else the device's.
     /// A plan recorded for another location than `selection` is never shown.
     init(saved: PlanSnapshot?, selection: LocationSelection? = nil, window: PlanWindow, now: Date, calendar deviceCalendar: Calendar) {
-        let planCalendar = saved?.locationCalendar(fallback: deviceCalendar) ?? deviceCalendar
-        let calendar = selection?.calendar(fallback: planCalendar) ?? planCalendar
+        let calendar = if let selection {
+            selection.calendar(fallback: deviceCalendar, savedPlan: saved)
+        } else {
+            saved?.locationCalendar(fallback: deviceCalendar) ?? deviceCalendar
+        }
         let nextMidnight = calendar.dateInterval(of: .day, for: now)!.end
         reloadDate = min(now.addingTimeInterval(Self.reloadInterval), nextMidnight)
 

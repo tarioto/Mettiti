@@ -2307,6 +2307,17 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.readySummary == nil)
     }
 
+    @Test func aRestOfDaySpanWithoutAnHourlyForecastEndsAtTheCitysMidnight() async throws {
+        let fetcher = FakeDayPlanFetcher()
+        let clock = FakeClock(date("2026-10-08T19:00:00+09:00"))
+        let viewModel = makeCityViewModel(tokyoCity, fetcher: fetcher, saved: nil, clock: clock)
+
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        #expect(await fetcher.requestedSpans.last?.interval.end == date("2026-10-09T00:00:00+09:00"))
+    }
+
     @Test func aZonelessCityWhoseSavedPlanRecordsNoZoneUsesTheDevicesZone() async throws {
         let clock = FakeClock(date("2026-10-19T15:05:00-07:00"))
         let saved = PlanSnapshot.saved(high: 99, summary: "Saved outfit", location: romeCityWithoutZone, generatedAt: date("2026-10-19T14:30:00-07:00"))

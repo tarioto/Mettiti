@@ -119,7 +119,7 @@ struct BackgroundPlanRefresher {
         // Likewise, don't replace a plan the app saved for today meanwhile with a less complete one.
         if let latest = loadSnapshot(),
            latest.generatedAt != savedSnapshot?.generatedAt,
-           latest.isFromToday(now: now(), calendar: latest.locationCalendar(fallback: calendar)),
+           latest.isFromToday(now: now(), calendar: selection.calendar(fallback: calendar, savedPlan: latest)),
            latest.recommendation != nil || recommendation == nil {
             return .supersededByApp
         }
