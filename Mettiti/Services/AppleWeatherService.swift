@@ -7,14 +7,17 @@ enum AppleWeatherServiceError: UserFacingError {
     case unavailable
     case missingForecast
 
-    var errorDescription: String? {
+    /// The message as a resource, so a caller can pick the language it is written in.
+    var message: LocalizedStringResource {
         switch self {
         case .unavailable:
-            return String(localized: "Couldn't reach Apple Weather. Check your connection, or switch to Open-Meteo in Settings.")
+            return "Couldn't reach Apple Weather. Check your connection, or switch to Open-Meteo in Settings."
         case .missingForecast:
-            return String(localized: "Apple Weather didn't return a forecast for today.")
+            return "Apple Weather didn't return a forecast for today."
         }
     }
+
+    var errorDescription: String? { String(localized: message) }
 }
 
 struct AppleWeatherService {

@@ -59,8 +59,49 @@ struct ItalianLocalizationTests {
     }
 
     @Test func serviceErrorsDescribeThemselvesWithTheirLocalizedText() {
-        #expect(WeatherServiceError.decodingFailed.localizedDescription == String(localized: "Received an unexpected response from the weather service."))
-        #expect(AppleWeatherServiceError.missingForecast.localizedDescription == String(localized: "Apple Weather didn't return a forecast for today."))
+        for (message, key) in [
+            (WeatherServiceError.decodingFailed.message, "Received an unexpected response from the weather service."),
+            (AppleWeatherServiceError.missingForecast.message, "Apple Weather didn't return a forecast for today."),
+        ] {
+            let text = italian(message)
+            #expect(text == localized(key, table: nil, language: "it"))
+            #expect(text != key, "\(key) has no Italian translation")
+        }
+        // The error's own description is that same message in the running language.
+        #expect(WeatherServiceError.decodingFailed.localizedDescription == String(localized: WeatherServiceError.decodingFailed.message))
+    }
+
+    /// The widget extension's own bundle, which holds the gallery names and descriptions.
+    private func widgetItalian() throws -> Bundle {
+        let plugIns = try #require(appBundle.builtInPlugInsURL)
+        let appex = try #require(FileManager.default.contentsOfDirectory(at: plugIns, includingPropertiesForKeys: nil).first { $0.pathExtension == "appex" })
+        let path = try #require(Bundle(url: appex)?.path(forResource: "it", ofType: "lproj"))
+        return try #require(Bundle(path: path))
+    }
+
+    @Test(arguments: [
+        ("Today's Summary", "Riepilogo di oggi"),
+        ("Today's Emojis", "Emoji di oggi"),
+        ("Today's Full Plan", "Piano completo di oggi"),
+        ("A short text summary of what to wear and bring today.", "Un breve riepilogo di cosa indossare e portare oggi."),
+        ("A quick emoji glance at what to wear and bring today.", "Un colpo d'occhio con emoji su cosa indossare e portare oggi."),
+        ("Weather, summary, and everything to wear and bring today.", "Meteo, riepilogo e tutto ciò che serve indossare e portare oggi."),
+        ("Open Mettiti", "Apri Mettiti"),
+        ("Open Mettiti to update", "Apri Mettiti per aggiornare"),
+    ])
+    func widgetNamesDescriptionsAndPromptsAreInItalian(key: String, expected: String) throws {
+        #expect(try widgetItalian().localizedString(forKey: key, value: "<missing>", table: nil) == expected)
+    }
+
+    @Test func aSavedConditionIsNamedInTheCurrentLanguageWithoutFetchingAgain() throws {
+        var weather = DailyWeather.placeholder
+        weather.condition = .wmo(61)
+        // Saved while the app was in English...
+        let saved = try JSONEncoder().encode(PlanSnapshot(weather: weather, recommendation: nil, generatedAt: .now, provider: .openMeteo))
+        let decoded = try JSONDecoder().decode(PlanSnapshot.self, from: saved)
+        // ...and shown in Italian, from the stored kind alone.
+        #expect(decoded.weather.conditionDescription(in: Locale(identifier: "it")) == "Pioggia")
+        #expect(decoded.weather.conditionDescription(in: Locale(identifier: "en")) == "Rain")
     }
 
     private func italian(_ resource: LocalizedStringResource) -> String {
