@@ -118,7 +118,7 @@ struct OutfitAdvisor: Sendable {
 
     /// Covers `span`, hour by hour, or the whole day when there's no hourly forecast for it.
     ///
-    /// `locale` only decides what `.system` means. Temperatures are always written in a fixed form with an
+    /// `locale` only decides what `.system` means, and the wind unit follows the resulting temperature unit. Temperatures are always written in a fixed form with an
     /// explicit unit and how they feel ("72°F (warm)"), and times in English ("4 PM"), because the model
     /// reads them, not the user. Conditions are in the user's language, like the weather provider's own
     /// descriptions. Times are in the span's time zone.
@@ -128,10 +128,9 @@ struct OutfitAdvisor: Sendable {
             "\(unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)) (\(TemperatureFeel(fahrenheit: fahrenheit, in: unit).rawValue))"
         }
         let warmThroughout = isWarmThroughout(weather, hourly: hourly, span: span, unit: unit)
-        // The weather is stored in mph; the model gets km/h where the locale doesn't use miles.
+        // The weather is stored in mph; the wind unit follows the temperature unit: °F gives mph, °C km/h.
         func wind(_ mph: Double) -> String {
-            let usesMiles = locale.measurementSystem == .us || locale.measurementSystem == .uk
-            return usesMiles ? "\(Int(mph.rounded())) mph" : "\(Int((mph * 1.609344).rounded())) km/h"
+            unit == .fahrenheit ? "\(Int(mph.rounded())) mph" : "\(Int((mph * 1.609344).rounded())) km/h"
         }
         let now = span.interval.start
         let timeZone = span.timeZone
