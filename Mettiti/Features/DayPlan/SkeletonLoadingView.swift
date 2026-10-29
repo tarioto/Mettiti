@@ -52,7 +52,12 @@ struct PlaceholderShimmer: ViewModifier {
     func body(content: Content) -> some View {
         if redactionReasons.contains(.placeholder) {
             if systemReduceMotion || previewReduceMotion {
-                content.opacity(0.6)
+                // Rewinds the phase too, ending a running loop so the shimmer starts afresh if motion comes back.
+                content
+                    .opacity(0.6)
+                    .onAppear {
+                        withTransaction(Transaction(animation: nil)) { phase = -0.5 }
+                    }
             } else {
                 content
                     .modifier(ShimmerMask(phase: phase))
