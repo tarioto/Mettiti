@@ -15,6 +15,25 @@ extension LocationSelection {
         selectionCalendar.timeZone = timeZone
         return selectionCalendar
     }
+
+    /// The one rule for "the location's calendar", shared by the app, the widgets and the background
+    /// refresh. A city with a zone: the city's. A city without one: the zone of `savedPlan` when that
+    /// plan is for this location (see `PlanSnapshot.locationCalendar(fallback:)`), then `calendar`'s
+    /// own (the device's). Current Location: always the device's, since a plan's older zone may be
+    /// a place the user has left.
+    func calendar(fallback calendar: Calendar, savedPlan: PlanSnapshot?) -> Calendar {
+        guard case .custom(_, _, _, nil) = self, let savedPlan, savedPlan.location == self else {
+            return self.calendar(fallback: calendar)
+        }
+        return savedPlan.locationCalendar(fallback: calendar)
+    }
+
+    /// This selection with `timeZone` filled in, when it's a city that has none. Any other
+    /// selection (a city with a zone, Current Location) is returned as is.
+    func fillingMissingTimeZone(with timeZone: TimeZone) -> LocationSelection {
+        guard case .custom(let name, let latitude, let longitude, nil) = self else { return self }
+        return .custom(name: name, latitude: latitude, longitude: longitude, timeZone: timeZone)
+    }
 }
 
 /// The time zone isn't part of equality: a city saved before it was stored is still the same

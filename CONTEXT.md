@@ -45,7 +45,7 @@ A map of where the plan is for, with an unlabelled pin, under the header "Locati
 _Avoid_: Map card, Current Location card
 
 **Skeleton**:
-The main screen's only loading state: a card's shapes shimmering where its content will go, until all of that card's content is ready and fades in at once. Shown on the first load, while an outfit is made, and when switching to a **Plan Window** whose outfit has to be made. A refresh behind a plan already on screen never shows it; the plan stays until the new one replaces it.
+The main screen's only loading state: a card's shapes shimmering where its content will go (a still dim instead, with Reduce Motion on), until all of that card's content is ready and fades in at once. Shown on the first load, while an outfit is made, and when switching to a **Plan Window** whose outfit has to be made. A refresh behind a plan already on screen never shows it; the plan stays until the new one replaces it.
 _Avoid_: Loading state, spinner, placeholder (for the whole state)
 
 ### Day plan
@@ -73,7 +73,7 @@ _Avoid_: Significant change, weather diff
 - With no **Icon Choice**, the shown icon is the **Build Icon** for the current **Install Source**
 - Each **Saved Plan** covers one **Plan Window**; on launch it's only shown when that's still the chosen one, and changing the Plan Window remakes the plan (or brings back one already made for that window, if it has had no **Meaningful Change** since)
 - A **Window Override** never becomes the **Saved Plan**'s window; changing the Settings default ends it
-- The widgets and the background refresh follow the **Plan Window** chosen in Settings. The widgets show the **Saved Plan** only while its window runs and it matches that choice, then ask to open the app to update it. The background refresh makes plans by the same staleness rule, but never between 11 PM and 6 AM; it waits until 6 AM instead. Both go by the time where the plan's location is. The main screen goes by the selected location's time zone too: for the **Saved Plan**'s "today", for staleness, and for a **Window Override** ending on the next day
+- The widgets and the background refresh follow the **Plan Window** chosen in Settings. The widgets show the **Saved Plan** only while its window runs and it matches that choice, then ask to open the app to update it. The background refresh makes plans by the same staleness rule, but never between 11 PM and 6 AM; it waits until 6 AM instead. The app, the widgets and the background refresh all go by one rule for "the location's calendar" (`LocationSelection.calendar(fallback:savedPlan:)`): a searched city's own time zone; for a city saved without one, the time zone of a **Saved Plan** for the same location, else the device's; and for Current Location always the device's time zone, even in the widgets (it follows the user, so an older plan's zone may be a place they've left). Every "today", midnight, staleness and quiet-hours check goes through it, and so does the span of a plan made without an hourly forecast. That covers the main screen's **Saved Plan** "today", staleness, and a **Window Override** ending on the next day
 
 ## Flagged ambiguities
 

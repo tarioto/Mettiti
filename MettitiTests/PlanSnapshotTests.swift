@@ -35,6 +35,7 @@ struct PlanSnapshotTests {
         #expect(snapshot.weather.highTemperatureF == 68)
         #expect(snapshot.recommendation?.summary == "Showers on and off, so bring rain gear.")
         #expect(snapshot.recommendation?.items.map(\.name) == ["Umbrella"])
+        #expect(snapshot.recommendation?.items.map(\.kind) == [.other])
         #expect(snapshot.provider == .openMeteo)
     }
 

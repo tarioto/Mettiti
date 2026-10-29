@@ -41,22 +41,63 @@ extension SkeletonLoadingView {
 }
 
 // Shimmers placeholder-redacted content. Applied inside each card, beneath its background,
-// so the card itself stays solid while its placeholders shimmer.
+// so the card itself stays solid while its placeholders shimmer. With Reduce Motion on, the
+// placeholders are a still dim instead.
 struct PlaceholderShimmer: ViewModifier {
     @Environment(\.redactionReasons) private var redactionReasons
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.previewReduceMotion) private var previewReduceMotion
     @State private var phase: CGFloat = -0.5
 
     func body(content: Content) -> some View {
         if redactionReasons.contains(.placeholder) {
-            content
-                .modifier(ShimmerMask(phase: phase))
-                .onAppear {
-                    withAnimation(.linear(duration: 1.3).repeatForever(autoreverses: false)) {
-                        phase = 1.5
+            if systemReduceMotion || previewReduceMotion {
+                // Rewinds the phase too, ending a running loop so the shimmer starts afresh if motion comes back.
+                content
+                    .opacity(0.6)
+                    .onAppear {
+                        withTransaction(Transaction(animation: nil)) { phase = -0.5 }
                     }
-                }
+            } else {
+                content
+                    .modifier(ShimmerMask(phase: phase))
+                    .onAppear(perform: startShimmer)
+            }
         } else {
             content
+        }
+    }
+
+    private func startShimmer() {
+        withAnimation(.linear(duration: 1.3).repeatForever(autoreverses: false)) {
+            phase = 1.5
+        }
+    }
+}
+
+private extension EnvironmentValues {
+    /// Stands in for Reduce Motion, which SwiftUI doesn't let a preview set.
+    @Entry var previewReduceMotion = false
+}
+
+extension View {
+    /// Redacts a view as a placeholder and shimmers it, unless an ancestor's redaction already does.
+    /// The shimmer sits outside the redaction, where it can see it.
+    func shimmeringPlaceholder() -> some View {
+        modifier(ShimmeringPlaceholder())
+    }
+}
+
+private struct ShimmeringPlaceholder: ViewModifier {
+    @Environment(\.redactionReasons) private var redactionReasons
+
+    func body(content: Content) -> some View {
+        if redactionReasons.contains(.placeholder) {
+            content
+        } else {
+            content
+                .redacted(reason: .placeholder)
+                .modifier(PlaceholderShimmer())
         }
     }
 }
@@ -83,6 +124,23 @@ private struct ShimmerMask: ViewModifier, Animatable {
 #Preview {
     SkeletonLoadingView()
         .padding()
+        .environment(TemperaturePreferenceStore())
+        .environment(CardPreferenceStore())
+}
+
+#Preview("Loaded plan, outfit skeleton") {
+    ScrollView {
+        DayPlanView(weather: .placeholder, recommendation: .loading, hourly: SkeletonLoadingView.hourly)
+            .padding()
+    }
+    .environment(TemperaturePreferenceStore())
+    .environment(CardPreferenceStore())
+}
+
+#Preview("Reduce Motion") {
+    SkeletonLoadingView()
+        .padding()
+        .environment(\.previewReduceMotion, true)
         .environment(TemperaturePreferenceStore())
         .environment(CardPreferenceStore())
 }

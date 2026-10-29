@@ -48,6 +48,25 @@ func isolatedDefaults() -> UserDefaults {
     UserDefaults(suiteName: "MettitiTests.\(UUID().uuidString)")!
 }
 
+/// A location store that never touches the real App Group or reloads the real widgets.
+@MainActor
+func testLocationStore(
+    defaults: UserDefaults = isolatedDefaults(),
+    sharedDefaults: UserDefaults = isolatedDefaults(),
+    reloadWidgets: @escaping @MainActor () -> Void = {}
+) -> LocationPreferenceStore {
+    LocationPreferenceStore(defaults: defaults, sharedDefaults: sharedDefaults, reloadWidgets: reloadWidgets)
+}
+
+/// A Plan Window store that never touches the real App Group or reloads the real widgets.
+@MainActor
+func testPlanWindowStore(
+    defaults: UserDefaults = isolatedDefaults(),
+    reloadWidgets: @escaping @MainActor () -> Void = {}
+) -> PlanWindowPreferenceStore {
+    PlanWindowPreferenceStore(defaults: defaults, reloadWidgets: reloadWidgets)
+}
+
 private final class FixtureBundleToken {}
 
 /// A hand-made API response in MettitiTests/Fixtures, in the shape the live API returns.
