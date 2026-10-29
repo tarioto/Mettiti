@@ -262,8 +262,11 @@ final class DayPlanViewModel {
         guard case .loaded(let weather, let hourly, let span, let provider, let recommendation) = state else { return }
         isShowingSavedPlan = true
         adviceBasis = nil
-        if case .loading = recommendation { return }
-        state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .loading)
+        // Not being able to make an outfit isn't tied to the window, so that notice stays.
+        switch recommendation {
+        case .loading, .unavailable: return
+        default: state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .loading)
+        }
     }
 
     /// Whether the weather last loaded is too old for `window`.
