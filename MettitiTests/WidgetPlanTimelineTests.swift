@@ -320,3 +320,55 @@ private extension WidgetPlanTimeline.Entry {
         }
     }
 }
+
+// MARK: - One rule for the location's calendar (#164)
+
+struct LocationCalendarRuleTests {
+    private let device = gregorianCalendar(in: pacific)
+    private let zoneless = LocationSelection.custom(name: "Rome", latitude: 41.9, longitude: 12.5)
+    private let tokyoCity = LocationSelection.custom(name: "Tokyo", latitude: 35.7, longitude: 139.7, timeZone: tokyo)
+
+    /// The widget's midnight, which must be the rule's midnight.
+    private func widgetReload(saved: PlanSnapshot?, selection: LocationSelection, now: Date) -> Date {
+        WidgetPlanTimeline(saved: saved, selection: selection, window: .restOfDay, now: now, calendar: device).reloadDate
+    }
+
+    private func midnight(_ calendar: Calendar, after now: Date) -> Date {
+        calendar.dateInterval(of: .day, for: now)!.end
+    }
+
+    @Test func cityWithAZoneUsesItsZoneEverywhere() {
+        let now = date("2026-10-08T23:30:00+09:00")
+        let saved = PlanSnapshot.generated(at: date("2026-10-08T22:00:00+09:00"), window: .restOfDay, in: rome, location: tokyoCity)
+        let calendar = tokyoCity.calendar(fallback: device, savedPlan: saved)
+
+        #expect(calendar.timeZone == tokyo)
+        #expect(widgetReload(saved: saved, selection: tokyoCity, now: now) == midnight(calendar, after: now))
+    }
+
+    @Test func cityWithoutAZoneUsesAMatchingSavedPlansZoneThenTheDevices() {
+        let romeNow = date("2026-10-08T23:30:00+02:00")
+        let deviceNow = date("2026-10-08T23:30:00-07:00")
+        let matching = PlanSnapshot.generated(at: date("2026-10-08T22:00:00+02:00"), window: .restOfDay, in: rome, location: zoneless)
+        let other = PlanSnapshot.generated(at: date("2026-10-08T22:00:00+09:00"), window: .restOfDay, in: tokyo, location: tokyoCity)
+
+        let withPlan = zoneless.calendar(fallback: device, savedPlan: matching)
+        #expect(withPlan.timeZone == rome)
+        #expect(widgetReload(saved: matching, selection: zoneless, now: romeNow) == midnight(withPlan, after: romeNow))
+
+        for saved in [other, nil] {
+            let calendar = zoneless.calendar(fallback: device, savedPlan: saved)
+            #expect(calendar.timeZone == pacific)
+            #expect(widgetReload(saved: saved, selection: zoneless, now: deviceNow) == midnight(calendar, after: deviceNow))
+        }
+    }
+
+    @Test func currentLocationUsesTheDevicesZoneEvenWithASavedPlanFromAnotherZone() {
+        let now = date("2026-10-08T23:30:00-07:00")
+        let saved = PlanSnapshot.generated(at: date("2026-10-08T22:00:00+09:00"), window: .restOfDay, in: tokyo, location: .currentLocation)
+        let calendar = LocationSelection.currentLocation.calendar(fallback: device, savedPlan: saved)
+
+        #expect(calendar.timeZone == pacific)
+        #expect(widgetReload(saved: saved, selection: .currentLocation, now: now) == midnight(calendar, after: now))
+    }
+}

@@ -1,7 +1,7 @@
 import Foundation
 import WeatherKit
 
-struct DailyWeather: Sendable, Codable {
+struct DailyWeather: Sendable, Codable, Hashable {
     let date: Date
     let highTemperatureF: Double
     let lowTemperatureF: Double
@@ -25,7 +25,7 @@ struct DailyWeather: Sendable, Codable {
 
 /// The kind of weather a provider reported, kept apart from its wording so the name is written
 /// in the current language when shown, not the one the plan was fetched in.
-enum WeatherConditionKind: Codable, Sendable, Equatable {
+enum WeatherConditionKind: Codable, Sendable, Hashable {
     /// An Open-Meteo WMO weather code.
     case wmo(Int)
     /// A WeatherKit condition, by its raw value so a case this version doesn't know still decodes.

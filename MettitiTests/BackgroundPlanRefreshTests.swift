@@ -541,6 +541,75 @@ struct BackgroundPlanRefreshTests {
         #expect(await harness.refresher.refreshIfStale() == .refreshed)
     }
 
+    // MARK: - A city saved without a time zone
+
+    private static let romeWithoutZone = LocationSelection.custom(name: "Rome", latitude: 41.9, longitude: 12.5)
+
+    @Test func refreshBackfillsTheForecastsZoneAndLaterJudgesQuietHoursInIt() async {
+        // 1:30 AM Oct 9 in Rome is 4:30 PM Oct 8 on the Pacific device.
+        let harness = Harness(now: date("2026-10-08T16:30:00-07:00"))
+        harness.selection = Self.romeWithoutZone
+        await harness.fetcher.returnHourly(HourlyForecast(timeZone: rome, points: []))
+        // Before the load, the device's zone applies, so this isn't quiet.
+        #expect(harness.refresher.nextRequestDate(availability: .available) != date("2026-10-09T06:00:00+02:00"))
+
+        _ = await harness.refresher.refreshIfStale()
+
+        #expect(harness.selection.calendar(fallback: gregorianCalendar(in: pacific)).timeZone == rome)
+        #expect(harness.published.first?.location.map { $0.calendar(fallback: gregorianCalendar(in: pacific)).timeZone } == rome)
+        #expect(await harness.refresher.refreshIfStale() == .skippedQuietHours)
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:00:00+02:00"))
+    }
+
+    @Test func zonelessCityBeforeAnyLoadUsesItsSavedPlansZone() async {
+        // 1:30 AM Oct 9 in Rome; the plan was made at 11 PM Oct 8 there (2 PM Pacific): a new day in Rome only.
+        let harness = Harness(now: date("2026-10-08T16:30:00-07:00"))
+        harness.selection = Self.romeWithoutZone
+        harness.snapshot = .generated(at: date("2026-10-08T14:00:00-07:00"), window: .restOfDay, in: rome, location: harness.selection)
+
+        #expect(await harness.refresher.refreshIfStale() == .skippedQuietHours)
+    }
+
+    @Test func zonelessCityWithoutASavedPlanForItUsesTheDevicesZone() async {
+        let harness = Harness(now: date("2026-10-08T16:30:00-07:00"))
+        harness.selection = Self.romeWithoutZone
+        // A plan for another city, from long enough ago to be stale, doesn't lend its zone (Tokyo's 3 AM-ish).
+        harness.snapshot = .generated(at: date("2026-10-08T07:00:00-07:00"), window: .restOfDay, in: tokyo, location: .custom(name: "Tokyo", latitude: 35.7, longitude: 139.7))
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+    }
+
+    @Test func refreshNeverOverwritesACitysOwnZone() async {
+        let harness = Harness(now: date("2026-10-08T06:00:00-07:00"))
+        harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3, timeZone: pacific)
+        await harness.fetcher.returnHourly(HourlyForecast(timeZone: rome, points: []))
+
+        _ = await harness.refresher.refreshIfStale()
+
+        #expect(harness.selection.calendar(fallback: gregorianCalendar(in: tokyo)).timeZone == pacific)
+    }
+
+    @Test func refreshDoesNotBackfillWithoutAnHourlyForecast() async {
+        let harness = Harness(now: date("2026-10-08T06:00:00-07:00"))
+        harness.selection = Self.romeWithoutZone
+
+        _ = await harness.refresher.refreshIfStale()
+
+        #expect(harness.selection.calendar(fallback: gregorianCalendar(in: tokyo)).timeZone == tokyo)
+    }
+
+    @Test func refreshDoesNotWriteItsZoneOntoACityPickedMeanwhile() async {
+        let harness = Harness(now: date("2026-10-08T06:00:00-07:00"))
+        harness.selection = Self.romeWithoutZone
+        await harness.fetcher.returnHourly(HourlyForecast(timeZone: rome, points: []))
+        let paris = LocationSelection.custom(name: "Paris", latitude: 48.9, longitude: 2.4)
+        await harness.fetcher.duringWeatherFetch { @MainActor in harness.selection = paris }
+
+        _ = await harness.refresher.refreshIfStale()
+
+        #expect(harness.selection.calendar(fallback: gregorianCalendar(in: tokyo)).timeZone == tokyo)
+    }
+
     @Test func newCityInAnotherZoneIsQuietWithNoSavedPlan() async {
         // Device in Rome, 2 AM in Tokyo is 7 PM there.
         let harness = Harness(now: date("2026-10-09T02:00:00+09:00"))
@@ -668,6 +737,7 @@ private final class Harness {
             loadSnapshot: { [unowned self] in snapshot },
             publish: { [unowned self] in published.append($0) },
             selection: { [unowned self] in selection },
+            saveSelection: { [unowned self] in selection = $0 },
             lastKnownGPSCoordinate: { [unowned self] in lastKnownGPSCoordinate },
             provider: { [unowned self] in provider },
             planWindow: { [unowned self] in planWindow }
