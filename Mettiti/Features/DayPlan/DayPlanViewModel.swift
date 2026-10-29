@@ -204,15 +204,21 @@ final class DayPlanViewModel {
     /// unless the weather has meaningfully changed since; otherwise the outfit is remade, or the
     /// whole plan reloads with fresh weather. The old window's outfit is for the wrong
     /// window, so the Plan and Wear & bring cards show the skeleton (the Weather card too when it
-    /// reloads) until the new one is complete.
+    /// reloads) until the new one is complete. That holds while a weather fetch is in flight or
+    /// Current Location awaits its first fix: the weather on screen stays, the outfit gives way
+    /// to the skeleton, and the load that's running (or the fix's) makes the new window's plan.
     private func showPlanForActiveWindow() {
         guard hasStarted else { return }
         // The load fetching the weather reads the new window once it has it.
-        if inFlightWeatherFetchID != nil { return }
-        // Current Location without a fix yet: today's Saved Plan (if any) stays as it is, and the
-        // fix's load reads the new window. Asks again in case an earlier request failed, leaving
-        // whether that load may keep an unchanged outfit as it was.
+        if inFlightWeatherFetchID != nil {
+            dropOutfitOnScreenForNewWindow()
+            return
+        }
+        // Current Location without a fix yet: the fix's load reads the new window. Asks again in
+        // case an earlier request failed, leaving whether that load may keep an unchanged outfit
+        // as it was.
         if case .currentLocation = locationPreference.selection, lastCoordinate == nil {
+            dropOutfitOnScreenForNewWindow()
             Task { await reload() }
             return
         }
@@ -246,6 +252,18 @@ final class DayPlanViewModel {
             state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .loading)
         }
         remakeRecommendationForWeatherOnScreen()
+    }
+
+    /// Replaces the outfit on screen, made for the old window, with the skeleton while a load
+    /// that's already under way makes the new one, keeping the weather. The plan stays marked as
+    /// kept, so if that load fails the weather stays with a notice rather than the error screen.
+    /// Does nothing when no weather is on screen.
+    private func dropOutfitOnScreenForNewWindow() {
+        guard case .loaded(let weather, let hourly, let span, let provider, let recommendation) = state else { return }
+        isShowingSavedPlan = true
+        adviceBasis = nil
+        if case .loading = recommendation { return }
+        state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .loading)
     }
 
     /// Whether the weather last loaded is too old for `window`.
