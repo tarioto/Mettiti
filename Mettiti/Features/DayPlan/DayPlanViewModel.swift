@@ -62,7 +62,7 @@ final class DayPlanViewModel {
     private let deviceCalendar: Calendar
     /// Defines "today" for every day and staleness check: the selected location's, so the app
     /// agrees with the widgets and background refresh. The device's when the selection has no time zone.
-    private var calendar: Calendar { locationPreference.selection.calendar(fallback: deviceCalendar) }
+    private var calendar: Calendar { locationPreference.selection.calendar(fallback: deviceCalendar, savedPlan: loadSnapshot()) }
     private let lookUpCityName: @Sendable (CLLocationCoordinate2D) async -> String?
     @ObservationIgnored private var hasStarted = false
     /// Whether the newest location request failed; cleared when another is made or a fix arrives.
@@ -486,6 +486,7 @@ final class DayPlanViewModel {
             let (weather, hourly) = try await fetcher.fetchWeather(for: coordinate, from: provider)
             fetchFinished()
             guard !Task.isCancelled else { return }
+            backfillTimeZone(from: hourly, fetchedFor: coordinate)
             let span = currentSpan(for: hourly)
             // The outfit to keep must be for the window the plan now covers, which a switch during
             // the fetch may have changed: the one on screen, or one already made for that window.
@@ -505,6 +506,14 @@ final class DayPlanViewModel {
             guard !Task.isCancelled else { return }
             fail(UserFacingMessage.describing(error))
         }
+    }
+
+    /// Gives a city saved without a time zone the forecast's, if it's still the selected city.
+    private func backfillTimeZone(from hourly: HourlyForecast?, fetchedFor coordinate: CLLocationCoordinate2D) {
+        guard let zone = hourly?.timeZone,
+              case .custom(_, let latitude, let longitude, nil) = locationPreference.selection,
+              latitude == coordinate.latitude, longitude == coordinate.longitude else { return }
+        locationPreference.selection = locationPreference.selection.fillingMissingTimeZone(with: zone)
     }
 
     /// Fills in the recommendation for weather that's already on screen; never fails the whole plan.
