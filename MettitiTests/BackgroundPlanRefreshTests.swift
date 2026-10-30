@@ -433,6 +433,36 @@ struct BackgroundPlanRefreshTests {
         #expect(harness.refresher.nextRequestDate(availability: .available) == date(expected))
     }
 
+    @Test func freshPlanForAnotherCityThanTheSelectionIsNotCurrent() async {
+        let harness = Harness(now: date("2026-10-08T09:00:00-07:00"))
+        harness.snapshot = .generated(at: date("2026-10-08T08:30:00-07:00"), window: .restOfDay, location: .custom(name: "Rome", latitude: 41.9, longitude: 12.5))
+        harness.selection = .custom(name: "Paris", latitude: 48.9, longitude: 2.4)
+
+        let outcome = await harness.refresher.refreshIfStale()
+
+        #expect(outcome == .refreshed)
+        #expect(await harness.fetcher.weatherRequests == [WeatherRequest(latitude: 48.9, longitude: 2.4, provider: .apple)])
+        #expect(harness.published.map(\.location) == [.custom(name: "Paris", latitude: 48.9, longitude: 2.4)])
+    }
+
+    @Test func nextRequestDoesNotWaitForAPlanForAnotherCityToGoStale() {
+        let harness = Harness(now: date("2026-10-08T09:00:00-07:00"))
+        harness.snapshot = .generated(at: date("2026-10-08T08:30:00-07:00"), window: .restOfDay, location: .custom(name: "Rome", latitude: 41.9, longitude: 12.5))
+        harness.selection = .custom(name: "Paris", latitude: 48.9, longitude: 2.4)
+
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-08T10:00:00-07:00"))
+    }
+
+    @Test func freshPlanForAnotherCityStillWaitsOutQuietHours() async {
+        let harness = Harness(now: date("2026-10-08T23:30:00-07:00"))
+        harness.snapshot = .generated(at: date("2026-10-08T22:30:00-07:00"), window: .restOfDay, location: .custom(name: "Rome", latitude: 41.9, longitude: 12.5))
+        harness.selection = .custom(name: "Paris", latitude: 48.9, longitude: 2.4)
+
+        #expect(await harness.refresher.refreshIfStale() == .skippedQuietHours)
+        #expect(await harness.fetcher.weatherRequests.isEmpty)
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:00:00-07:00"))
+    }
+
     @Test(arguments: ["2026-10-08T23:00:00-07:00", "2026-10-08T23:59:00-07:00", "2026-10-09T05:59:00-07:00"])
     func lateRunInQuietHoursMakesNoPlanAndWaitsForSixAM(now: String) async {
         // e.g. iOS ran a 10:45 PM request late.

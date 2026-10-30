@@ -57,7 +57,7 @@ struct BackgroundPlanRefresher {
         let savedSnapshot = loadSnapshot()
         let window = planWindow()
         var locationCalendar = selection().calendar(fallback: calendar, savedPlan: savedSnapshot)
-        guard !hasCurrentSnapshot(savedSnapshot, window: window, now: now(), calendar: locationCalendar, availability: availability) else { return .alreadyCurrent }
+        guard !hasCurrentSnapshot(savedSnapshot, selection: selection(), window: window, now: now(), calendar: locationCalendar, availability: availability) else { return .alreadyCurrent }
         // iOS can run a request late; `nextRequestDate` then asks for the morning.
         guard !Self.isQuietHour(now(), in: locationCalendar) else { return .skippedQuietHours }
 
@@ -130,7 +130,7 @@ struct BackgroundPlanRefresher {
     /// When the next background refresh should run, by the same staleness rule as the app:
     /// - a current plan (see `hasCurrentSnapshot`): once it goes stale for its Plan Window;
     /// - otherwise (none, from an earlier day, for another window, stale, or still missing its
-    ///   suggestions): retry within the hour, or sooner for a short window; during quiet hours,
+    ///   suggestions, or for another location than the selection): retry within the hour, or sooner for a short window; during quiet hours,
     ///   at the coming `morningHour`.
     /// Never sooner than `PlanWindow.minimumRefreshInterval` after the last plan was made (or,
     /// outside quiet hours, from now), and a time in quiet hours moves to the next `morningHour`.
@@ -148,7 +148,7 @@ struct BackgroundPlanRefresher {
         let snapshot = loadSnapshot()
         let locationCalendar = selection().calendar(fallback: calendar, savedPlan: snapshot)
         let floor = now.addingTimeInterval(PlanWindow.minimumRefreshInterval)
-        guard let snapshot, hasCurrentSnapshot(snapshot, window: window, now: now, calendar: locationCalendar, availability: availability) else {
+        guard let snapshot, hasCurrentSnapshot(snapshot, selection: selection(), window: window, now: now, calendar: locationCalendar, availability: availability) else {
             if Self.isQuietHour(now, in: locationCalendar) {
                 // E.g. a run skipped for quiet hours: try again first thing, spaced only from the
                 // last plan made, since nothing has been refreshed since.
@@ -178,14 +178,16 @@ struct BackgroundPlanRefresher {
     }
 
     /// Whether the saved plan needs no refresh yet:
-    /// - none saved, from an earlier day (the location's), for another Plan Window than the
+    /// - none saved, for another location than the selection (one saved before locations were
+    ///   recorded counts as matching, as in the widgets), from an earlier day (the location's), for another Plan Window than the
     ///   Settings default, or stale for that window: not current;
     /// - otherwise with outfit suggestions: current;
     /// - otherwise weather only: current only when the model can't make suggestions on this
     ///   device today (not eligible, Apple Intelligence off). If it's available again (an earlier
     ///   generation failed) or still getting ready, refresh so the suggestions can be retried.
-    private func hasCurrentSnapshot(_ snapshot: PlanSnapshot?, window: PlanWindow, now: Date, calendar: Calendar, availability: RecommendationAvailability) -> Bool {
+    private func hasCurrentSnapshot(_ snapshot: PlanSnapshot?, selection: LocationSelection, window: PlanWindow, now: Date, calendar: Calendar, availability: RecommendationAvailability) -> Bool {
         guard let snapshot,
+              snapshot.location.map({ $0 == selection }) ?? true,
               snapshot.planWindow == window,
               !window.isPlanStale(lastLoadedAt: snapshot.generatedAt, now: now, calendar: calendar) else { return false }
         if snapshot.recommendation != nil { return true }
