@@ -6,6 +6,9 @@ let pacific = TimeZone(identifier: "America/Los_Angeles")!
 let tokyo = TimeZone(identifier: "Asia/Tokyo")!
 let rome = TimeZone(identifier: "Europe/Rome")!
 
+/// The language tests make outfits in, and record on the plans they save.
+let testResponseLanguage = "English"
+
 func date(_ iso: String) -> Date {
     try! Date(iso, strategy: .iso8601)
 }
@@ -18,7 +21,7 @@ func gregorianCalendar(in timeZone: TimeZone) -> Calendar {
 
 extension PlanSnapshot {
     static func generated(at date: Date) -> PlanSnapshot {
-        PlanSnapshot(weather: .placeholder, recommendation: .placeholder, generatedAt: date, provider: .apple)
+        PlanSnapshot(weather: .placeholder, recommendation: .placeholder, generatedAt: date, provider: .apple, adviceLanguage: testResponseLanguage)
     }
 
     static func weatherOnly(at date: Date) -> PlanSnapshot {
@@ -36,7 +39,7 @@ extension PlanSnapshot {
     }
 
     private static func covering(_ window: PlanWindow, from date: Date, in timeZone: TimeZone, location: LocationSelection?, recommendation: OutfitRecommendation?) -> PlanSnapshot {
-        PlanSnapshot(weather: .placeholder, recommendation: recommendation, generatedAt: date, provider: .apple, location: location, span: PlanSpan(window: window, startingAt: date, timeZone: timeZone))
+        PlanSnapshot(weather: .placeholder, recommendation: recommendation, generatedAt: date, provider: .apple, location: location, span: PlanSpan(window: window, startingAt: date, timeZone: timeZone), adviceLanguage: recommendation == nil ? nil : testResponseLanguage)
     }
 }
 

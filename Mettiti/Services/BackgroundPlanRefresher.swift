@@ -43,6 +43,8 @@ struct BackgroundPlanRefresher {
     let provider: () -> WeatherProvider
     /// The Settings default Plan Window; background refresh never follows the main screen's override.
     let planWindow: () -> PlanWindow
+    /// The language an outfit made now would be written in; an outfit in another language is remade.
+    var responseLanguage: () -> String = { OutfitAdvisor.responseLanguage() }
 
     /// How long to wait before trying again while the saved plan still needs a refresh, e.g.
     /// because this run failed. Shorter windows' own staleness comes first.
@@ -57,7 +59,7 @@ struct BackgroundPlanRefresher {
         let savedSnapshot = loadSnapshot()
         let window = planWindow()
         var locationCalendar = selection().calendar(fallback: calendar, savedPlan: savedSnapshot)
-        guard !hasCurrentSnapshot(savedSnapshot, selection: selection(), window: window, now: now(), calendar: locationCalendar, availability: availability) else { return .alreadyCurrent }
+        guard !hasCurrentSnapshot(savedSnapshot, selection: selection(), window: window, now: now(), calendar: locationCalendar, availability: availability, language: responseLanguage()) else { return .alreadyCurrent }
         // iOS can run a request late; `nextRequestDate` then asks for the morning.
         guard !Self.isQuietHour(now(), in: locationCalendar) else { return .skippedQuietHours }
 
@@ -85,6 +87,7 @@ struct BackgroundPlanRefresher {
         let freshSummary = WindowSummary(weather: weather, hourly: hourly, span: span)
         let recommendation: OutfitRecommendation?
         let adviceBasis: WindowSummary?
+        let adviceLanguage: String?
         let outcome: Outcome
         // Today's outfit for this place, source and Settings window still fits unless the weather
         // it was made for has had a Meaningful Change (#99); then only the weather is updated,
@@ -92,6 +95,7 @@ struct BackgroundPlanRefresher {
         if let saved = savedSnapshot,
            let outfit = saved.recommendation,
            let basis = saved.adviceBasis,
+           saved.adviceLanguage == responseLanguage(),
            saved.location == selection,
            saved.provider == provider,
            saved.planWindow == window,
@@ -99,6 +103,7 @@ struct BackgroundPlanRefresher {
            !freshSummary.differsMeaningfully(from: basis) {
             recommendation = outfit
             adviceBasis = basis
+            adviceLanguage = saved.adviceLanguage
             outcome = .refreshedKeepingOutfit
         } else {
             recommendation = if availability == .available {
@@ -107,6 +112,7 @@ struct BackgroundPlanRefresher {
                 nil
             }
             adviceBasis = recommendation.map { _ in freshSummary }
+            adviceLanguage = recommendation.map { _ in responseLanguage() }
             outcome = recommendation == nil ? .refreshedWeatherOnly : .refreshed
         }
         // `try?` above also swallows `CancellationError`: if the system expired the task mid-generation,
@@ -123,7 +129,7 @@ struct BackgroundPlanRefresher {
            latest.recommendation != nil || recommendation == nil {
             return .supersededByApp
         }
-        publish(PlanSnapshot(weather: weather, recommendation: recommendation, generatedAt: now(), provider: provider, location: selection, hourly: hourly, span: span, adviceBasis: adviceBasis))
+        publish(PlanSnapshot(weather: weather, recommendation: recommendation, generatedAt: now(), provider: provider, location: selection, hourly: hourly, span: span, adviceBasis: adviceBasis, adviceLanguage: adviceLanguage))
         return outcome
     }
 
@@ -148,7 +154,7 @@ struct BackgroundPlanRefresher {
         let snapshot = loadSnapshot()
         let locationCalendar = selection().calendar(fallback: calendar, savedPlan: snapshot)
         let floor = now.addingTimeInterval(PlanWindow.minimumRefreshInterval)
-        guard let snapshot, hasCurrentSnapshot(snapshot, selection: selection(), window: window, now: now, calendar: locationCalendar, availability: availability) else {
+        guard let snapshot, hasCurrentSnapshot(snapshot, selection: selection(), window: window, now: now, calendar: locationCalendar, availability: availability, language: responseLanguage()) else {
             if Self.isQuietHour(now, in: locationCalendar) {
                 // E.g. a run skipped for quiet hours: try again first thing, spaced only from the
                 // last plan made, since nothing has been refreshed since.
@@ -181,16 +187,17 @@ struct BackgroundPlanRefresher {
     /// - none saved, for another location than the selection (one saved before locations were
     ///   recorded counts as matching, as in the widgets), from an earlier day (the location's), for another Plan Window than the
     ///   Settings default, or stale for that window: not current;
-    /// - otherwise with outfit suggestions: current;
+    /// - otherwise with outfit suggestions: current, unless written in another language;
     /// - otherwise weather only: current only when the model can't make suggestions on this
     ///   device today (not eligible, Apple Intelligence off). If it's available again (an earlier
     ///   generation failed) or still getting ready, refresh so the suggestions can be retried.
-    private func hasCurrentSnapshot(_ snapshot: PlanSnapshot?, selection: LocationSelection, window: PlanWindow, now: Date, calendar: Calendar, availability: RecommendationAvailability) -> Bool {
+    private func hasCurrentSnapshot(_ snapshot: PlanSnapshot?, selection: LocationSelection, window: PlanWindow, now: Date, calendar: Calendar, availability: RecommendationAvailability, language: String) -> Bool {
         guard let snapshot,
               snapshot.location.map({ $0 == selection }) ?? true,
               snapshot.planWindow == window,
               !window.isPlanStale(lastLoadedAt: snapshot.generatedAt, now: now, calendar: calendar) else { return false }
-        if snapshot.recommendation != nil { return true }
+        // An outfit in another language (or from before it was recorded) is remade.
+        if snapshot.recommendation != nil { return snapshot.adviceLanguage == language }
         switch availability {
         case .unavailable(.deviceNotEligible), .unavailable(.appleIntelligenceNotEnabled):
             return true

@@ -95,6 +95,11 @@ final class DayPlanViewModel {
     @ObservationIgnored private var appliedPlanWindow: PlanWindow
     /// The weather the outfit on screen was written for (#99); nil when that's unknown.
     @ObservationIgnored private var adviceBasis: WindowSummary?
+    /// The language the outfit on screen was written in; nil when unknown, which never matches.
+    @ObservationIgnored private var adviceLanguage: String?
+    /// The language an outfit made now would be written in. An outfit in another language (the
+    /// app's language changed since it was made) is never kept or brought back.
+    @ObservationIgnored private let responseLanguage: @MainActor () -> String
     /// Whether the next load may keep the outfit on screen when the weather hasn't changed in a
     /// way that matters (#99). Automatic refreshes may; pull-to-refresh and changing the
     /// location or provider always remake it, and changing the Plan Window only brings back an
@@ -107,7 +112,8 @@ final class DayPlanViewModel {
     /// that keeps the outfit keeps them too.
     @ObservationIgnored private var outfitsByWindow: [PlanWindow: Advice] = [:]
 
-    init(locationManager: LocationProviding, locationPreference: LocationPreferenceStore, providerPreference: WeatherProviderPreferenceStore, planWindowPreference: PlanWindowPreferenceStore, fetcher: DayPlanFetching = DayPlanFetcher(), loadSnapshot: @escaping @MainActor () -> PlanSnapshot? = SharedStore.load, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = DayPlanViewModel.saveAndReloadWidgets, now: @escaping @MainActor () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent, lookUpCityName: @escaping @Sendable (CLLocationCoordinate2D) async -> String? = PlaceNameLookup.cityName) {
+    init(locationManager: LocationProviding, locationPreference: LocationPreferenceStore, providerPreference: WeatherProviderPreferenceStore, planWindowPreference: PlanWindowPreferenceStore, fetcher: DayPlanFetching = DayPlanFetcher(), loadSnapshot: @escaping @MainActor () -> PlanSnapshot? = SharedStore.load, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = DayPlanViewModel.saveAndReloadWidgets, now: @escaping @MainActor () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent, lookUpCityName: @escaping @Sendable (CLLocationCoordinate2D) async -> String? = PlaceNameLookup.cityName, responseLanguage: @escaping @MainActor () -> String = { OutfitAdvisor.responseLanguage() }) {
+        self.responseLanguage = responseLanguage
         self.locationManager = locationManager
         self.locationPreference = locationPreference
         self.providerPreference = providerPreference
@@ -225,7 +231,8 @@ final class DayPlanViewModel {
         if case .loaded(let weather, let hourly, _, let provider, _) = state,
            !isShowingSavedPlan,
            !isWeatherStale(for: activePlanWindow),
-           let made = outfitsByWindow[activePlanWindow] {
+           let made = outfitsByWindow[activePlanWindow],
+           made.language == responseLanguage() {
             let span = currentSpan(for: hourly)
             if !WindowSummary(weather: weather, hourly: hourly, span: span).differsMeaningfully(from: made.basis) {
                 loadTask?.cancel()
@@ -238,6 +245,7 @@ final class DayPlanViewModel {
         let wasShowingSavedPlan = isShowingSavedPlan
         isShowingSavedPlan = false
         adviceBasis = nil
+        adviceLanguage = nil
         // A Saved Plan's weather is stale whatever its age: it's not from the newest load.
         if wasShowingSavedPlan || isWeatherStale(for: activePlanWindow) {
             // Cancelled now, not when the refresh starts, so the old window's load can't write in between.
@@ -291,6 +299,7 @@ final class DayPlanViewModel {
     private func showSavedPlanIfCurrent() {
         isShowingSavedPlan = false
         adviceBasis = nil
+        adviceLanguage = nil
         guard let snapshot = loadSnapshot(),
               snapshot.isFromToday(now: now(), calendar: calendar),
               snapshot.location == locationPreference.selection,
@@ -298,6 +307,7 @@ final class DayPlanViewModel {
               snapshot.planWindow == activePlanWindow else { return }
         isShowingSavedPlan = true
         adviceBasis = snapshot.adviceBasis
+        adviceLanguage = snapshot.adviceLanguage
         if location == nil, case .currentLocation = locationPreference.selection, let place = snapshot.place {
             location = PlanLocation(name: place.name, coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude), isCurrentLocation: true)
         }
@@ -322,11 +332,12 @@ final class DayPlanViewModel {
               activePlanWindow.isPlanStale(lastLoadedAt: lastLoadRequestedAt, now: now(), calendar: calendar) else { return }
         // The Saved Plan is never for the Window Override, so today's plan for it stays on screen
         // in its place, and may be kept if its weather hasn't meaningfully changed (#99).
-        let overridePlan = planWindowOverride != nil && !isShowingSavedPlan ? currentAdvice.map { (state, $0.basis) } : nil
+        let overridePlan = planWindowOverride != nil && !isShowingSavedPlan ? currentAdvice.map { (state, $0) } : nil
         showSavedPlanIfCurrent()
-        if !isShowingSavedPlan, let (planState, basis) = overridePlan {
+        if !isShowingSavedPlan, let (planState, advice) = overridePlan {
             isShowingSavedPlan = true
-            adviceBasis = basis
+            adviceBasis = advice.basis
+            adviceLanguage = advice.language
             state = planState
         }
         if !isShowingSavedPlan { state = .idle }
@@ -512,7 +523,7 @@ final class DayPlanViewModel {
             // The outfit to keep must be for the window the plan now covers, which a switch during
             // the fetch may have changed: the one on screen, or one already made for that window.
             let candidate = keepingUnchangedAdvice
-                ? [adviceToKeep, outfitsByWindow[span.window]].compactMap { $0 }.first { $0.basis.window == span.window }
+                ? [adviceToKeep, outfitsByWindow[span.window]].compactMap { $0 }.first { $0.basis.window == span.window && $0.language == responseLanguage() }
                 : nil
             if let candidate, !WindowSummary(weather: weather, hourly: hourly, span: span).differsMeaningfully(from: candidate.basis) {
                 showLocation(ofWeatherAt: coordinate)
@@ -573,6 +584,7 @@ final class DayPlanViewModel {
         isShowingSavedPlan = false
         refreshFailureMessage = nil
         adviceBasis = recommendation.outfit.map { _ in WindowSummary(weather: weather, hourly: hourly, span: span) }
+        adviceLanguage = recommendation.outfit.map { _ in responseLanguage() }
         showLocation(ofWeatherAt: coordinate)
         state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: recommendation)
         if let currentAdvice {
@@ -585,12 +597,13 @@ final class DayPlanViewModel {
     private struct Advice {
         let outfit: OutfitRecommendation
         let basis: WindowSummary
+        let language: String?
     }
 
     /// The outfit on screen and the weather it was written for, when both are known.
     private var currentAdvice: Advice? {
         guard case .loaded(_, _, _, _, .ready(let outfit)) = state, let adviceBasis else { return nil }
-        return Advice(outfit: outfit, basis: adviceBasis)
+        return Advice(outfit: outfit, basis: adviceBasis, language: adviceLanguage)
     }
 
     /// Shows fresh weather with an outfit already made, still based on its original weather so
@@ -599,6 +612,7 @@ final class DayPlanViewModel {
         isShowingSavedPlan = false
         refreshFailureMessage = nil
         adviceBasis = advice.basis
+        adviceLanguage = advice.language
         state = .loaded(weather: weather, hourly: hourly, span: span, provider: provider, recommendation: .ready(advice.outfit))
         outfitsByWindow[span.window] = advice
         publishIfSettingsDefault(weather: weather, hourly: hourly, span: span, provider: provider, advice: advice)
@@ -609,7 +623,7 @@ final class DayPlanViewModel {
     /// the widgets and the next launch follow that, never the Window Override.
     private func publishIfSettingsDefault(weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, provider: WeatherProvider, advice: Advice?) {
         guard span.window == planWindowPreference.window else { return }
-        publishSnapshot(PlanSnapshot(weather: weather, recommendation: advice?.outfit, generatedAt: now(), provider: provider, location: locationPreference.selection, hourly: hourly, span: span, adviceBasis: advice?.basis, place: location.map { SavedPlace(name: $0.name, latitude: $0.latitude, longitude: $0.longitude) }))
+        publishSnapshot(PlanSnapshot(weather: weather, recommendation: advice?.outfit, generatedAt: now(), provider: provider, location: locationPreference.selection, hourly: hourly, span: span, adviceBasis: advice?.basis, adviceLanguage: advice?.language, place: location.map { SavedPlace(name: $0.name, latitude: $0.latitude, longitude: $0.longitude) }))
     }
 
     /// Whether a kept plan (today's Saved Plan or a pull-to-refreshed one) is on screen with its

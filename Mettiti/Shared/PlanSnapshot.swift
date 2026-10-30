@@ -20,6 +20,10 @@ struct PlanSnapshot: Codable, Sendable {
     /// refresh keeps the outfit, so small changes that add up still count. Nil without a
     /// recommendation, and in plans saved before it was stored, which are always remade.
     var adviceBasis: WindowSummary?
+    /// The language `recommendation` was written in (`OutfitAdvisor.responseLanguage()`), so a
+    /// refresh remakes the outfit when the app's language has changed since. Nil without a
+    /// recommendation, and in plans saved before it was stored, which are remade once.
+    var adviceLanguage: String?
     /// Where the plan was made, so a Current Location plan shown at launch has its map and city
     /// before a new fix arrives. Nil when saved before it was stored.
     var place: SavedPlace?
