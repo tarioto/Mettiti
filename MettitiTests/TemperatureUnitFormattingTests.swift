@@ -83,17 +83,17 @@ struct DayPlanLocaleFormattingTests {
         #expect(text == "H:72° L:58°  •  30% rain  •  UV 5")
     }
 
-    @Test func summaryLineIsItalianWithLocaleFormattedPercent() throws {
-        let key = "H:%@ L:%@  •  %@ rain  •  UV %lld"
-        let format = try italianBundle().localizedString(forKey: key, value: "<missing>", table: "Shared")
-        let rain = (0.3).formatted(.percent.precision(.fractionLength(0)).locale(italy))
-        #expect(rain == "30%")
-        #expect(String(format: format, "22 °C", "14 °C", rain, 5) == "Max 22 °C Min 14 °C  •  pioggia 30%  •  UV 5")
+    @Test func summaryLineIsItalianWithLocaleFormattedPercent() {
+        // 72°F = 22.2°C, 58°F = 14.4°C
+        let text = TemperatureUnit.celsius.formattedSummary(highFahrenheit: 72, lowFahrenheit: 58, precipitationProbability: 30, uvIndex: 4.6, locale: italy)
+            .replacingOccurrences(of: "\u{00A0}", with: " ")
+        #expect(text == "Max 22 °C Min 14 °C  •  pioggia 30%  •  UV 5")
     }
 
-    @Test func highLowLineIsItalianWithLocaleFormattedTemperatures() throws {
-        let format = try italianBundle().localizedString(forKey: "H:%@ L:%@", value: "<missing>", table: "Shared")
-        #expect(String(format: format, "22 °C", "14 °C") == "Max 22 °C Min 14 °C")
+    @Test func highLowLineIsItalianWithLocaleFormattedTemperatures() {
+        let text = TemperatureUnit.celsius.formattedHighLow(highFahrenheit: 72, lowFahrenheit: 58, locale: italy)
+            .replacingOccurrences(of: "\u{00A0}", with: " ")
+        #expect(text == "Max 22 °C Min 14 °C")
     }
 
     @Test func chartLegendAndAxisLabelsAreInItalian() throws {

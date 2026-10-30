@@ -19,7 +19,11 @@ struct DailyWeather: Sendable, Codable, Hashable {
 
     /// The condition's name in the current language, or the stored text when there's no condition.
     var localizedConditionDescription: String {
-        condition?.localizedDescription ?? conditionDescription
+        conditionDescription(in: .autoupdatingCurrent)
+    }
+
+    func conditionDescription(in locale: Locale) -> String {
+        condition?.localizedDescription(locale: locale) ?? conditionDescription
     }
 }
 
@@ -37,10 +41,10 @@ enum WeatherConditionKind: Codable, Sendable, Hashable {
 
     /// The condition's name in the current language: our catalog for WMO codes, Apple's own
     /// description for WeatherKit conditions. Nil for a WeatherKit condition this version doesn't know.
-    var localizedDescription: String? {
+    func localizedDescription(locale: Locale = .autoupdatingCurrent) -> String? {
         switch self {
         case .wmo(let code):
-            return WMOWeatherCode.description(for: code)
+            return WMOWeatherCode.description(for: code, locale: locale)
         case .weatherKit(let rawValue):
             return WeatherCondition(rawValue: rawValue)?.description
         }
@@ -61,24 +65,30 @@ extension DailyWeather {
 }
 
 enum WMOWeatherCode {
-    static func description(for code: Int) -> String {
+    static func description(for code: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        // A resource carries the locale so it picks the language, not just the number formats.
+        func name(_ resource: LocalizedStringResource) -> String {
+            var resource = resource
+            resource.locale = locale
+            return String(localized: resource)
+        }
         switch code {
-        case 0: return String(localized: "Clear sky", table: "Shared")
-        case 1: return String(localized: "Mainly clear", table: "Shared")
-        case 2: return String(localized: "Partly cloudy", table: "Shared")
-        case 3: return String(localized: "Overcast", table: "Shared")
-        case 45, 48: return String(localized: "Foggy", table: "Shared")
-        case 51, 53, 55: return String(localized: "Drizzle", table: "Shared")
-        case 56, 57: return String(localized: "Freezing drizzle", table: "Shared")
-        case 61, 63, 65: return String(localized: "Rain", table: "Shared")
-        case 66, 67: return String(localized: "Freezing rain", table: "Shared")
-        case 71, 73, 75: return String(localized: "Snow", table: "Shared")
-        case 77: return String(localized: "Snow grains", table: "Shared")
-        case 80, 81, 82: return String(localized: "Rain showers", table: "Shared")
-        case 85, 86: return String(localized: "Snow showers", table: "Shared")
-        case 95: return String(localized: "Thunderstorm", table: "Shared")
-        case 96, 99: return String(localized: "Thunderstorm with hail", table: "Shared")
-        default: return String(localized: "Unknown conditions", table: "Shared")
+        case 0: return name(LocalizedStringResource("Clear sky", table: "Shared"))
+        case 1: return name(LocalizedStringResource("Mainly clear", table: "Shared"))
+        case 2: return name(LocalizedStringResource("Partly cloudy", table: "Shared"))
+        case 3: return name(LocalizedStringResource("Overcast", table: "Shared"))
+        case 45, 48: return name(LocalizedStringResource("Foggy", table: "Shared"))
+        case 51, 53, 55: return name(LocalizedStringResource("Drizzle", table: "Shared"))
+        case 56, 57: return name(LocalizedStringResource("Freezing drizzle", table: "Shared"))
+        case 61, 63, 65: return name(LocalizedStringResource("Rain", table: "Shared"))
+        case 66, 67: return name(LocalizedStringResource("Freezing rain", table: "Shared"))
+        case 71, 73, 75: return name(LocalizedStringResource("Snow", table: "Shared"))
+        case 77: return name(LocalizedStringResource("Snow grains", table: "Shared"))
+        case 80, 81, 82: return name(LocalizedStringResource("Rain showers", table: "Shared"))
+        case 85, 86: return name(LocalizedStringResource("Snow showers", table: "Shared"))
+        case 95: return name(LocalizedStringResource("Thunderstorm", table: "Shared"))
+        case 96, 99: return name(LocalizedStringResource("Thunderstorm with hail", table: "Shared"))
+        default: return name(LocalizedStringResource("Unknown conditions", table: "Shared"))
         }
     }
 

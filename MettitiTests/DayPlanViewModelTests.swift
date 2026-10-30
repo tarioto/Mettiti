@@ -2059,6 +2059,65 @@ struct DayPlanViewModelTests {
         #expect(await !fetcher.isWaiting(onLatitude: 10))
     }
 
+    @Test func switchingWithASavedPlanOnScreenAndFreshWeatherShowsTheSkeletonUntilTheNewOutfit() async throws {
+        let fetcher = HeldRecommendationFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
+        viewModel.start()
+        // The fresh weather is in and the saved outfit is still up while the new one is made.
+        try await waitUntil { fetcher.isGenerating }
+        #expect(viewModel.state.readySummary == "Saved outfit")
+        let recorder = StateRecorder(viewModel, skippingCurrent: true)
+        defer { recorder.stop() }
+
+        viewModel.selectPlanWindow(.threeHours)
+
+        // The saved plan is for the old window, so the plan reloads: the skeleton, never the saved outfit.
+        try await waitUntil { fetcher.requestCount == 2 }
+        #expect(viewModel.state.isRecommendationLoading)
+        #expect(viewModel.state.readySummary == nil)
+        fetcher.finish(with: .success(OutfitRecommendation(summary: "Three-hour outfit", items: [])))
+        try await waitUntil { viewModel.state.readySummary == "Three-hour outfit" }
+
+        #expect(viewModel.state.span?.window == .threeHours)
+        #expect(viewModel.state.loadedHigh == 10)
+        #expect(recorder.states.allSatisfy { $0.readySummary != "Saved outfit" })
+    }
+
+    @Test func anOutfitThatFailsAfterSwitchingShowsTheFailureNotTheSkeletonOrTheOldOutfit() async throws {
+        let fetcher = HeldRecommendationFetcher()
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: nil)
+        viewModel.start()
+        try await waitUntil { fetcher.isGenerating }
+        fetcher.finish(with: .success(OutfitRecommendation(summary: "Rest of day outfit", items: [])))
+        try await waitUntil { viewModel.state.readySummary == "Rest of day outfit" }
+
+        viewModel.selectPlanWindow(.threeHours)
+        try await waitUntil { fetcher.requestCount == 2 }
+        #expect(viewModel.state.isRecommendationLoading)
+        fetcher.finish(with: .failure(FakeFetchError()))
+        try await waitUntil { viewModel.state.recommendationFailureMessage != nil }
+
+        #expect(!viewModel.state.isRecommendationLoading)
+        #expect(viewModel.state.readySummary == nil)
+        #expect(viewModel.state.loadedHigh == 10)
+    }
+
+    @Test func anUnavailableModelAfterSwitchingShowsWhyNotTheSkeleton() async throws {
+        let fetcher = GatedDayPlanFetcher(availability: .unavailable(.modelNotReady))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher)
+        viewModel.start()
+        try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
+        await fetcher.complete(latitude: 10, with: .success(.forecast(high: 10)))
+        try await waitUntil { viewModel.state.loadedHigh == 10 && !viewModel.state.isRecommendationLoading }
+
+        viewModel.selectPlanWindow(.threeHours)
+        try await Task.sleep(for: .milliseconds(200))
+
+        #expect(!viewModel.state.isRecommendationLoading)
+        #expect(viewModel.state.recommendationState?.problemMessage == RecommendationState.unavailable(.modelNotReady).problemMessage)
+        #expect(viewModel.state.loadedHigh == 10)
+    }
+
     @Test func aLoadThatFailsAfterSwitchingKeepsTheWeatherWithANoticeAndNeverBecomesTheErrorScreen() async throws {
         let fetcher = GatedDayPlanFetcher()
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, saved: .saved(high: 99, summary: "Saved outfit", location: cityA))
@@ -3311,14 +3370,17 @@ private final class MainActorGatedRecommendationFetcher: DayPlanFetching {
 /// Returns weather right away (high = latitude), then holds each outfit until the test
 /// finishes it.
 private final class HeldRecommendationFetcher: DayPlanFetching {
-    private let results: AsyncStream<Result<OutfitRecommendation, Error>>
-    private let continuation: AsyncStream<Result<OutfitRecommendation, Error>>.Continuation
+    typealias Waiter = (id: UUID, continuation: CheckedContinuation<OutfitRecommendation, Error>)
+    private let queue = Mutex((waiters: [Waiter](), results: [Result<OutfitRecommendation, Error>]()))
     private let generating = Mutex(false)
+    private let requests = Mutex(0)
     private let weatherFailuresLeft: Mutex<Int>
+
+    /// How many outfits have been asked for, cancelled ones included.
+    var requestCount: Int { requests.withLock { $0 } }
 
     /// The first `failingWeatherRequests` weather requests fail, e.g. to fail a Saved Plan's refresh.
     init(failingWeatherRequests: Int = 0) {
-        (results, continuation) = AsyncStream.makeStream(of: Result<OutfitRecommendation, Error>.self)
         weatherFailuresLeft = Mutex(failingWeatherRequests)
     }
 
@@ -3330,8 +3392,16 @@ private final class HeldRecommendationFetcher: DayPlanFetching {
         weatherFailuresLeft.withLock { $0 = count }
     }
 
+    /// Hands the result to the oldest outfit still waiting, or keeps it for the next one asked for.
     func finish(with result: Result<OutfitRecommendation, Error>) {
-        continuation.yield(result)
+        let waiter = queue.withLock { queue -> Waiter? in
+            if queue.waiters.isEmpty {
+                queue.results.append(result)
+                return nil
+            }
+            return queue.waiters.removeFirst()
+        }
+        waiter?.continuation.resume(with: result)
     }
 
     func fetchWeather(for coordinate: CLLocationCoordinate2D, from provider: WeatherProvider) async throws -> (DailyWeather, HourlyForecast?) {
@@ -3351,10 +3421,27 @@ private final class HeldRecommendationFetcher: DayPlanFetching {
 
     func recommendation(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) async throws -> OutfitRecommendation {
         generating.withLock { $0 = true }
-        for await result in results {
-            return try result.get()
+        requests.withLock { $0 += 1 }
+        let id = UUID()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                let ready: Result<OutfitRecommendation, Error>? = queue.withLock { queue in
+                    if Task.isCancelled { return .failure(CancellationError()) }
+                    if queue.results.isEmpty {
+                        queue.waiters.append((id, continuation))
+                        return nil
+                    }
+                    return queue.results.removeFirst()
+                }
+                if let ready { continuation.resume(with: ready) }
+            }
+        } onCancel: {
+            // A cancelled request stops waiting, so it can't take the result meant for the next one.
+            let waiter = queue.withLock { queue in
+                queue.waiters.firstIndex { $0.id == id }.map { queue.waiters.remove(at: $0) }
+            }
+            waiter?.continuation.resume(throwing: CancellationError())
         }
-        throw CancellationError()
     }
 }
 
