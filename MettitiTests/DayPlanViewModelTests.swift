@@ -10,16 +10,17 @@ struct DayPlanViewModelTests {
     @Test func pullToRefreshAfterLocationFailureLoadsPlanOnceLocationArrives() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -37,16 +38,17 @@ struct DayPlanViewModelTests {
     }
 
     @Test func searchedCityIsTheLocationAsSoonAsItsPicked() {
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "Lisbon", latitude: 38.7, longitude: -9.1)
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: FakeDayPlanFetcher(),
             loadSnapshot: { nil },
             publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific),
             lookUpCityName: { _ in "Looked up" }
         )
 
@@ -57,17 +59,18 @@ struct DayPlanViewModelTests {
 
     @Test func currentLocationGetsItsCityNameOnceLookedUpAndKeepsItForANearbyFix() async throws {
         let location = FakeLocationProvider()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         let lookups = Mutex(0)
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: FakeDayPlanFetcher(),
             loadSnapshot: { nil },
             publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific),
             lookUpCityName: { _ in
                 lookups.withLock { $0 += 1 }
                 return "Bangkok"
@@ -90,16 +93,17 @@ struct DayPlanViewModelTests {
     @Test func currentLocationFollowsTheWeatherOnScreenNotEveryFix() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
             publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific),
             lookUpCityName: { $0.latitude < 13.77 ? "Bangkok" : "Nonthaburi" }
         )
 
@@ -121,17 +125,18 @@ struct DayPlanViewModelTests {
     @Test func refreshInCurrentLocationAfterCustomCityDoesNotReloadThatCity() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { snapshots.append($0) }
+            publishSnapshot: { snapshots.append($0) },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -153,16 +158,17 @@ struct DayPlanViewModelTests {
     @Test func refreshInCurrentLocationReloadsLastGPSFixWithoutNewLocationRequest() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -180,17 +186,18 @@ struct DayPlanViewModelTests {
     @Test func refreshAfterReturningToCurrentLocationRequestsNewFixInsteadOfReloadingOldOne() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { snapshots.append($0) }
+            publishSnapshot: { snapshots.append($0) },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -213,16 +220,17 @@ struct DayPlanViewModelTests {
 
     @Test func refreshForCustomCityReloadsThatCity() async throws {
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -236,17 +244,18 @@ struct DayPlanViewModelTests {
 
     @Test func slowLoadForPreviousCityDoesNotOverwriteNewerCity() async throws {
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { snapshots.append($0) }
+            publishSnapshot: { snapshots.append($0) },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         let loadA = Task { await viewModel.refresh() }
@@ -267,16 +276,17 @@ struct DayPlanViewModelTests {
 
     @Test func supersededLoadThatFailsDoesNotReplaceNewerPlan() async throws {
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         let loadA = Task { await viewModel.refresh() }
@@ -296,16 +306,17 @@ struct DayPlanViewModelTests {
 
     @Test func pullToRefreshFinishesOnlyWhenTheRefreshedLoadFinishes() async throws {
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         var refreshFinished = false
@@ -421,17 +432,18 @@ struct DayPlanViewModelTests {
 
     @Test func lateRecommendationFromSupersededLoadDoesNotOverwriteNewerCity() async throws {
         let fetcher = GatedRecommendationFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { snapshots.append($0) }
+            publishSnapshot: { snapshots.append($0) },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -454,16 +466,17 @@ struct DayPlanViewModelTests {
     @Test func retryCancelledBySwitchingToCurrentLocationLeavesPlanIdleSoNextGPSFixLoads() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher(recommendation: .failure(FakeFetchError()))
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
         viewModel.start()
         try await waitUntil { viewModel.state.recommendationFailureMessage != nil }
@@ -482,17 +495,18 @@ struct DayPlanViewModelTests {
 
     @Test func retrySupersededByLoadForAnotherCityNeverWritesStateOrPublishes() async throws {
         let fetcher = GatedRecommendationFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { snapshots.append($0) }
+            publishSnapshot: { snapshots.append($0) },
+            calendar: gregorianCalendar(in: pacific)
         )
         viewModel.start()
         try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
@@ -518,16 +532,17 @@ struct DayPlanViewModelTests {
     @Test func reselectingTheSameCityKeepsThePlanWithoutRefetching() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -618,17 +633,18 @@ struct DayPlanViewModelTests {
     @Test func todaysPlanForCurrentLocationIsReplacedOnceTheGPSFixArrives() async throws {
         let location = FakeLocationProvider()
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
-            publishSnapshot: { snapshots.append($0) }
+            publishSnapshot: { snapshots.append($0) },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -646,7 +662,7 @@ struct DayPlanViewModelTests {
     @Test func currentLocationSavedPlanShowsItsMapAndCityAtLaunchAndMovesWithTheRefreshedWeather() async throws {
         let location = FakeLocationProvider()
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         var saved = PlanSnapshot.saved(high: 99, summary: "Saved outfit", location: .currentLocation)
         saved.place = SavedPlace(name: "Seattle", latitude: 47.6, longitude: -122.3)
@@ -655,10 +671,11 @@ struct DayPlanViewModelTests {
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { saved },
             publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific),
             lookUpCityName: { _ in
                 lookups.withLock { $0 += 1 }
                 return "Elsewhere"
@@ -680,7 +697,7 @@ struct DayPlanViewModelTests {
     @Test func savedPlanLocationMovesToTheFixTheRefreshedWeatherLoadedFor() async throws {
         let location = FakeLocationProvider()
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         var saved = PlanSnapshot.saved(high: 99, summary: "Saved outfit", location: .currentLocation)
         saved.place = SavedPlace(name: "Seattle", latitude: 47.6, longitude: -122.3)
@@ -688,10 +705,11 @@ struct DayPlanViewModelTests {
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { saved },
             publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific),
             lookUpCityName: { _ in "Portland" }
         )
 
@@ -707,17 +725,18 @@ struct DayPlanViewModelTests {
 
     @Test func savedPlanRecordsWhereItWasMade() async throws {
         let location = FakeLocationProvider()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: FakeDayPlanFetcher(),
             loadSnapshot: { nil },
             publishSnapshot: { snapshots.append($0) },
+            calendar: gregorianCalendar(in: pacific),
             lookUpCityName: { _ in "Bangkok" }
         )
 
@@ -731,7 +750,7 @@ struct DayPlanViewModelTests {
 
     @Test func failedCityLookupIsRetriedByALaterLoadNearby() async throws {
         let location = FakeLocationProvider()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         // Lookups for the first fix fail however often they're tried: the load itself may retry
         // one that finished before the outfit did, so only the nearby fix's lookup succeeds.
@@ -740,10 +759,11 @@ struct DayPlanViewModelTests {
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: FakeDayPlanFetcher(),
             loadSnapshot: { nil },
             publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific),
             lookUpCityName: { coordinate in
                 lookups.withLock { $0.started += 1 }
                 defer { lookups.withLock { $0.finished += 1 } }
@@ -767,16 +787,17 @@ struct DayPlanViewModelTests {
 
     @Test func locationIsUnavailableOnlyOnceGettingOneFailed() {
         let location = FakeLocationProvider()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: FakeDayPlanFetcher(),
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -789,16 +810,17 @@ struct DayPlanViewModelTests {
 
     @Test func choosingAnotherCityAfterAFailedRefreshShowsItsWeatherBeforeTheOutfit() async throws {
         let fetcher = GatedRecommendationFetcher(failingLatitudes: [10])
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = cityA
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: cityA) },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -812,17 +834,18 @@ struct DayPlanViewModelTests {
 
     @Test func choosingAnotherCityDuringTheRefreshNeverShowsTheSavedOutfitWithItsWeather() async throws {
         let fetcher = GatedRecommendationFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = cityA
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: cityA) },
-            publishSnapshot: { snapshots.append($0) }
+            publishSnapshot: { snapshots.append($0) },
+            calendar: gregorianCalendar(in: pacific)
         )
         viewModel.start()
         try await waitUntil { await fetcher.pendingRecommendationCount == 1 }
@@ -849,16 +872,17 @@ struct DayPlanViewModelTests {
 
     @Test func weatherFailureForAnotherCityChosenDuringTheRefreshFailsThePlanInsteadOfKeepingTheSavedOne() async throws {
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = cityA
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: cityA) },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
         viewModel.start()
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
@@ -903,17 +927,18 @@ struct DayPlanViewModelTests {
     @Test func locationErrorDuringTheRefreshKeepsTodaysPlanOnScreenUntilALaterFixReplacesIt() async throws {
         let location = FakeLocationProvider()
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
-            publishSnapshot: { snapshots.append($0) }
+            publishSnapshot: { snapshots.append($0) },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -935,16 +960,17 @@ struct DayPlanViewModelTests {
     @Test func refreshBeforeTheFirstGPSFixKeepsTodaysPlanAndTheNextFixRefreshesIt() async throws {
         let location = FakeLocationProvider()
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -1021,17 +1047,18 @@ struct DayPlanViewModelTests {
         let fetcher = GatedRecommendationFetcher()
         let providerPreference = WeatherProviderPreferenceStore(defaults: isolatedDefaults())
         providerPreference.provider = .apple
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = cityA
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: providerPreference,
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: cityA, provider: .apple) },
-            publishSnapshot: { snapshots.append($0) }
+            publishSnapshot: { snapshots.append($0) },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         viewModel.start()
@@ -1057,7 +1084,7 @@ struct DayPlanViewModelTests {
 
     @Test func planCoversTheChosenPlanWindowFromNow() async throws {
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .threeHours
         var snapshots: [PlanSnapshot] = []
         let viewModel = makePlanWindowViewModel(fetcher: fetcher, planWindowPreference: planWindowPreference, publishSnapshot: { snapshots.append($0) })
@@ -1074,7 +1101,7 @@ struct DayPlanViewModelTests {
 
     @Test func changingThePlanWindowRegeneratesTheOutfitForTheNewWindowWithoutRefetching() async throws {
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         let viewModel = makePlanWindowViewModel(fetcher: fetcher, planWindowPreference: planWindowPreference)
         viewModel.start()
         try await waitUntil { viewModel.state.readySummary != nil }
@@ -1091,7 +1118,7 @@ struct DayPlanViewModelTests {
 
     @Test func changingThePlanWindowWhileRefreshingKeepsTheRefreshAndUsesTheNewWindow() async throws {
         let fetcher = GatedDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         let viewModel = makePlanWindowViewModel(fetcher: fetcher, planWindowPreference: planWindowPreference)
         viewModel.start()
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
@@ -1111,7 +1138,7 @@ struct DayPlanViewModelTests {
 
     @Test func retryingTheOutfitCoversTheWindowFromTheRetry() async throws {
         let fetcher = FakeDayPlanFetcher(recommendation: .failure(FakeFetchError()))
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .oneHour
         let clock = FakeClock(planWindowClock)
         let viewModel = makePlanWindowViewModel(fetcher: fetcher, planWindowPreference: planWindowPreference, clock: clock)
@@ -1134,7 +1161,7 @@ struct DayPlanViewModelTests {
         (PlanWindow.threeHours, false),
     ])
     func savedPlanIsOnlyShownForTheSamePlanWindow(window: PlanWindow, isShown: Bool) {
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = window
         // Saved before Plan Windows existed, so it covers the rest of the day.
         let saved = PlanSnapshot.saved(high: 99, summary: "Saved outfit", location: cityA, generatedAt: planWindowClock)
@@ -1149,17 +1176,18 @@ struct DayPlanViewModelTests {
         let fetcher = MainActorGatedRecommendationFetcher()
         let providerPreference = WeatherProviderPreferenceStore(defaults: isolatedDefaults())
         providerPreference.provider = .apple
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = cityA
         var snapshots: [PlanSnapshot] = []
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: providerPreference,
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: cityA, provider: .apple) },
-            publishSnapshot: { snapshots.append($0) }
+            publishSnapshot: { snapshots.append($0) },
+            calendar: gregorianCalendar(in: pacific)
         )
         viewModel.start()
         try await waitUntil { fetcher.pendingCount == 1 }
@@ -1406,16 +1434,17 @@ struct DayPlanViewModelTests {
     @Test func loadSupersededWhileCheckingTheModelWritesNothingSoTheNextGPSFixLoads() async throws {
         let location = FakeLocationProvider()
         let fetcher = AvailabilityGatedFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = cityA
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         let loadA = Task { await viewModel.refresh() }
@@ -1465,6 +1494,21 @@ struct DayPlanViewModelTests {
         #expect(viewModel.location == nil)
     }
 
+    @Test func currentLocationJudgesTheSavedPlanByTheDevicesDayJustAfterMidnight() {
+        // 12:10 AM Oct 19 in Pacific, which is already the afternoon of Oct 19 in Tokyo.
+        let now = date("2026-10-19T00:10:00-07:00")
+        let lateYesterday = PlanSnapshot.saved(high: 99, summary: "Yesterday's outfit", location: .currentLocation, generatedAt: date("2026-10-18T23:50:00-07:00"))
+        let justAfterMidnight = PlanSnapshot.saved(high: 99, summary: "Today's outfit", location: .currentLocation, generatedAt: date("2026-10-19T00:05:00-07:00"))
+
+        let stale = makeCurrentLocationViewModel(location: FakeLocationProvider(), fetcher: GatedDayPlanFetcher(), saved: lateYesterday, now: { now })
+        stale.start()
+        let fresh = makeCurrentLocationViewModel(location: FakeLocationProvider(), fetcher: GatedDayPlanFetcher(), saved: justAfterMidnight, now: { now })
+        fresh.start()
+
+        #expect(stale.state.readySummary == nil)
+        #expect(fresh.state.readySummary == "Today's outfit")
+    }
+
     @Test func locationErrorWhileWaitingForTheFirstFixKeepsTheSavedPlanWithANotice() async throws {
         let location = FakeLocationProvider()
         let viewModel = makeCurrentLocationViewModel(location: location, fetcher: GatedDayPlanFetcher(), saved: .saved(high: 99, summary: "Saved outfit", location: .currentLocation))
@@ -1479,16 +1523,17 @@ struct DayPlanViewModelTests {
     @Test func loadCancelledBeforeItRunsWritesNothingSoTheNextGPSFixLoads() async throws {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = cityA
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
 
         // City B's load is enqueued, then superseded before it gets to run.
@@ -1696,13 +1741,13 @@ struct DayPlanViewModelTests {
         let clock = FakeClock(date("2026-10-18T20:00:00-07:00"))
         let location = FakeLocationProvider()
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
             publishSnapshot: { _ in },
@@ -1729,13 +1774,13 @@ struct DayPlanViewModelTests {
     @Test func returningOnANewDayAfterTheLocationNeverArrivedStillClearsYesterdaysPlan() async throws {
         let clock = FakeClock(date("2026-10-18T20:00:00-07:00"))
         let location = FakeLocationProvider()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: GatedDayPlanFetcher(),
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation, generatedAt: date("2026-10-18T08:00:00-07:00")) },
             publishSnapshot: { _ in },
@@ -1759,7 +1804,7 @@ struct DayPlanViewModelTests {
     @Test func returningHalfAnHourLaterForTheNextHourRefetchesTheWeather() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .oneHour
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -1776,7 +1821,7 @@ struct DayPlanViewModelTests {
     @Test func returningWithinHalfAnHourForTheNextHourKeepsThePlanWithoutRefetching() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .oneHour
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -1794,7 +1839,7 @@ struct DayPlanViewModelTests {
     @Test func returningAfterSwitchingToAShorterWindowGoesByThatWindowsThreshold() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
         try await waitUntil { viewModel.state.readySummary != nil }
@@ -1818,7 +1863,7 @@ struct DayPlanViewModelTests {
     @Test func switchingToAShorterWindowWithWeatherTooOldForItRefetchesFirst() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .twelveHours
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -1837,7 +1882,7 @@ struct DayPlanViewModelTests {
     @Test func switchingToALongerWindowWithWeatherStillFreshForItReusesTheWeather() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .oneHour
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -1856,7 +1901,7 @@ struct DayPlanViewModelTests {
     @Test func switchingBackToAWindowAlreadyMadeForThisWeatherShowsItWithoutAskingTheModel() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .threeHours
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -1878,7 +1923,7 @@ struct DayPlanViewModelTests {
     @Test func refetchingTheWeatherForgetsTheOutfitsMadeForOtherWindows() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .threeHours
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -1899,7 +1944,7 @@ struct DayPlanViewModelTests {
     @Test func theOutfitSkeletonShowsWhileTheNewWindowsOutfitIsMade() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = GatedRecommendationFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .threeHours
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -1922,7 +1967,7 @@ struct DayPlanViewModelTests {
     @Test func theWholePlanShowsTheSkeletonWhileTheWeatherIsRefetchedForTheNewWindow() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = GatedRecommendationFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         let recorder = StateRecorder(viewModel, skippingCurrent: true)
         viewModel.start()
@@ -1947,7 +1992,7 @@ struct DayPlanViewModelTests {
     @Test func switchingAgainWhileTheWeatherIsRefetchedKeepsThatRefetchAndUsesTheLatestWindow() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = GatedDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .twelveHours
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2095,16 +2140,17 @@ struct DayPlanViewModelTests {
     @Test func switchingBeforeTheFirstGPSFixKeepsTodaysWeatherDropsItsOutfitAndTheFixLoadsTheNewWindow() async throws {
         let location = FakeLocationProvider()
         let fetcher = GatedDayPlanFetcher()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { .saved(high: 99, summary: "Saved outfit", location: .currentLocation) },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
         let recorder = StateRecorder(viewModel, skippingCurrent: true)
         viewModel.start()
@@ -2132,7 +2178,7 @@ struct DayPlanViewModelTests {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)), recommendation: .success(OutfitRecommendation(summary: "Three-hour outfit", items: [])))
         let store = FakeSnapshotStore()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .threeHours
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2165,7 +2211,7 @@ struct DayPlanViewModelTests {
     @Test func switchingToAWindowWhoseWeatherIsTooOldRefetchesAndKeepsItsOutfitIfNothingMeaningfullyChanged() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)), recommendation: .success(OutfitRecommendation(summary: "One-hour outfit", items: [])))
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .oneHour
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2188,7 +2234,7 @@ struct DayPlanViewModelTests {
     @Test func switchingDuringAnAutomaticRefetchKeepsTheNewWindowsOutfitIfNothingMeaningfullyChanged() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = GatedDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .threeHours
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2214,7 +2260,7 @@ struct DayPlanViewModelTests {
     @Test func aRefetchThatRemakesTheOutfitDropsOtherWindowsOutfits() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)))
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .threeHours
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2240,7 +2286,7 @@ struct DayPlanViewModelTests {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
         let defaults = isolatedDefaults()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: defaults)
+        let planWindowPreference = testPlanWindowStore(defaults: defaults)
         let store = FakeSnapshotStore()
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2250,14 +2296,14 @@ struct DayPlanViewModelTests {
         try await waitUntil { viewModel.state.span?.window == .oneHour && viewModel.state.readySummary != nil }
 
         #expect(planWindowPreference.window == .restOfDay)
-        #expect(PlanWindowPreferenceStore(defaults: defaults).window == .restOfDay)
+        #expect(testPlanWindowStore(defaults: defaults).window == .restOfDay)
         #expect(store.published.map(\.planWindow) == [.restOfDay])
     }
 
     @Test func makingTheOverrideTheSettingsDefaultSavesThePlanOnScreenForTheWidgets() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         let store = FakeSnapshotStore()
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2275,12 +2321,12 @@ struct DayPlanViewModelTests {
         let defaults = isolatedDefaults()
         let fetcher = FakeDayPlanFetcher()
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
-        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: PlanWindowPreferenceStore(defaults: defaults))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: testPlanWindowStore(defaults: defaults))
         viewModel.start()
         viewModel.selectPlanWindow(.oneHour)
         #expect(viewModel.activePlanWindow == .oneHour)
 
-        let relaunched = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: PlanWindowPreferenceStore(defaults: defaults))
+        let relaunched = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: testPlanWindowStore(defaults: defaults))
 
         #expect(relaunched.activePlanWindow == .restOfDay)
     }
@@ -2288,7 +2334,7 @@ struct DayPlanViewModelTests {
     @Test func theOverrideEndsOnANewDay() async throws {
         let clock = FakeClock(date("2026-10-19T20:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .sixHours
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2307,7 +2353,7 @@ struct DayPlanViewModelTests {
     @Test func pullToRefreshOnANewDayEndsTheOverride() async throws {
         let clock = FakeClock(date("2026-10-19T23:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
         try await waitUntil { viewModel.state.readySummary != nil }
@@ -2326,14 +2372,14 @@ struct DayPlanViewModelTests {
         let clock = FakeClock(date("2026-10-19T14:30:00-07:00")) // 23:30 in Rome
         let fetcher = FakeDayPlanFetcher(hourly: HourlyForecast(timeZone: rome, points: []))
         let shared = isolatedDefaults()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults(), sharedDefaults: shared, reloadWidgets: {})
+        let locationPreference = testLocationStore(sharedDefaults: shared)
         locationPreference.selection = romeCityWithoutZone
         let store = FakeSnapshotStore()
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { store.saved },
             publishSnapshot: { store.publish($0) },
@@ -2366,6 +2412,17 @@ struct DayPlanViewModelTests {
         #expect(viewModel.state.readySummary == nil)
     }
 
+    @Test func aRestOfDaySpanWithoutAnHourlyForecastEndsAtTheCitysMidnight() async throws {
+        let fetcher = FakeDayPlanFetcher()
+        let clock = FakeClock(date("2026-10-08T19:00:00+09:00"))
+        let viewModel = makeCityViewModel(tokyoCity, fetcher: fetcher, saved: nil, clock: clock)
+
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        #expect(await fetcher.requestedSpans.last?.interval.end == date("2026-10-09T00:00:00+09:00"))
+    }
+
     @Test func aZonelessCityWhoseSavedPlanRecordsNoZoneUsesTheDevicesZone() async throws {
         let clock = FakeClock(date("2026-10-19T15:05:00-07:00"))
         let saved = PlanSnapshot.saved(high: 99, summary: "Saved outfit", location: romeCityWithoutZone, generatedAt: date("2026-10-19T14:30:00-07:00"))
@@ -2378,13 +2435,13 @@ struct DayPlanViewModelTests {
 
     @Test func aCityThatHasAZoneKeepsItWhenTheForecastReportsAnother() async throws {
         let fetcher = FakeDayPlanFetcher(hourly: HourlyForecast(timeZone: rome, points: []))
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults(), sharedDefaults: isolatedDefaults(), reloadWidgets: {})
+        let locationPreference = testLocationStore()
         locationPreference.selection = tokyoCity
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
             publishSnapshot: { _ in },
@@ -2399,16 +2456,17 @@ struct DayPlanViewModelTests {
 
     @Test func aLoadForACityTheUserHasLeftDoesNotWriteItsZoneOntoTheNewSelection() async throws {
         let fetcher = GatedDayPlanFetcher(hourly: HourlyForecast(timeZone: rome, points: []))
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults(), sharedDefaults: isolatedDefaults(), reloadWidgets: {})
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "City A", latitude: 10, longitude: 10)
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
         let loadA = Task { await viewModel.refresh() }
         try await waitUntil { await fetcher.isWaiting(onLatitude: 10) }
@@ -2488,13 +2546,13 @@ struct DayPlanViewModelTests {
 
     @Test func changingTheLocationAppliesItsDayRightAway() async throws {
         let clock = FakeClock(date("2026-10-19T07:00:00-07:00"))
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3, timeZone: pacific)
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: FakeDayPlanFetcher(),
             loadSnapshot: { nil },
             publishSnapshot: { _ in },
@@ -2514,7 +2572,7 @@ struct DayPlanViewModelTests {
 
     @Test func changingTheSettingsDefaultReplacesTheOverride() async throws {
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         let viewModel = makePlanWindowViewModel(fetcher: fetcher, planWindowPreference: planWindowPreference)
         viewModel.start()
         try await waitUntil { viewModel.state.readySummary != nil }
@@ -2530,7 +2588,7 @@ struct DayPlanViewModelTests {
     @Test func pullToRefreshMinutesAfterTheLastLoadStillRefetches() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .oneHour
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2561,7 +2619,7 @@ struct DayPlanViewModelTests {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)), recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
         let store = FakeSnapshotStore()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .oneHour
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2587,7 +2645,7 @@ struct DayPlanViewModelTests {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)), recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
         let store = FakeSnapshotStore()
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .oneHour
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2607,7 +2665,7 @@ struct DayPlanViewModelTests {
     @Test func smallChangesAddingUpToAMeaningfulOneRegenerateTheOutfit() async throws {
         let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
         let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)))
-        let planWindowPreference = PlanWindowPreferenceStore(defaults: isolatedDefaults())
+        let planWindowPreference = testPlanWindowStore()
         planWindowPreference.window = .oneHour
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference)
         viewModel.start()
@@ -2656,6 +2714,59 @@ struct DayPlanViewModelTests {
         #expect(await fetcher.recommendationRequestCount == 1)
     }
 
+    @Test(arguments: ["French", nil] as [String?])
+    func savedPlanWrittenInAnotherOrNoLanguageIsRemadeOnLaunchButItsWeatherShowsAtOnce(savedLanguage: String?) async throws {
+        let clock = FakeClock(date("2026-10-19T08:30:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)))
+        let store = FakeSnapshotStore()
+        var saved = PlanSnapshot.saved(high: 70, summary: "Saved outfit", location: cityA, generatedAt: date("2026-10-19T08:00:00-07:00"))
+            .basedOn(.forecast(high: 70), from: date("2026-10-19T08:00:00-07:00"))
+        saved.adviceLanguage = savedLanguage
+        store.saved = saved
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock)
+
+        viewModel.start()
+        #expect(viewModel.state.loadedHigh == 70)
+
+        try await waitUntil { viewModel.state.readySummary == OutfitRecommendation.placeholder.summary }
+        #expect(await fetcher.recommendationRequestCount == 1)
+        #expect(store.published.last?.adviceLanguage == testResponseLanguage)
+    }
+
+    @Test func savedPlanWrittenInTheCurrentLanguageKeepsItsOutfitOnLaunch() async throws {
+        let clock = FakeClock(date("2026-10-19T08:30:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)))
+        let store = FakeSnapshotStore()
+        store.saved = .saved(high: 70, summary: "Saved outfit", location: cityA, generatedAt: date("2026-10-19T08:00:00-07:00"))
+            .basedOn(.forecast(high: 70), from: date("2026-10-19T08:00:00-07:00"))
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: store, clock: clock, language: { testResponseLanguage })
+
+        viewModel.start()
+
+        try await waitUntil { store.published.last != nil }
+        #expect(viewModel.state.readySummary == "Saved outfit")
+        #expect(await fetcher.recommendationRequestCount == 0)
+        #expect(store.published.last?.adviceLanguage == testResponseLanguage)
+    }
+
+    @Test func outfitCachedForAWindowInAnotherLanguageIsNotBroughtBack() async throws {
+        let clock = FakeClock(date("2026-10-19T08:00:00-07:00"))
+        let fetcher = FakeDayPlanFetcher(weather: .success(.forecast(high: 70)))
+        var language = "English"
+        let planWindowPreference = testPlanWindowStore()
+        planWindowPreference.window = .oneHour
+        let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: clock, planWindowPreference: planWindowPreference, language: { language })
+        viewModel.start()
+        try await waitUntil { viewModel.state.readySummary != nil }
+
+        language = "French"
+        select(.restOfDay, in: planWindowPreference, for: viewModel)
+        try await waitUntil { await fetcher.recommendationRequestCount == 2 }
+        select(.oneHour, in: planWindowPreference, for: viewModel)
+
+        try await waitUntil { await fetcher.recommendationRequestCount == 3 }
+    }
+
     @Test func pullToRefreshRegeneratesTheOutfitEvenWithoutAMeaningfulChange() async throws {
         let fetcher = FakeDayPlanFetcher(recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
         let viewModel = makeCustomCityViewModel(fetcher: fetcher, store: FakeSnapshotStore(), clock: FakeClock(date("2026-10-19T08:00:00-07:00")))
@@ -2672,16 +2783,17 @@ struct DayPlanViewModelTests {
     @Test func changingProviderRegeneratesTheOutfitEvenWithoutAMeaningfulChange() async throws {
         let fetcher = FakeDayPlanFetcher(recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
         let providerPreference = WeatherProviderPreferenceStore(defaults: isolatedDefaults())
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = cityA
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: providerPreference,
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
         viewModel.start()
         try await waitUntil { viewModel.state.readySummary == "First outfit" }
@@ -2695,16 +2807,17 @@ struct DayPlanViewModelTests {
 
     @Test func changingLocationRegeneratesTheOutfitEvenWithTheSameWeather() async throws {
         let fetcher = FakeDayPlanFetcher(recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = cityA
         let viewModel = DayPlanViewModel(
             locationManager: FakeLocationProvider(),
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { nil },
-            publishSnapshot: { _ in }
+            publishSnapshot: { _ in },
+            calendar: gregorianCalendar(in: pacific)
         )
         viewModel.start()
         try await waitUntil { viewModel.state.readySummary == "First outfit" }
@@ -2721,13 +2834,13 @@ struct DayPlanViewModelTests {
         let location = FakeLocationProvider()
         let fetcher = FakeDayPlanFetcher(recommendation: .success(OutfitRecommendation(summary: "First outfit", items: [])))
         let store = FakeSnapshotStore()
-        let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+        let locationPreference = testLocationStore()
         locationPreference.selection = .currentLocation
         let viewModel = DayPlanViewModel(
             locationManager: location,
             locationPreference: locationPreference,
             providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-            planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+            planWindowPreference: testPlanWindowStore(),
             fetcher: fetcher,
             loadSnapshot: { store.saved },
             publishSnapshot: { store.publish($0) },
@@ -2754,40 +2867,45 @@ struct DayPlanViewModelTests {
 private let cityA = LocationSelection.custom(name: "City A", latitude: 10, longitude: 10)
 
 @MainActor
-private func makeCurrentLocationViewModel(location: FakeLocationProvider, fetcher: DayPlanFetching, saved: PlanSnapshot? = nil) -> DayPlanViewModel {
-    let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+private func makeCurrentLocationViewModel(location: FakeLocationProvider, fetcher: DayPlanFetching, saved: PlanSnapshot? = nil, now: @escaping @MainActor () -> Date = { .now }) -> DayPlanViewModel {
+    let locationPreference = testLocationStore()
     locationPreference.selection = .currentLocation
     return DayPlanViewModel(
         locationManager: location,
         locationPreference: locationPreference,
         providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-        planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+        planWindowPreference: testPlanWindowStore(),
         fetcher: fetcher,
         loadSnapshot: { saved },
-        publishSnapshot: { _ in }
+        publishSnapshot: { _ in },
+        now: now,
+        calendar: gregorianCalendar(in: pacific),
+        responseLanguage: { testResponseLanguage }
     )
 }
 
 @MainActor
-private func makeCustomCityViewModel(fetcher: DayPlanFetching, saved: PlanSnapshot? = nil, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
-    let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+private func makeCustomCityViewModel(fetcher: DayPlanFetching, saved: PlanSnapshot? = nil, language: String = testResponseLanguage, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
+    let locationPreference = testLocationStore()
     locationPreference.selection = cityA
     return DayPlanViewModel(
         locationManager: FakeLocationProvider(),
         locationPreference: locationPreference,
         providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-        planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+        planWindowPreference: testPlanWindowStore(),
         fetcher: fetcher,
         loadSnapshot: { saved },
-        publishSnapshot: publishSnapshot
+        publishSnapshot: publishSnapshot,
+        calendar: gregorianCalendar(in: pacific),
+        responseLanguage: { language }
     )
 }
 
 /// A custom-city view model with a Plan Window store the test controls, at 2:20 PM PDT unless
 /// the test moves `clock` on.
 @MainActor
-private func makePlanWindowViewModel(fetcher: DayPlanFetching, planWindowPreference: PlanWindowPreferenceStore, saved: PlanSnapshot? = nil, clock: FakeClock = FakeClock(planWindowClock), publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
-    let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+private func makePlanWindowViewModel(fetcher: DayPlanFetching, planWindowPreference: PlanWindowPreferenceStore, saved: PlanSnapshot? = nil, clock: FakeClock = FakeClock(planWindowClock), language: String = testResponseLanguage, publishSnapshot: @escaping @MainActor (PlanSnapshot) -> Void = { _ in }) -> DayPlanViewModel {
+    let locationPreference = testLocationStore()
     locationPreference.selection = cityA
     return DayPlanViewModel(
         locationManager: FakeLocationProvider(),
@@ -2798,7 +2916,8 @@ private func makePlanWindowViewModel(fetcher: DayPlanFetching, planWindowPrefere
         loadSnapshot: { saved },
         publishSnapshot: publishSnapshot,
         now: { clock.now },
-        calendar: gregorianCalendar(in: pacific)
+        calendar: gregorianCalendar(in: pacific),
+        responseLanguage: { language }
     )
 }
 
@@ -2806,13 +2925,13 @@ private let romeCityWithoutZone = LocationSelection.custom(name: "Rome", latitud
 
 @MainActor
 private func makeCityViewModel(_ city: LocationSelection, fetcher: DayPlanFetching, saved: PlanSnapshot?, clock: FakeClock) -> DayPlanViewModel {
-    let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults(), sharedDefaults: isolatedDefaults(), reloadWidgets: {})
+    let locationPreference = testLocationStore()
     locationPreference.selection = city
     return DayPlanViewModel(
         locationManager: FakeLocationProvider(),
         locationPreference: locationPreference,
         providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-        planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+        planWindowPreference: testPlanWindowStore(),
         fetcher: fetcher,
         loadSnapshot: { saved },
         publishSnapshot: { _ in },
@@ -2826,18 +2945,19 @@ private let tokyoCity = LocationSelection.custom(name: "Tokyo", latitude: 35.7, 
 /// A Tokyo view model on a Pacific device calendar.
 @MainActor
 private func makeTokyoViewModel(fetcher: DayPlanFetching, saved: PlanSnapshot?, clock: FakeClock) -> DayPlanViewModel {
-    let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+    let locationPreference = testLocationStore()
     locationPreference.selection = tokyoCity
     return DayPlanViewModel(
         locationManager: FakeLocationProvider(),
         locationPreference: locationPreference,
         providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-        planWindowPreference: PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+        planWindowPreference: testPlanWindowStore(),
         fetcher: fetcher,
         loadSnapshot: { saved },
         publishSnapshot: { _ in },
         now: { clock.now },
-        calendar: gregorianCalendar(in: pacific)
+        calendar: gregorianCalendar(in: pacific),
+        responseLanguage: { testResponseLanguage }
     )
 }
 
@@ -2845,19 +2965,20 @@ private let planWindowClock = date("2026-10-09T21:20:00Z")
 
 /// A view model whose Saved Plan store and clock the test controls, for tests that move time on.
 @MainActor
-private func makeCustomCityViewModel(fetcher: DayPlanFetching, store: FakeSnapshotStore, clock: FakeClock, planWindowPreference: PlanWindowPreferenceStore? = nil) -> DayPlanViewModel {
-    let locationPreference = LocationPreferenceStore(defaults: isolatedDefaults())
+private func makeCustomCityViewModel(fetcher: DayPlanFetching, store: FakeSnapshotStore, clock: FakeClock, planWindowPreference: PlanWindowPreferenceStore? = nil, language: @escaping @MainActor () -> String = { testResponseLanguage }) -> DayPlanViewModel {
+    let locationPreference = testLocationStore()
     locationPreference.selection = cityA
     return DayPlanViewModel(
         locationManager: FakeLocationProvider(),
         locationPreference: locationPreference,
         providerPreference: WeatherProviderPreferenceStore(defaults: isolatedDefaults()),
-        planWindowPreference: planWindowPreference ?? PlanWindowPreferenceStore(defaults: isolatedDefaults()),
+        planWindowPreference: planWindowPreference ?? testPlanWindowStore(),
         fetcher: fetcher,
         loadSnapshot: { store.saved },
         publishSnapshot: { store.publish($0) },
         now: { clock.now },
-        calendar: gregorianCalendar(in: pacific)
+        calendar: gregorianCalendar(in: pacific),
+        responseLanguage: language
     )
 }
 
@@ -2899,6 +3020,7 @@ private extension PlanSnapshot {
     func basedOn(_ weather: DailyWeather, from start: Date) -> PlanSnapshot {
         var snapshot = self
         snapshot.adviceBasis = WindowSummary(weather: weather, hourly: nil, span: PlanSpan(window: .restOfDay, startingAt: start, timeZone: pacific))
+        snapshot.adviceLanguage = testResponseLanguage
         return snapshot
     }
 

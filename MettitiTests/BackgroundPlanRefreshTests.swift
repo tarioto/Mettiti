@@ -375,6 +375,35 @@ struct BackgroundPlanRefreshTests {
         #expect(harness.published.first?.adviceBasis != nil)
     }
 
+    @Test func staleTodaysPlanWrittenInTheCurrentLanguageKeepsItsOutfitAndLanguage() async {
+        let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
+        staleSeattlePlan(in: harness, basisHighOffBy: 0)
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshedKeepingOutfit)
+        #expect(harness.published.first?.adviceLanguage == testResponseLanguage)
+    }
+
+    @Test(arguments: ["French", nil] as [String?])
+    func staleTodaysPlanWrittenInAnotherOrNoLanguageIsRemade(savedLanguage: String?) async {
+        let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
+        staleSeattlePlan(in: harness, basisHighOffBy: 0)
+        harness.snapshot?.adviceLanguage = savedLanguage
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+        #expect(await harness.fetcher.recommendationRequestCount == 1)
+        #expect(harness.published.first?.adviceLanguage == testResponseLanguage)
+    }
+
+    @Test func freshPlanWithAnOutfitInAnotherLanguageIsStillRefreshed() async {
+        let harness = Harness(now: date("2026-10-08T09:00:00-07:00"))
+        harness.snapshot = .generated(at: date("2026-10-08T08:30:00-07:00"))
+        harness.selection = .custom(name: "Seattle", latitude: 47.6, longitude: -122.3)
+        harness.language = "French"
+
+        #expect(await harness.refresher.refreshIfStale() == .refreshed)
+        #expect(harness.published.first?.adviceLanguage == "French")
+    }
+
     @Test func planForAnotherLocationIsRemadeEvenWithoutAMeaningfulChange() async {
         // The outfit was written for Seattle; Portland's weather may look the same but isn't.
         let harness = Harness(now: date("2026-10-08T12:30:00-07:00"))
@@ -431,6 +460,36 @@ struct BackgroundPlanRefreshTests {
         harness.planWindow = .oneHour
 
         #expect(harness.refresher.nextRequestDate(availability: .available) == date(expected))
+    }
+
+    @Test func freshPlanForAnotherCityThanTheSelectionIsNotCurrent() async {
+        let harness = Harness(now: date("2026-10-08T09:00:00-07:00"))
+        harness.snapshot = .generated(at: date("2026-10-08T08:30:00-07:00"), window: .restOfDay, location: .custom(name: "Rome", latitude: 41.9, longitude: 12.5))
+        harness.selection = .custom(name: "Paris", latitude: 48.9, longitude: 2.4)
+
+        let outcome = await harness.refresher.refreshIfStale()
+
+        #expect(outcome == .refreshed)
+        #expect(await harness.fetcher.weatherRequests == [WeatherRequest(latitude: 48.9, longitude: 2.4, provider: .apple)])
+        #expect(harness.published.map(\.location) == [.custom(name: "Paris", latitude: 48.9, longitude: 2.4)])
+    }
+
+    @Test func nextRequestDoesNotWaitForAPlanForAnotherCityToGoStale() {
+        let harness = Harness(now: date("2026-10-08T09:00:00-07:00"))
+        harness.snapshot = .generated(at: date("2026-10-08T08:30:00-07:00"), window: .restOfDay, location: .custom(name: "Rome", latitude: 41.9, longitude: 12.5))
+        harness.selection = .custom(name: "Paris", latitude: 48.9, longitude: 2.4)
+
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-08T10:00:00-07:00"))
+    }
+
+    @Test func freshPlanForAnotherCityStillWaitsOutQuietHours() async {
+        let harness = Harness(now: date("2026-10-08T23:30:00-07:00"))
+        harness.snapshot = .generated(at: date("2026-10-08T22:30:00-07:00"), window: .restOfDay, location: .custom(name: "Rome", latitude: 41.9, longitude: 12.5))
+        harness.selection = .custom(name: "Paris", latitude: 48.9, longitude: 2.4)
+
+        #expect(await harness.refresher.refreshIfStale() == .skippedQuietHours)
+        #expect(await harness.fetcher.weatherRequests.isEmpty)
+        #expect(harness.refresher.nextRequestDate(availability: .available) == date("2026-10-09T06:00:00-07:00"))
     }
 
     @Test(arguments: ["2026-10-08T23:00:00-07:00", "2026-10-08T23:59:00-07:00", "2026-10-09T05:59:00-07:00"])
@@ -693,6 +752,7 @@ private final class Harness {
     var lastKnownGPSCoordinate: CLLocationCoordinate2D?
     var provider: WeatherProvider = .apple
     var planWindow: PlanWindow = .restOfDay
+    var language = testResponseLanguage
     private(set) var published: [PlanSnapshot] = []
 
     init(now: Date) {
@@ -710,7 +770,8 @@ private final class Harness {
             saveSelection: { [unowned self] in selection = $0 },
             lastKnownGPSCoordinate: { [unowned self] in lastKnownGPSCoordinate },
             provider: { [unowned self] in provider },
-            planWindow: { [unowned self] in planWindow }
+            planWindow: { [unowned self] in planWindow },
+            responseLanguage: { [unowned self] in language }
         )
     }
 }

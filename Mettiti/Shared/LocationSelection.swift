@@ -16,9 +16,11 @@ extension LocationSelection {
         return selectionCalendar
     }
 
-    /// Like `calendar(fallback:)`, but a city without a time zone first uses the zone of `savedPlan`
-    /// when that plan is for this location (see `PlanSnapshot.locationCalendar(fallback:)`), as the
-    /// widgets do, before `calendar`'s own.
+    /// The one rule for "the location's calendar", shared by the app, the widgets and the background
+    /// refresh. A city with a zone: the city's. A city without one: the zone of `savedPlan` when that
+    /// plan is for this location (see `PlanSnapshot.locationCalendar(fallback:)`), then `calendar`'s
+    /// own (the device's). Current Location: always the device's, since a plan's older zone may be
+    /// a place the user has left.
     func calendar(fallback calendar: Calendar, savedPlan: PlanSnapshot?) -> Calendar {
         guard case .custom(_, _, _, nil) = self, let savedPlan, savedPlan.location == self else {
             return self.calendar(fallback: calendar)

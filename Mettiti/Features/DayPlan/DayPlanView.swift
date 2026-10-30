@@ -63,27 +63,43 @@ struct DayPlanView: View {
         VStack(alignment: .leading, spacing: 16) {
             CardTitle(type: .weather)
 
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(weather.localizedConditionDescription)
-                        .font(.title2.bold())
-                    Text(temperaturePreference.unit.formattedSummary(highFahrenheit: details.highF, lowFahrenheit: details.lowF, precipitationProbability: details.precipitationProbability, uvIndex: details.uvIndex))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Image(systemName: WMOWeatherCode.symbolName(for: weather.conditionCode))
-                    .font(.system(size: conditionSymbolSize))
-                    .symbolRenderingMode(.multicolor)
-                    .accessibilityHidden(true)
-            }
+            // Stacked in a ZStack so the old and new weather don't both take up height while they fade.
+            ZStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(weather.localizedConditionDescription)
+                                .font(.title2.bold())
+                            Text(temperaturePreference.unit.formattedSummary(highFahrenheit: details.highF, lowFahrenheit: details.lowF, precipitationProbability: details.precipitationProbability, uvIndex: details.uvIndex))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: WMOWeatherCode.symbolName(for: weather.conditionCode))
+                            .font(.system(size: conditionSymbolSize))
+                            .symbolRenderingMode(.multicolor)
+                            .accessibilityHidden(true)
+                    }
 
-            if let hourly {
-                HourlyTemperatureChart(hourly: hourly, span: span)
+                    if let hourly {
+                        HourlyTemperatureChart(hourly: hourly, span: span)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .id(WeatherContentID(weather: weather, hourly: hourly))
+                .transition(.opacity)
             }
+            .animation(Self.crossfade, value: WeatherContentID(weather: weather, hourly: hourly))
         }
         .padding()
         .cardBackground()
+    }
+
+    /// Changes only when the weather the card shows changes, so identical weather from a refresh
+    /// doesn't animate and different weather crossfades.
+    struct WeatherContentID: Hashable {
+        let weather: DailyWeather
+        let hourly: HourlyForecast?
     }
 
     /// The hourly forecast over the plan's span, or nil without one (or with no hours in it),
@@ -124,7 +140,7 @@ struct DayPlanView: View {
                     Text(SkeletonLoadingView.recommendation.summary)
                         .font(.body)
                         .foregroundStyle(.secondary)
-                        .redacted(reason: .placeholder)
+                        .shimmeringPlaceholder()
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel("Loading")
                 case .unavailable, .failed:
@@ -147,7 +163,7 @@ struct DayPlanView: View {
                     itemList(outfit.items)
                 case .loading:
                     itemList(SkeletonLoadingView.recommendation.items)
-                        .redacted(reason: .placeholder)
+                        .shimmeringPlaceholder()
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel("Loading")
                 case .unavailable, .failed:
@@ -384,24 +400,9 @@ private struct LocationCard: View {
             }
         }
         .animation(DayPlanView.crossfade, value: placeholderRegion != nil)
-        .modifier(ShimmeringPlaceholder())
+        .shimmeringPlaceholder()
         .task {
             placeholderRegion = await PlaceholderMapRegion.resolveForDevice()
-        }
-    }
-}
-
-/// Makes a view shimmer as a placeholder, unless an ancestor's redaction already does.
-private struct ShimmeringPlaceholder: ViewModifier {
-    @Environment(\.redactionReasons) private var redactionReasons
-
-    func body(content: Content) -> some View {
-        if redactionReasons.contains(.placeholder) {
-            content
-        } else {
-            content
-                .redacted(reason: .placeholder)
-                .modifier(PlaceholderShimmer())
         }
     }
 }

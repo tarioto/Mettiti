@@ -6,6 +6,9 @@ let pacific = TimeZone(identifier: "America/Los_Angeles")!
 let tokyo = TimeZone(identifier: "Asia/Tokyo")!
 let rome = TimeZone(identifier: "Europe/Rome")!
 
+/// The language tests make outfits in, and record on the plans they save.
+let testResponseLanguage = "English"
+
 func date(_ iso: String) -> Date {
     try! Date(iso, strategy: .iso8601)
 }
@@ -18,7 +21,7 @@ func gregorianCalendar(in timeZone: TimeZone) -> Calendar {
 
 extension PlanSnapshot {
     static func generated(at date: Date) -> PlanSnapshot {
-        PlanSnapshot(weather: .placeholder, recommendation: .placeholder, generatedAt: date, provider: .apple)
+        PlanSnapshot(weather: .placeholder, recommendation: .placeholder, generatedAt: date, provider: .apple, adviceLanguage: testResponseLanguage)
     }
 
     static func weatherOnly(at date: Date) -> PlanSnapshot {
@@ -36,13 +39,32 @@ extension PlanSnapshot {
     }
 
     private static func covering(_ window: PlanWindow, from date: Date, in timeZone: TimeZone, location: LocationSelection?, recommendation: OutfitRecommendation?) -> PlanSnapshot {
-        PlanSnapshot(weather: .placeholder, recommendation: recommendation, generatedAt: date, provider: .apple, location: location, span: PlanSpan(window: window, startingAt: date, timeZone: timeZone))
+        PlanSnapshot(weather: .placeholder, recommendation: recommendation, generatedAt: date, provider: .apple, location: location, span: PlanSpan(window: window, startingAt: date, timeZone: timeZone), adviceLanguage: recommendation == nil ? nil : testResponseLanguage)
     }
 }
 
 /// A throwaway defaults suite so preference tests never touch the app's real settings.
 func isolatedDefaults() -> UserDefaults {
     UserDefaults(suiteName: "MettitiTests.\(UUID().uuidString)")!
+}
+
+/// A location store that never touches the real App Group or reloads the real widgets.
+@MainActor
+func testLocationStore(
+    defaults: UserDefaults = isolatedDefaults(),
+    sharedDefaults: UserDefaults = isolatedDefaults(),
+    reloadWidgets: @escaping @MainActor () -> Void = {}
+) -> LocationPreferenceStore {
+    LocationPreferenceStore(defaults: defaults, sharedDefaults: sharedDefaults, reloadWidgets: reloadWidgets)
+}
+
+/// A Plan Window store that never touches the real App Group or reloads the real widgets.
+@MainActor
+func testPlanWindowStore(
+    defaults: UserDefaults = isolatedDefaults(),
+    reloadWidgets: @escaping @MainActor () -> Void = {}
+) -> PlanWindowPreferenceStore {
+    PlanWindowPreferenceStore(defaults: defaults, reloadWidgets: reloadWidgets)
 }
 
 private final class FixtureBundleToken {}

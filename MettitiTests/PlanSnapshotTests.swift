@@ -169,9 +169,19 @@ struct PlanSnapshotTests {
         #expect(weather.localizedConditionDescription == weather.conditionDescription)
     }
 
+    @Test func adviceLanguageRoundTrips() throws {
+        var snapshot = PlanSnapshot.generated(at: date("2026-10-08T09:00:00-07:00"))
+        snapshot.adviceLanguage = "French"
+
+        let decoded = try JSONDecoder().decode(PlanSnapshot.self, from: JSONEncoder().encode(snapshot))
+
+        #expect(decoded.adviceLanguage == "French")
+    }
+
     @Test func snapshotSavedByEarlierVersionHasNoAdviceBasis() throws {
         let snapshot = try JSONDecoder().decode(PlanSnapshot.self, from: Data(savedBeforeWeatherOnlySnapshots.utf8))
 
         #expect(snapshot.adviceBasis == nil)
+        #expect(snapshot.adviceLanguage == nil)
     }
 }
