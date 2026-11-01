@@ -3,11 +3,10 @@ import CoreLocation
 import MapKit
 import WeatherKit
 
-enum AppleWeatherServiceError: UserFacingError {
+enum AppleWeatherServiceError: UserFacingMessageError {
     case unavailable
     case missingForecast
 
-    /// The message as a resource, so a caller can pick the language it is written in.
     var message: LocalizedStringResource {
         switch self {
         case .unavailable:
@@ -16,8 +15,6 @@ enum AppleWeatherServiceError: UserFacingError {
             return "Apple Weather didn't return a forecast for today."
         }
     }
-
-    var errorDescription: String? { String(localized: message) }
 }
 
 struct AppleWeatherService {

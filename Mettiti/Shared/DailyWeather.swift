@@ -22,6 +22,7 @@ struct DailyWeather: Sendable, Codable, Hashable {
         conditionDescription(in: .autoupdatingCurrent)
     }
 
+    /// The condition's name in `locale`'s language, or the stored text when there's no condition.
     func conditionDescription(in locale: Locale) -> String {
         condition?.localizedDescription(locale: locale) ?? conditionDescription
     }
@@ -39,8 +40,9 @@ enum WeatherConditionKind: Codable, Sendable, Hashable {
         self = .weatherKit(condition.rawValue)
     }
 
-    /// The condition's name in the current language: our catalog for WMO codes, Apple's own
-    /// description for WeatherKit conditions. Nil for a WeatherKit condition this version doesn't know.
+    /// The condition's name: our catalog for WMO codes, in `locale`'s language; Apple's own
+    /// description for WeatherKit conditions, always in the system language because WeatherKit
+    /// takes no locale. Nil for a WeatherKit condition this version doesn't know.
     func localizedDescription(locale: Locale = .autoupdatingCurrent) -> String? {
         switch self {
         case .wmo(let code):
@@ -66,11 +68,8 @@ extension DailyWeather {
 
 enum WMOWeatherCode {
     static func description(for code: Int, locale: Locale = .autoupdatingCurrent) -> String {
-        // A resource carries the locale so it picks the language, not just the number formats.
         func name(_ resource: LocalizedStringResource) -> String {
-            var resource = resource
-            resource.locale = locale
-            return String(localized: resource)
+            String(localized: resource, in: locale)
         }
         switch code {
         case 0: return name(LocalizedStringResource("Clear sky", table: "Shared"))

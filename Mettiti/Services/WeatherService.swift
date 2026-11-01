@@ -1,11 +1,10 @@
 import Foundation
 import CoreLocation
 
-enum WeatherServiceError: UserFacingError {
+enum WeatherServiceError: UserFacingMessageError {
     case invalidResponse
     case decodingFailed
 
-    /// The message as a resource, so a caller can pick the language it is written in.
     var message: LocalizedStringResource {
         switch self {
         case .invalidResponse:
@@ -14,8 +13,6 @@ enum WeatherServiceError: UserFacingError {
             return "Received an unexpected response from the weather service."
         }
     }
-
-    var errorDescription: String? { String(localized: message) }
 }
 
 /// Today's forecast plus the hourly forecast, from one request.

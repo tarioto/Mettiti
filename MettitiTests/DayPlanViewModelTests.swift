@@ -2071,7 +2071,7 @@ struct DayPlanViewModelTests {
 
         viewModel.selectPlanWindow(.threeHours)
 
-        // The saved plan is for the old window, so the plan reloads: the skeleton, never the saved outfit.
+        // The Saved Plan is for the old window, so the plan reloads: the skeleton, never the saved outfit.
         try await waitUntil { fetcher.requestCount == 2 }
         #expect(viewModel.state.isRecommendationLoading)
         #expect(viewModel.state.readySummary == nil)
@@ -2111,7 +2111,7 @@ struct DayPlanViewModelTests {
         try await waitUntil { viewModel.state.loadedHigh == 10 && !viewModel.state.isRecommendationLoading }
 
         viewModel.selectPlanWindow(.threeHours)
-        try await Task.sleep(for: .milliseconds(200))
+        try await waitUntil { viewModel.state.span?.window == .threeHours }
 
         #expect(!viewModel.state.isRecommendationLoading)
         #expect(viewModel.state.recommendationState?.problemMessage == RecommendationState.unavailable(.modelNotReady).problemMessage)

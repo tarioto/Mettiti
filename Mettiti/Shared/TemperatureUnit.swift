@@ -44,14 +44,11 @@ enum TemperatureUnit: String, Codable, CaseIterable, Identifiable {
     func formattedHighLow(highFahrenheit: Double, lowFahrenheit: Double, locale: Locale = .autoupdatingCurrent) -> String {
         let high = formatted(fahrenheit: highFahrenheit, locale: locale)
         let low = formatted(fahrenheit: lowFahrenheit, locale: locale)
-        // A resource carries the locale so it picks the language as well as the number formats;
-        // `String(localized:locale:)` only formats values.
         return String(localized: LocalizedStringResource(
             "H:\(high) L:\(low)",
             table: "Shared",
-            locale: locale,
             comment: "Today's high and low temperatures, each already formatted with its unit"
-        ))
+        ), in: locale)
     }
 
     /// The one-line summary of a day or window, e.g. "H:72° L:58°  •  30% rain  •  UV 5". A single string
@@ -71,9 +68,8 @@ enum TemperatureUnit: String, Codable, CaseIterable, Identifiable {
         return String(localized: LocalizedStringResource(
             "H:\(high) L:\(low)  •  \(rain) rain  •  UV \(uv)",
             table: "Shared",
-            locale: locale,
             comment: "One-line weather summary: high and low (each already formatted with its unit), chance of rain (already formatted as a percentage) and UV index"
-        ))
+        ), in: locale)
     }
 
     func convert(fromFahrenheit value: Double, locale: Locale = .autoupdatingCurrent) -> Double {

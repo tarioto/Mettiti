@@ -4,6 +4,16 @@ import FoundationModels
 /// An error whose `errorDescription` is already written for the user, so it's shown as is.
 protocol UserFacingError: LocalizedError {}
 
+/// A user-facing error whose message is a resource, so a caller can pick the language it's
+/// written in. Its `errorDescription` is that message in the current language.
+protocol UserFacingMessageError: UserFacingError {
+    var message: LocalizedStringResource { get }
+}
+
+extension UserFacingMessageError {
+    var errorDescription: String? { String(localized: message) }
+}
+
 /// What to tell the user when a plan or its outfit suggestion fails (#29). The app's own errors
 /// keep their copy; system errors (networking, the on-device model) never show their raw text.
 enum UserFacingMessage {

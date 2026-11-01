@@ -72,7 +72,7 @@ struct ItalianLocalizationTests {
     }
 
     /// The widget extension's own bundle, which holds the gallery names and descriptions.
-    private func widgetItalian() throws -> Bundle {
+    private func widgetItalianBundle() throws -> Bundle {
         let plugIns = try #require(appBundle.builtInPlugInsURL)
         let appex = try #require(FileManager.default.contentsOfDirectory(at: plugIns, includingPropertiesForKeys: nil).first { $0.pathExtension == "appex" })
         let path = try #require(Bundle(url: appex)?.path(forResource: "it", ofType: "lproj"))
@@ -90,7 +90,7 @@ struct ItalianLocalizationTests {
         ("Open Mettiti to update", "Apri Mettiti per aggiornare"),
     ])
     func widgetNamesDescriptionsAndPromptsAreInItalian(key: String, expected: String) throws {
-        #expect(try widgetItalian().localizedString(forKey: key, value: "<missing>", table: nil) == expected)
+        #expect(try widgetItalianBundle().localizedString(forKey: key, value: "<missing>", table: nil) == expected)
     }
 
     @Test func aSavedConditionIsNamedInTheCurrentLanguageWithoutFetchingAgain() throws {
@@ -105,9 +105,7 @@ struct ItalianLocalizationTests {
     }
 
     private func italian(_ resource: LocalizedStringResource) -> String {
-        var resource = resource
-        resource.locale = Locale(identifier: "it")
-        return String(localized: resource)
+        String(localized: resource, in: Locale(identifier: "it"))
     }
 
     @Test func settingsStaticTextIsInItalian() {
