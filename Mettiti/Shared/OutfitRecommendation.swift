@@ -59,6 +59,12 @@ extension OutfitRecommendation {
     func withoutWarmLayers() -> OutfitRecommendation {
         OutfitRecommendation(summary: summary, items: items.filter { !$0.isWarmLayer })
     }
+
+    /// Without umbrellas, ponchos, raincoats and the like, for when it's dry throughout. A rain
+    /// jacket or trench coat stays: it's still a jacket, and may be the only warm layer.
+    func withoutRainGear() -> OutfitRecommendation {
+        OutfitRecommendation(summary: summary, items: items.filter { !$0.isRainOnlyGear })
+    }
 }
 
 extension RecommendedItem {
@@ -73,7 +79,7 @@ extension RecommendedItem {
     /// doesn't.
     /// The Italian ones cover "Impermeabile", "Giacca impermeabile", "Mantella" and "Ombrello".
     private static let rainGearPrefixes = [
-        "rain", "waterproof", "storm", "trench", "poncho",
+        "rain", "waterproof", "storm", "trench", "poncho", "umbrella",
         "impermeabil", "mantell", "ombrell",
     ]
 
@@ -87,21 +93,39 @@ extension RecommendedItem {
     /// Whether to drop the item when it's warm throughout. Rain gear wins over a warm layer, by the
     /// model's label or by the name, in either language.
     var isWarmLayer: Bool {
-        let words = name.lowercased().split { !$0.isLetter }.map(String.init)
-        let singular = words.map { $0.hasSuffix("s") ? String($0.dropLast()) : $0 }
-        let pairs = Array(zip(words, words.dropFirst()))
+        if isRainGear { return false }
+        return kind == .warmLayer || namesWarmLayer
+    }
 
+    /// Whether to drop the item when it's dry throughout: rain gear, by the model's label or by
+    /// the name, unless the name also makes it a jacket or coat.
+    var isRainOnlyGear: Bool {
+        isRainGear && !namesWarmLayer
+    }
+
+    private var words: [String] {
+        name.lowercased().split { !$0.isLetter }.map(String.init)
+    }
+
+    private var isRainGear: Bool {
+        let pairs = zip(words, words.dropFirst())
         let isRainGearByName = words.contains { word in Self.rainGearPrefixes.contains { word.hasPrefix($0) } }
             || pairs.contains { $0 == "k" && $1 == "way" }
-        if kind == .rainGear || isRainGearByName { return false }
+        return kind == .rainGear || isRainGearByName
+    }
+
+    /// Whether the name alone says it's a warm layer, whatever else it says.
+    private var namesWarmLayer: Bool {
+        let words = words
+        let singular = words.map { $0.hasSuffix("s") ? String($0.dropLast()) : $0 }
+        let pairs = Array(zip(words, words.dropFirst()))
 
         // Long sleeves are a warm layer, short sleeves aren't.
         let hasLongSleeves = zip(singular, singular.dropFirst()).contains { $0 == "long" && $1.hasPrefix("sleeve") }
             || pairs.contains { $0 == "maniche" && $1 == "lunghe" }
         let hasThermalTop = pairs.contains { ($0 == "maglia" || $0 == "maglie") && $1.hasPrefix("termic") }
-        let isWarmLayerByName = hasLongSleeves || hasThermalTop
+        return hasLongSleeves || hasThermalTop
             || !Set(singular).isDisjoint(with: Self.warmLayerWords)
             || !Set(words).isDisjoint(with: Self.italianWarmLayerWords)
-        return kind == .warmLayer || isWarmLayerByName
     }
 }

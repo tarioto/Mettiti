@@ -22,6 +22,22 @@ struct ForecastWindowTests {
         #expect(window.wettest?.date == date("2026-10-10T06:00:00Z"))
     }
 
+    @Test func windowIsDryOnlyWhenEveryHourWithAChanceOfRainIsBelowThirtyPercent() {
+        let span = DateInterval(start: date("2026-10-10T05:00:00Z"), end: date("2026-10-10T07:00:00Z"))
+        func window(_ rain: Int?...) -> ForecastWindow {
+            ForecastWindow(forecast: HourlyForecast(timeZone: pacific, points: [
+                hour("2026-10-10T05:00:00Z", rain: rain[0]),
+                hour("2026-10-10T06:00:00Z", rain: rain[1]),
+            ]), span: span)
+        }
+
+        #expect(window(0, 29).isDry)
+        #expect(window(nil, 10).isDry)
+        #expect(!window(0, 30).isDry)
+        // No chance given at all says nothing about rain.
+        #expect(!window(nil, nil).isDry)
+    }
+
     @Test func windowAcrossSunsetOnlyCountsUVWhileTheSunIsUp() {
         let forecast = HourlyForecast(
             timeZone: pacific,

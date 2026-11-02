@@ -25,7 +25,7 @@ struct OutfitAdvisor: Sendable {
         let session = preparedSession.take() ?? Self.makeSession(language: language)
         let request = Self.request(for: weather, hourly: hourly, span: span, unit: unitProvider(), language: language)
         let response = try await session.respond(to: request.prompt, generating: OutfitRecommendation.self)
-        return request.droppingWarmLayersIfWarmThroughout(response.content)
+        return request.checked(response.content)
     }
 
     /// Creates the next recommendation's session and loads the model into memory, so it can run
@@ -37,11 +37,12 @@ struct OutfitAdvisor: Sendable {
         preparedSession.store(session)
     }
 
-    /// What to ask the model about the plan, and whether to drop warm layers from its answer.
+    /// What to ask the model about the plan, and whether to drop warm layers or rain gear from its answer.
     static func request(for weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan, unit: TemperatureUnit, locale: Locale = .autoupdatingCurrent, language: String = defaultLanguage) -> OutfitRequest {
         OutfitRequest(
             prompt: prompt(for: weather, hourly: hourly, span: span, unit: unit, locale: locale, language: language),
-            isWarmThroughout: isWarmThroughout(weather, hourly: hourly, span: span, unit: unit.resolved(for: locale))
+            isWarmThroughout: isWarmThroughout(weather, hourly: hourly, span: span, unit: unit.resolved(for: locale)),
+            isDryThroughout: isDryThroughout(weather, hourly: hourly, span: span)
         )
     }
 
@@ -51,6 +52,16 @@ struct OutfitAdvisor: Sendable {
         let window = hourly.map { ForecastWindow(forecast: $0, span: span.interval) }
         let coldestF = window?.low?.meanF ?? weather.lowTemperatureF
         return TemperatureFeel(fahrenheit: coldestF, in: unit).isWarm
+    }
+
+    /// Whether no part of the plan has a meaningful chance of rain: the span's wettest hour, or
+    /// the day's chance without an hourly forecast for it.
+    private static func isDryThroughout(_ weather: DailyWeather, hourly: HourlyForecast?, span: PlanSpan) -> Bool {
+        let window = hourly.map { ForecastWindow(forecast: $0, span: span.interval) }
+        guard let window, window.high != nil else {
+            return weather.precipitationProbability < ForecastWindow.meaningfulPrecipitationProbability
+        }
+        return window.isDry
     }
 
     private static func makeSession(language: String) -> LanguageModelSession {
@@ -101,8 +112,9 @@ struct OutfitAdvisor: Sendable {
     static let instructions = """
     You are a friendly outfit and packing assistant. Given the weather from now until \
     the end of the forecast, recommend what someone should wear and bring for that time. \
-    Consider rain protection (umbrella, raincoat) and temperature layering (light or heavy \
-    jacket) when relevant to the forecast. Each temperature comes with how it feels (freezing, \
+    Consider temperature layering (light or heavy jacket) when relevant to the forecast. \
+    Only suggest rain protection (umbrella, raincoat) when some hour has a meaningful chance of \
+    precipitation; cold or cloudy weather alone is no reason for it. Each temperature comes with how it feels (freezing, \
     cold, cool, mild, warm or hot); base clothing on how it feels, whatever the time of day. \
     Only suggest a jacket, sweater or other warm layer when some hour feels mild or colder; \
     a warm evening that cools off a little is still warm. \
@@ -128,6 +140,7 @@ struct OutfitAdvisor: Sendable {
             "\(unit.formatted(fahrenheit: fahrenheit, width: .abbreviated, locale: promptLocale)) (\(TemperatureFeel(fahrenheit: fahrenheit, in: unit).rawValue))"
         }
         let warmThroughout = isWarmThroughout(weather, hourly: hourly, span: span, unit: unit)
+        let dryThroughout = isDryThroughout(weather, hourly: hourly, span: span)
         // The weather is stored in mph; the wind unit follows the temperature unit: °F gives mph, °C km/h.
         func wind(_ mph: Double) -> String {
             unit == .fahrenheit ? "\(Int(mph.rounded())) mph" : "\(Int((mph * 1.609344).rounded())) km/h"
@@ -152,7 +165,7 @@ struct OutfitAdvisor: Sendable {
                 currentTime += " It's dark outside, so sun protection isn't needed."
             }
             let noWarmLayer = warmThroughout ? noWarmLayerLine(low: weather.lowTemperatureF, unit: unit) : nil
-            return wholeDayPrompt(for: weather, currentTime: currentTime, isDark: isDark, noWarmLayer: noWarmLayer, temperature: temperature, wind: wind, language: language)
+            return wholeDayPrompt(for: weather, currentTime: currentTime, isDark: isDark, noWarmLayer: noWarmLayer, noRainGear: dryThroughout ? noRainGearLine : nil, temperature: temperature, wind: wind, language: language)
         }
 
         switch window.isDaylightAtStart {
@@ -167,6 +180,9 @@ struct OutfitAdvisor: Sendable {
         }
         if let wettest = window.wettest, let probability = wettest.precipitationProbability {
             summary.append("- Highest chance of precipitation: \(probability)% at \(hour(wettest.date))")
+        }
+        if dryThroughout {
+            summary.append(noRainGearLine)
         }
         if let windiest = window.windiest, let speed = windiest.windSpeedMph {
             summary.append("- Strongest wind: \(wind(speed)) at \(hour(windiest.date))")
@@ -211,6 +227,9 @@ struct OutfitAdvisor: Sendable {
         "- Coldest it gets: \(TemperatureFeel(fahrenheit: fahrenheit, in: unit).rawValue), so no jacket, sweater or other warm layer is needed."
     }
 
+    /// Spelled out because the model reads cold, overcast weather as a reason for an umbrella.
+    private static let noRainGearLine = "- No meaningful chance of precipitation, so no umbrella, raincoat or other rain gear is needed."
+
     /// How a temperature feels in `unit` (Celsius or Fahrenheit), given with each temperature so
     /// the model doesn't judge the number itself: on its own it called 30°C at night "chilly". The
     /// raw values are the words the prompt uses.
@@ -235,14 +254,14 @@ struct OutfitAdvisor: Sendable {
     /// For when there's no hourly forecast to cover: the whole day's high, low and maximums.
     /// It leaves out the day's peak UV, which may have passed, and after dark asks about the night,
     /// so a plan made in the evening doesn't suggest sunscreen.
-    private static func wholeDayPrompt(for weather: DailyWeather, currentTime: String, isDark: Bool, noWarmLayer: String?, temperature: (Double) -> String, wind: (Double) -> String, language: String) -> String {
+    private static func wholeDayPrompt(for weather: DailyWeather, currentTime: String, isDark: Bool, noWarmLayer: String?, noRainGear: String?, temperature: (Double) -> String, wind: (Double) -> String, language: String) -> String {
         """
         \(currentTime)
 
         \(isDark ? "Today's forecast, including the hours that have passed:" : "Today's forecast:")
         - Condition: \(weather.localizedConditionDescription)
         - High: \(temperature(weather.highTemperatureF)), Low: \(temperature(weather.lowTemperatureF))\(noWarmLayer.map { "\n\($0)" } ?? "")
-        - Chance of precipitation: \(weather.precipitationProbability)%
+        - Chance of precipitation: \(weather.precipitationProbability)%\(noRainGear.map { "\n\($0)" } ?? "")
         - Wind: \(wind(weather.windSpeedMph))
 
         Recommend what to wear and bring for the rest of \(isDark ? "tonight" : "today"). \(responseLanguageLine(language))
@@ -266,16 +285,28 @@ struct OutfitAdvisor: Sendable {
     }
 }
 
-/// What one recommendation asks the model, and whether it's warm enough throughout that warm
-/// layers are dropped from the answer.
+/// What one recommendation asks the model, and whether it's warm or dry enough throughout that
+/// warm layers or rain gear are dropped from the answer.
 struct OutfitRequest: Sendable {
     let prompt: String
     let isWarmThroughout: Bool
+    let isDryThroughout: Bool
+
+    /// The model's answer without the items the prompt said aren't needed.
+    func checked(_ recommendation: OutfitRecommendation) -> OutfitRecommendation {
+        droppingRainGearIfDryThroughout(droppingWarmLayersIfWarmThroughout(recommendation))
+    }
 
     /// The prompt says no warm layer is needed when it's warm throughout, but the model still
     /// suggested a heavy jacket for a Bangkok evening that only "cooled off" to warm.
     func droppingWarmLayersIfWarmThroughout(_ recommendation: OutfitRecommendation) -> OutfitRecommendation {
         isWarmThroughout ? recommendation.withoutWarmLayers() : recommendation
+    }
+
+    /// The prompt says no rain gear is needed when it's dry throughout, but the model still
+    /// suggested an umbrella for a cold, overcast Zurich evening with no chance of rain.
+    func droppingRainGearIfDryThroughout(_ recommendation: OutfitRecommendation) -> OutfitRecommendation {
+        isDryThroughout ? recommendation.withoutRainGear() : recommendation
     }
 }
 

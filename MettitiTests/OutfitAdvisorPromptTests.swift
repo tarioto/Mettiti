@@ -225,6 +225,78 @@ struct OutfitAdvisorPromptTests {
         #expect(instructions.contains("only suggest a jacket, sweater or other warm layer when some hour feels mild or colder"))
     }
 
+    /// Zurich on a November evening: cold and overcast, with no chance of rain.
+    private let zurichEvening = HourlyForecast(timeZone: pacific, points: [
+        hour("2026-10-10T03:00:00Z", temperature: 43, rain: 0, uv: 0, wind: 9, code: 3, daylight: false),
+        hour("2026-10-10T04:00:00Z", temperature: 42, rain: 0, uv: 0, wind: 8, code: 3, daylight: false),
+        hour("2026-10-10T05:00:00Z", temperature: 41, rain: 5, uv: 0, wind: 8, code: 3, daylight: false),
+    ])
+
+    @Test func promptSaysNoRainGearIsNeededWhenItsDryThroughout() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: zurichEvening, span: restOfDay(from: evening), unit: .celsius)
+
+        #expect(prompt.contains("- Highest chance of precipitation: 5% at 10 PM\n- No meaningful chance of precipitation, so no umbrella, raincoat or other rain gear is needed."))
+    }
+
+    @Test func promptDoesntRuleOutRainGearWhenSomeHourMightBeWet() {
+        let prompt = OutfitAdvisor.prompt(for: weather, hourly: bangkokEvening, span: restOfDay(from: evening), unit: .fahrenheit)
+
+        #expect(!prompt.contains("No meaningful chance of precipitation"))
+    }
+
+    @Test func wholeDayPromptSaysNoRainGearIsNeededOnlyForADryDay() {
+        let dryDay = DailyWeather(date: date("2026-10-09T07:00:00Z"), highTemperatureF: 45, lowTemperatureF: 38, precipitationProbability: 10, uvIndex: 1, windSpeedMph: 8, conditionCode: 3, conditionDescription: "Overcast")
+
+        let dry = OutfitAdvisor.prompt(for: dryDay, hourly: nil, span: restOfDay(from: evening), unit: .celsius)
+        let wet = OutfitAdvisor.prompt(for: weather, hourly: nil, span: restOfDay(from: evening), unit: .celsius)
+
+        #expect(dry.contains("- Chance of precipitation: 10%\n- No meaningful chance of precipitation, so no umbrella"))
+        #expect(!wet.contains("No meaningful chance of precipitation"))
+    }
+
+    @Test func recommendationForADryEveningDropsRainGearButKeepsJacketsAndCoats() {
+        let names = [
+            "Umbrella", "Raincoat", "Poncho", "Rain boots", "Rain jacket", "Waterproof jacket", "Trench coat",
+            "Ombrello", "Impermeabile", "K-way", "Mantella", "Giacca impermeabile", "Maglione caldo", "Guanti",
+        ]
+        let suggested = OutfitRecommendation(summary: "Cold and overcast.", items: names.map { RecommendedItem(emoji: "☂️", name: $0, reason: "") })
+
+        let checked = OutfitAdvisor.request(for: weather, hourly: zurichEvening, span: restOfDay(from: evening), unit: .celsius).checked(suggested)
+
+        #expect(checked.items.map(\.name) == ["Rain jacket", "Waterproof jacket", "Trench coat", "Giacca impermeabile", "Maglione caldo", "Guanti"])
+        #expect(checked.summary == "Cold and overcast.")
+    }
+
+    @Test func modelsRainGearLabelIsDroppedWhenDryWhateverTheNameSays() {
+        let suggested = OutfitRecommendation(summary: "", items: [
+            RecommendedItem(emoji: "☂️", name: "Zorp", reason: "", kind: .rainGear),
+            RecommendedItem(emoji: "🧥", name: "Light jacket", reason: "", kind: .rainGear),
+            RecommendedItem(emoji: "🧤", name: "Zorp", reason: "", kind: .other),
+        ])
+
+        let checked = OutfitAdvisor.request(for: weather, hourly: zurichEvening, span: restOfDay(from: evening), unit: .celsius).checked(suggested)
+
+        #expect(checked.items.map(\.emoji) == ["🧥", "🧤"])
+    }
+
+    @Test func recommendationForAWetEveningKeepsItsUmbrella() {
+        let suggested = OutfitRecommendation(summary: "", items: [
+            RecommendedItem(emoji: "☂️", name: "Umbrella", reason: "Thunderstorms are expected."),
+            RecommendedItem(emoji: "☂️", name: "Ombrello", reason: ""),
+        ])
+
+        let checked = OutfitAdvisor.request(for: weather, hourly: bangkokEvening, span: restOfDay(from: evening), unit: .fahrenheit).checked(suggested)
+
+        #expect(checked.items.map(\.name) == ["Umbrella", "Ombrello"])
+    }
+
+    @Test func instructionsOnlyAllowRainProtectionWhenSomeHourHasAMeaningfulChanceOfPrecipitation() {
+        let instructions = OutfitAdvisor.instructions.lowercased()
+
+        #expect(instructions.contains("only suggest rain protection (umbrella, raincoat) when some hour has a meaningful chance of precipitation"))
+        #expect(instructions.contains("cold or cloudy weather alone is no reason for it"))
+    }
+
     @Test func temperaturesThatReadTheSameFeelTheSame() {
         let nearTheEdge = HourlyForecast(timeZone: pacific, points: [
             hour("2026-10-10T03:00:00Z", temperature: 46.4, rain: 0, uv: 0, wind: 4, code: 0, daylight: false),
