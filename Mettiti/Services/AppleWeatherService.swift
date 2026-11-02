@@ -3,16 +3,16 @@ import CoreLocation
 import MapKit
 import WeatherKit
 
-enum AppleWeatherServiceError: UserFacingError {
+enum AppleWeatherServiceError: UserFacingMessageError {
     case unavailable
     case missingForecast
 
-    var errorDescription: String? {
+    var message: LocalizedStringResource {
         switch self {
         case .unavailable:
-            return String(localized: "Couldn't reach Apple Weather. Check your connection, or switch to Open-Meteo in Settings.")
+            return "Couldn't reach Apple Weather. Check your connection, or switch to Open-Meteo in Settings."
         case .missingForecast:
-            return String(localized: "Apple Weather didn't return a forecast for today.")
+            return "Apple Weather didn't return a forecast for today."
         }
     }
 }
