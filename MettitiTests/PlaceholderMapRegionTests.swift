@@ -57,9 +57,8 @@ struct PlaceholderMapRegionCacheTests {
 
         #expect(cache.region == nil)
         await cache.load()
-        #expect(cache.region?.center.latitude == 51.5)
 
-        // A new Location card after the crossfade reads the cache: it already has the region.
+        // The Location card the crossfade makes reads the cache and loads it again.
         #expect(cache.region?.center.latitude == 51.5)
         await cache.load()
         #expect(lookups == 1)
