@@ -7,7 +7,7 @@ struct WindowSummary: Codable, Sendable, Equatable {
     /// About 3°C, in Fahrenheit degrees.
     static let meaningfulTemperatureChangeF: Double = 5.4
     /// Chances of rain at which the advice changes, e.g. from nothing to an umbrella.
-    static let rainThresholds = [30, 60]
+    static let rainThresholds = [ForecastWindow.meaningfulPrecipitationProbability, 60]
     /// From this UV index on, it's high or above (the WHO's "high").
     static let highUVIndex: Double = 6
     /// UV indices at which the advice changes: low below the first, moderate, high and above.

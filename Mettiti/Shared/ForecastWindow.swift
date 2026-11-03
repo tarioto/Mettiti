@@ -4,6 +4,8 @@ import Foundation
 struct ForecastWindow {
     /// From this UV index on, sun protection is worth bringing up (the WHO's "moderate").
     static let meaningfulUVIndex: Double = 3
+    /// From this chance of rain on, rain gear is worth bringing up.
+    static let meaningfulPrecipitationProbability = 30
 
     let span: DateInterval
     let timeZone: TimeZone
@@ -42,6 +44,12 @@ struct ForecastWindow {
 
     /// The hour with the highest chance of rain.
     var wettest: HourlyTemperaturePoint? { Self.peak(of: \.precipitationProbability, in: hours) }
+
+    /// Whether no hour reaches a meaningful chance of rain. False when no hour gives a chance at all.
+    var isDry: Bool {
+        guard let probability = wettest?.precipitationProbability else { return false }
+        return probability < Self.meaningfulPrecipitationProbability
+    }
 
     var windiest: HourlyTemperaturePoint? { Self.peak(of: \.windSpeedMph, in: hours) }
 
