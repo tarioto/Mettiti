@@ -331,7 +331,7 @@ private struct LocationCard: View {
     let location: PlanLocation?
     let isUnavailable: Bool
     @ScaledMetric(relativeTo: .body) private var mapHeight: CGFloat = 160
-    @State private var placeholderRegion: MKCoordinateRegion?
+    private let placeholderRegions = PlaceholderMapRegionCache.device
 
     /// The map runs to the card's edges, so only the title is padded and the card clips the map
     /// to its corners.
@@ -391,7 +391,7 @@ private struct LocationCard: View {
     /// Skeleton.
     private var placeholderMap: some View {
         Group {
-            if let placeholderRegion {
+            if let placeholderRegion = placeholderRegions.region {
                 Map(position: .constant(.region(placeholderRegion)), interactionModes: [])
                     .saturation(0)
             } else {
@@ -399,10 +399,10 @@ private struct LocationCard: View {
                     .fill(.quaternary)
             }
         }
-        .animation(DayPlanView.crossfade, value: placeholderRegion != nil)
+        .animation(DayPlanView.crossfade, value: placeholderRegions.region != nil)
         .shimmeringPlaceholder()
         .task {
-            placeholderRegion = await PlaceholderMapRegion.resolveForDevice()
+            await placeholderRegions.load()
         }
     }
 }
