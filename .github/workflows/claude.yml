@@ -184,7 +184,9 @@ jobs:
 
       # Claude can end "successfully" without opening a PR (#72 did), which would leave the issue
       # looking started forever. Say so on the issue and fail the job. The claim branch is deleted
-      # only when nothing was pushed to it, so relabeling the issue starts it again.
+      # only when nothing was pushed to it, so relabeling the issue starts it again. Each call to
+      # GitHub is retried: when the runner lost its network (#170), this step failed too and left
+      # the branch behind.
       - if: always() && steps.claim.outputs.started != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -193,18 +195,28 @@ jobs:
           BRANCH: claude/issue-${{ matrix.issue }}
         run: |
           set -euo pipefail
-          if [[ -n "$(gh pr list --head "$BRANCH" --state all --json number --jq '.[].number')" ]]; then
+          # Tries a command 5 times, waiting 15, 30, 45 and 60 seconds between tries.
+          retry() {
+            local try
+            for try in 1 2 3 4 5; do
+              "$@" && return 0
+              (( try < 5 )) && sleep $(( try * 15 ))
+            done
+            return 1
+          }
+          prs=$(retry gh pr list --head "$BRANCH" --state all --json number --jq '.[].number')
+          if [[ -n "$prs" ]]; then
             exit 0
           fi
-          git fetch -q origin main "$BRANCH"
+          retry git fetch -q origin main "$BRANCH"
           if [[ "$(git rev-list --count "origin/main..origin/$BRANCH")" == 0 ]]; then
-            git push origin --delete "$BRANCH"
+            retry git push origin --delete "$BRANCH"
             note="Nothing was pushed, so the branch is deleted. Add the ready-for-agent label again to retry."
           else
             note="Its commits are on $BRANCH. Open a PR from it, or delete it and add the ready-for-agent label again to retry."
           fi
-          gh issue edit "$ISSUE" --remove-label ready-for-agent
-          gh issue comment "$ISSUE" --body "Claude finished without opening a PR ([run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)). $note"
+          retry gh issue edit "$ISSUE" --remove-label ready-for-agent
+          retry gh issue comment "$ISSUE" --body "Claude finished without opening a PR ([run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)). $note"
           echo "::error::Claude finished without opening a PR for #$ISSUE."
           exit 1
 
