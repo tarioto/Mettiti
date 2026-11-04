@@ -1,0 +1,10 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "OldBase" : {
+      "extractionState" : "stale",
+      "shouldTranslate" : false
+    }
+  },
+  "version" : "1.0"
+}

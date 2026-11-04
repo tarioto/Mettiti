@@ -143,7 +143,15 @@
       }
     },
     "Changes how far ahead the outfit covers for now. Settings keeps the default." : {
-      "comment" : "VoiceOver hint for the main screen's Plan Window menu, which lasts until the next launch or the next day"
+      "comment" : "VoiceOver hint for the main screen's Plan Window menu, which lasts until the next launch or the next day",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cambia per ora l'intervallo coperto dai consigli sull'abbigliamento. Il valore predefinito resta quello delle Impostazioni."
+          }
+        }
+      }
     },
     "City name" : {
       "localizations" : {
@@ -226,7 +234,14 @@
       }
     },
     "Current Temperature" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Temperatura attuale"
+          }
+        }
+      }
     },
     "Dark" : {
       "localizations" : {
@@ -273,7 +288,14 @@
       }
     },
     "High" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Massima"
+          }
+        }
+      }
     },
     "High %@ at %@, low %@ at %@" : {
       "comment" : "VoiceOver summary of the hourly chart; the arguments are the high temperature, its hour, the low temperature and its hour, e.g. High 72° at 3 PM, low 55° at 6 AM",
@@ -368,7 +390,14 @@
       }
     },
     "Low" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Minima"
+          }
+        }
+      }
     },
     "Midnight" : {
       "localizations" : {
@@ -401,10 +430,24 @@
       }
     },
     "Open Settings" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apri Impostazioni"
+          }
+        }
+      }
     },
     "Other data sources" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Altre fonti di dati"
+          }
+        }
+      }
     },
     "Outfit suggestions aren't available in your language yet." : {
       "localizations" : {
@@ -468,6 +511,12 @@
             "state" : "new",
             "value" : "%1$@, %2$@"
           }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@, %2$@"
+          }
         }
       }
     },
@@ -479,11 +528,24 @@
             "state" : "new",
             "value" : "%1$@ · %2$@"
           }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ · %2$@"
+          }
         }
       }
     },
     "Rain" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pioggia"
+          }
+        }
+      }
     },
     "RainBase" : {
       "comment" : "Internal chart series name for the baseline of the rain bars; not shown on screen.",

@@ -1,0 +1,11 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Fmt %@ %lld" : {
+      "localizations" : {
+        "it" : { "stringUnit" : { "state" : "needs_review", "value" : "Fmt %lld" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -1,0 +1,17 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%lld hours" : {
+      "localizations" : {
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : { "stringUnit" : { "state" : "translated", "value" : "un'ora" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
