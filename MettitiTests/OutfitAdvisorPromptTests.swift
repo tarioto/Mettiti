@@ -219,6 +219,35 @@ struct OutfitAdvisorPromptTests {
         #expect(checked.items.map(\.name) == ["Light jacket"])
     }
 
+    @Test func sweatersAndHoodiesGetTheirEmojiByName() {
+        let knits = ["Sweater", "Sweaters", "Light sweater", "Jumper", "Pullover", "Cardigan", "Maglione", "Maglioni", "Maglione pesante", "Hoodie sweater"]
+        let hoodies = ["Hoodie", "Sweatshirt", "Fleece", "Felpa", "Felpe", "Pile"]
+        let others = [("Scarf", "🧣"), ("Umbrella", "☂️"), ("Sunglasses", "🕶️"), ("Light jacket", "🧥"), ("Pilentro", "🧣")]
+        let names = knits + hoodies + others.map(\.0)
+        let suggested = OutfitRecommendation(summary: "Mild.", items: names.map { name in
+            RecommendedItem(emoji: others.first { $0.0 == name }?.1 ?? "🧣", name: name, reason: "Why", kind: .other)
+        })
+
+        let checked = OutfitRequest(prompt: "", isWarmThroughout: false, isDryThroughout: false).checked(suggested)
+
+        #expect(checked.items.map(\.name) == names)
+        #expect(checked.items.map(\.emoji) == knits.map { _ in "🧶" } + hoodies.map { _ in "🧥" } + others.map(\.1))
+        #expect(checked.items.map(\.reason) == names.map { _ in "Why" })
+        #expect(checked.items.map(\.kind) == names.map { _ in .other })
+        #expect(checked.summary == "Mild.")
+    }
+
+    @Test func emojiFixUpDoesNotChangeWhatTheWarmThroughoutCheckDrops() {
+        let suggested = OutfitRecommendation(summary: "", items: [
+            RecommendedItem(emoji: "🧣", name: "Sweater", reason: ""),
+            RecommendedItem(emoji: "🕶️", name: "Sunglasses", reason: ""),
+        ])
+
+        let checked = OutfitAdvisor.request(for: weather, hourly: bangkokEvening, span: restOfDay(from: evening), unit: .fahrenheit).checked(suggested)
+
+        #expect(checked.items.map(\.name) == ["Sunglasses"])
+    }
+
     @Test func instructionsOnlyAllowWarmLayersWhenSomeHourFeelsMildOrColder() {
         let instructions = OutfitAdvisor.instructions.lowercased()
 
