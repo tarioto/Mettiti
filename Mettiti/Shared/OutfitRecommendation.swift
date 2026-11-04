@@ -11,7 +11,7 @@ struct OutfitRecommendation: Codable {
 
 @Generable
 struct RecommendedItem: Codable {
-    @Guide(description: "A single emoji character that best represents this item, e.g. 🕶️ for sunglasses, ☂️ for an umbrella")
+    @Guide(description: "A single emoji character that best represents this item, e.g. 🕶️ for sunglasses, ☂️ for an umbrella, 🧶 for a sweater, 🧥 for a hoodie or jacket")
     var emoji: String
 
     @Guide(description: "Short item name, 1-3 words, e.g. 'Sunglasses' or 'Light jacket'")
@@ -60,6 +60,10 @@ extension OutfitRecommendation {
         OutfitRecommendation(summary: summary, items: items.filter { !$0.isWarmLayer })
     }
 
+    func withFixedEmojis() -> OutfitRecommendation {
+        OutfitRecommendation(summary: summary, items: items.map { $0.withFixedEmoji() })
+    }
+
     /// Without umbrellas, ponchos, raincoats and the like, for when it's dry throughout. A rain
     /// jacket or trench coat stays: it's still a jacket, and may be the only warm layer.
     func withoutRainGear() -> OutfitRecommendation {
@@ -101,6 +105,27 @@ extension RecommendedItem {
     /// the name, unless the name also makes it a jacket or coat.
     var isRainOnlyGear: Bool {
         isRainGear && !namesWarmLayer
+    }
+
+    /// Unicode has no sweater emoji and the model reaches for a scarf, so knits and hoodies get a
+    /// fixed one by name. Knits win when a name says both. Other items keep the model's emoji.
+    private static let knitWords: Set<String> = ["sweater", "jumper", "pullover", "cardigan"]
+    private static let italianKnitWords: Set<String> = ["maglione", "maglioni"]
+    private static let hoodieWords: Set<String> = ["hoodie", "sweatshirt", "fleece"]
+    private static let italianHoodieWords: Set<String> = ["felpa", "felpe", "pile"]
+
+    /// The item with 🧶 or 🧥 when its name says it's a knit or a hoodie, otherwise unchanged.
+    func withFixedEmoji() -> RecommendedItem {
+        let words = words
+        let singular = Set(words.map { $0.hasSuffix("s") ? String($0.dropLast()) : $0 })
+        let wholeWords = Set(words)
+        var fixed = self
+        if !singular.isDisjoint(with: Self.knitWords) || !wholeWords.isDisjoint(with: Self.italianKnitWords) {
+            fixed.emoji = "🧶"
+        } else if !singular.isDisjoint(with: Self.hoodieWords) || !wholeWords.isDisjoint(with: Self.italianHoodieWords) {
+            fixed.emoji = "🧥"
+        }
+        return fixed
     }
 
     private var words: [String] {
