@@ -233,6 +233,7 @@ struct OutfitAdvisorPromptTests {
         #expect(checked.items.map(\.name) == names)
         #expect(checked.items.map(\.emoji) == knits.map { _ in "🧶" } + hoodies.map { _ in "🧥" } + others.map(\.1))
         #expect(checked.items.map(\.reason) == names.map { _ in "Why" })
+        #expect(checked.items.map(\.kind) == names.map { _ in .other })
         #expect(checked.summary == "Mild.")
     }
 
