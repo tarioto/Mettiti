@@ -9,6 +9,12 @@
             "state" : "new",
             "value" : "%1$@ – %2$@"
           }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ – %2$@"
+          }
         }
       }
     },
@@ -19,6 +25,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@, from %2$@ to %3$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@, dalle %2$@ alle %3$@"
           }
         }
       }
@@ -313,7 +325,14 @@
       }
     },
     "Weather data by Open-Meteo.com" : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dati meteo di Open-Meteo.com"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -6,14 +6,14 @@
 # (see README), not enforced here.
 #
 # Usage: scripts/check-translations.sh [catalog.xcstrings ...]
-# With no arguments, checks every .xcstrings file tracked by git.
+# With no arguments, checks every .xcstrings file tracked by git, except the test fixtures.
 set -euo pipefail
 
 if [[ $# -gt 0 ]]; then
   catalogs=("$@")
 else
   catalogs=()
-  while IFS= read -r path; do catalogs+=("$path"); done < <(git ls-files '*.xcstrings')
+  while IFS= read -r path; do catalogs+=("$path"); done < <(git ls-files '*.xcstrings' ':!scripts/fixtures/')
 fi
 
 if [[ ${#catalogs[@]} -eq 0 ]]; then
