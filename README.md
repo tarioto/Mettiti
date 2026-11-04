@@ -79,7 +79,9 @@ The app is localized in English (source) and Italian through String Catalogs (`L
 2. Add an Italian entry for it in the catalog editor. A machine translation is fine; mark it **Needs Review**.
 3. Remove keys Xcode marks **Stale** once the code no longer uses them.
 
-CI runs `scripts/check-translations.sh` (you can run it locally too) and fails when a key has no Italian entry, is stale, or is still untranslated (state `new`). **Needs Review** entries do not fail CI, so machine-translated Italian ships in TestFlight builds, which upload on every merge to `main`.
+CI runs `scripts/check-translations.sh` (you can run it locally too) and fails when a key has no Italian entry, is stale (even if marked Don't Translate), is still untranslated (state `new`), has an empty Italian value, has an Italian plural without an `other` form, or uses different format placeholders from the English (order and positional forms like `%1$@` don't matter). It also fails on a catalog it can't read. **Needs Review** entries do not fail CI, so machine-translated Italian ships in TestFlight builds, which upload on every merge to `main`.
+
+When changing the check, run `scripts/test-check-translations.sh`. It runs the check against the fixture catalogs in `scripts/fixtures/` (one per rule, plus a clean one) and fails if any verdict is wrong.
 
 **Review workflow and App Store gate**
 

@@ -25,10 +25,17 @@ filter="$(dirname "$0")/translation-problems.jq"
 
 failures=0
 for catalog in "${catalogs[@]}"; do
+  # Capture rather than pipe: a jq failure inside process substitution escapes set -e.
+  if ! problems=$(jq -r -f "$filter" "$catalog" 2>&1); then
+    echo "::error file=$catalog::could not read catalog: ${problems//$'\n'/ }"
+    failures=$((failures + 1))
+    continue
+  fi
   while IFS= read -r message; do
+    [[ -n "$message" ]] || continue
     echo "::error file=$catalog::$message"
     failures=$((failures + 1))
-  done < <(jq -r -f "$filter" "$catalog")
+  done <<< "$problems"
 done
 
 if [[ $failures -gt 0 ]]; then

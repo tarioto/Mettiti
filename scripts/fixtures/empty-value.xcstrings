@@ -1,0 +1,11 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Hello" : {
+      "localizations" : {
+        "it" : { "stringUnit" : { "state" : "needs_review", "value" : "" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

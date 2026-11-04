@@ -1,0 +1,43 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Hello" : {
+      "localizations" : {
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Ciao" } }
+      }
+    },
+    "High %1$@ at %2$@" : {
+      "localizations" : {
+        "it" : { "stringUnit" : { "state" : "needs_review", "value" : "Alle %2$@ massima %1$@" } }
+      }
+    },
+    "card.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ · %2$@" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ · %2$@" } }
+      }
+    },
+    "%lld hours" : {
+      "localizations" : {
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : { "stringUnit" : { "state" : "translated", "value" : "un'ora" } },
+              "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld ore" } }
+            }
+          }
+        }
+      }
+    },
+    "100%% sure" : {
+      "localizations" : {
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Sicuro al 100%%" } }
+      }
+    },
+    "RainBase" : {
+      "shouldTranslate" : false
+    }
+  },
+  "version" : "1.0"
+}
