@@ -148,7 +148,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Cambia per ora fino a quando arrivano i consigli sull'abbigliamento. Il valore predefinito resta quello delle Impostazioni."
+            "value" : "Cambia per ora l'intervallo coperto dai consigli sull'abbigliamento. Il valore predefinito resta quello delle Impostazioni."
           }
         }
       }

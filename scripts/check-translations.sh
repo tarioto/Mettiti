@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Fail if any String Catalog entry lacks a finished Italian translation or is stale.
+# Fail if a String Catalog can't be read, or any entry is stale or lacks a finished, well-formed
+# Italian translation (see translation-problems.jq for the rules).
 #
 # Entries marked "Needs Review" pass: machine-translated Italian is fine for TestFlight.
 # Only "Translated" is required before an App Store submission, and that is a human gate

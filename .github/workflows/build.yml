@@ -27,8 +27,8 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      # Every key needs an Italian entry (Needs Review is enough). The self-test first, so a
-      # broken check can't pass the catalogs.
+      # Every key needs a well-formed Italian entry (Needs Review is enough; see README). The
+      # self-test runs first, so a broken check can't pass the catalogs.
       - name: Check translations
         run: |
           scripts/test-check-translations.sh
