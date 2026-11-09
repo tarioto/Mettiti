@@ -18,6 +18,10 @@ struct CardColumnArrangementTests {
         #expect(CardColumnArrangement(cards: [.plan, .weather, .wearAndBring]) == .columns(left: [.plan, .weather], right: [.wearAndBring]))
     }
 
+    @Test func fourCardsSplitTwoAndTwo() {
+        #expect(CardColumnArrangement(cards: [.plan, .weather, .wearAndBring, .location]) == .columns(left: [.plan, .weather], right: [.wearAndBring, .location]))
+    }
+
     @Test func aCustomOrderIsRespected() {
         #expect(CardColumnArrangement(cards: [.wearAndBring, .weather, .plan]) == .columns(left: [.wearAndBring, .weather], right: [.plan]))
     }
