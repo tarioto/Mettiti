@@ -66,6 +66,14 @@ _Avoid_: Cached plan, snapshot (outside code)
 A change in the **Plan Window**'s weather that would change the outfit advice: the window now crosses a sunrise or sunset it didn't (or the other way round), day turned to night (or night to day), the UV band changed (low, moderate, high or above), the chance of rain crossed about 30% or 60%, the high or low moved by about 3°C (5°F), or the kind of weather changed. It's measured against the weather the outfit was made for (`WindowSummary` in code; the check is `differsMeaningfully`), and a different Plan Window or gaining or losing the hourly forecast counts too. An automatic refresh only remakes the outfit after a Meaningful Change (or when the outfit is in another language than the app's current one, see **Saved Plan**); otherwise it keeps the outfit and updates only the weather card and the chart. Pull-to-refresh and changing the location or weather source always remake it. Changing the Plan Window remakes it too, unless an outfit already made for that window has had no Meaningful Change since (see **Window Override**).
 _Avoid_: Significant change, weather diff
 
+**Temperature Feel**:
+How a temperature feels: freezing, cold, cool, mild, warm or hot, each band fixed in degrees (0 / 8 / 15 / 22 / 29 °C; 32 / 46 / 59 / 72 / 84 °F). The outfit advice goes by it.
+_Avoid_: Temperature band, heat level
+
+**Temperature Colour**:
+The colour a temperature gets on the hourly chart's line, spread band and current-hour marker: blue at freezing and below, through cyan, green, yellow and orange, to red at 35 °C (95 °F) and above, blending in between, with each colour change following the **Temperature Feel** bands. It goes by the air temperature, never "feels like", and only by the temperature, never the day's own range, so 9 °C looks the same on every day and in either unit.
+_Avoid_: Heat colour, relative colour
+
 ## Relationships
 
 - Each **Theme** except Default has exactly one **Theme Icon**

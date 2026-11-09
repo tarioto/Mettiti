@@ -7,12 +7,51 @@ import UIKit
 struct HourlyTemperatureChartTests {
     @Test func heatColoursAreResolvedForEachColourScheme() {
         // The system blue at the cold end is lighter in Dark mode.
-        let light = UIColor(HeatPalette.light.color(atFraction: 0))
-        let dark = UIColor(HeatPalette.dark.color(atFraction: 0))
+        let light = UIColor(HeatPalette.light.color(fahrenheit: 0))
+        let dark = UIColor(HeatPalette.dark.color(fahrenheit: 0))
 
         #expect(components(of: light) == components(of: UIColor.systemBlue.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))))
         #expect(components(of: dark) == components(of: UIColor.systemBlue.resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))))
         #expect(components(of: light) != components(of: dark))
+    }
+
+    @Test func temperatureColoursArePinnedToFixedTemperatures() {
+        let palette = HeatPalette.light
+        let resolved = { (color: Color) in UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: .light)) }
+
+        // Freezing and below is blue, 35 °C (95 °F) and above is red, and 8 °C is cyan.
+        #expect(components(of: UIColor(palette.color(fahrenheit: 14))) == components(of: resolved(.blue)))
+        #expect(components(of: UIColor(palette.color(fahrenheit: 32))) == components(of: resolved(.blue)))
+        #expect(components(of: UIColor(palette.color(fahrenheit: 46.4))) == components(of: resolved(.cyan)))
+        #expect(components(of: UIColor(palette.color(fahrenheit: 95))) == components(of: resolved(.red)))
+        #expect(components(of: UIColor(palette.color(fahrenheit: 110))) == components(of: resolved(.red)))
+    }
+
+    @Test func aCoolDaysWarmestHourIsNotRed() {
+        // A day from 4 to 9 °C: its top is still cyan-ish, not the red the old relative scale gave it.
+        let scale = HourlyChartScale(points: [point(minF: 39.2, maxF: 48.2)], unit: .celsius, palette: .light)
+        let top = components(of: UIColor(scale.color(fahrenheit: 48.2)))
+        let red = components(of: UIColor(HeatPalette.light.color(fahrenheit: 95)))
+
+        #expect(top != red)
+        #expect(top[2] > top[0]) // More blue than red.
+    }
+
+    @Test func gradientPlacesEachFixedStopAtItsHeight() {
+        // 32...59 °F spans blue (0 °C) to green (15 °C), with cyan (8 °C) in between.
+        let stops = HeatPalette.light.gradientStops(fromFahrenheit: 32, toFahrenheit: 59)
+
+        #expect(stops.map(\.location).count == 3)
+        #expect(abs(stops[1].location - (46.4 - 32) / 27) < 0.0001)
+        #expect(stops.first?.location == 0)
+        #expect(stops.last?.location == 1)
+    }
+
+    @Test func flatGradientIsOneColour() {
+        let stops = HeatPalette.light.gradientStops(fromFahrenheit: 50, toFahrenheit: 50)
+
+        #expect(stops.count == 2)
+        #expect(components(of: UIColor(stops[0].color)) == components(of: UIColor(stops[1].color)))
     }
 
     @Test func rangeIsInTheDisplayedUnitWithFifteenPercentPadding() {
