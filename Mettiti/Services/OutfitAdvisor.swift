@@ -292,9 +292,10 @@ struct OutfitRequest: Sendable {
     let isWarmThroughout: Bool
     let isDryThroughout: Bool
 
-    /// The model's answer without the items the prompt said aren't needed.
+    /// The model's answer without the items the prompt said aren't needed, and with sweaters and
+    /// hoodies given their emoji by name.
     func checked(_ recommendation: OutfitRecommendation) -> OutfitRecommendation {
-        droppingRainGearIfDryThroughout(droppingWarmLayersIfWarmThroughout(recommendation))
+        droppingRainGearIfDryThroughout(droppingWarmLayersIfWarmThroughout(recommendation)).withFixedEmojis()
     }
 
     /// The prompt says no warm layer is needed when it's warm throughout, but the model still
