@@ -25,10 +25,6 @@ struct HourlyTemperatureChart: View {
         hourly.hasSpread
     }
 
-    private var heatGradient: LinearGradient {
-        LinearGradient(colors: HeatPalette.stops, startPoint: .bottom, endPoint: .top)
-    }
-
     private var timeDomain: ClosedRange<Date> {
         Self.timeDomain(for: hourly.points)
     }
@@ -156,7 +152,7 @@ struct HourlyTemperatureChart: View {
             yStart: .value("Low", scale.unit.convert(fromFahrenheit: point.minF)),
             yEnd: .value("High", scale.unit.convert(fromFahrenheit: point.maxF))
         )
-        .foregroundStyle(heatGradient.opacity(0.15))
+        .foregroundStyle(scale.bandGradient.opacity(0.15))
         .interpolationMethod(.catmullRom)
         .accessibilityHidden(true)
 
@@ -164,7 +160,7 @@ struct HourlyTemperatureChart: View {
             x: .value("Time", point.date),
             y: .value("Temperature", scale.unit.convert(fromFahrenheit: point.meanF))
         )
-        .foregroundStyle(heatGradient)
+        .foregroundStyle(scale.lineGradient)
         .interpolationMethod(.catmullRom)
         .lineStyle(StrokeStyle(lineWidth: 2))
         // The x value is a Date, which VoiceOver would read in the device's time zone.
@@ -175,7 +171,7 @@ struct HourlyTemperatureChart: View {
     @ChartContentBuilder
     private func currentHourMarks(for point: HourlyTemperaturePoint, scale: HourlyChartScale) -> some ChartContent {
         let value = scale.unit.convert(fromFahrenheit: point.meanF)
-        let color = scale.color(for: value)
+        let color = scale.color(fahrenheit: point.meanF)
 
         RuleMark(x: .value("Time", point.date))
             .foregroundStyle(.secondary.opacity(0.4))
@@ -209,11 +205,23 @@ struct HourlyChartScale {
     /// The full plotted range, shared by both the temperature line and the rain bars
     /// (bars span 0%...100% across this same range, drawn behind the line).
     let range: ClosedRange<Double>
+    /// The line's Temperature Colours, bottom to top over the line's own lowest and highest hour.
+    let lineGradient: LinearGradient
+    /// The spread band's Temperature Colours, over the band's own lowest low and highest high.
+    let bandGradient: LinearGradient
     private let palette: HeatPalette
 
     init(points: [HourlyTemperaturePoint], unit: TemperatureUnit, palette: HeatPalette) {
         self.unit = unit
         self.palette = palette
+        // Swift Charts stretches a mark's gradient over that mark's own bounds, so each gradient
+        // spans its own marks' temperatures; that keeps every height at its fixed colour.
+        let means = points.map(\.meanF)
+        lineGradient = palette.gradient(fromFahrenheit: means.min() ?? 0, toFahrenheit: means.max() ?? 0)
+        bandGradient = palette.gradient(
+            fromFahrenheit: points.map(\.minF).min() ?? 0,
+            toFahrenheit: points.map(\.maxF).max() ?? 0
+        )
         let values = points.flatMap { [unit.convert(fromFahrenheit: $0.minF), unit.convert(fromFahrenheit: $0.maxF)] }
         let minValue = values.min() ?? 0
         let maxValue = values.max() ?? 100
@@ -245,9 +253,9 @@ struct HourlyChartScale {
         fraction(of: rawValue).formatted(.percent.precision(.fractionLength(0)))
     }
 
-    /// The heat colour at `displayedValue`'s height in the range.
-    func color(for displayedValue: Double) -> Color {
-        palette.color(atFraction: fraction(of: displayedValue))
+    /// The Temperature Colour of `fahrenheit`.
+    func color(fahrenheit: Double) -> Color {
+        palette.color(fahrenheit: fahrenheit)
     }
 }
 
@@ -371,10 +379,15 @@ struct HourlyChartDescriptor: AXChartDescriptorRepresentable {
     }
 }
 
-/// The chart's cold-to-hot colours as plain RGB, so picking one doesn't allocate `UIColor`s.
-/// The stops are dynamic system colours, so there's one table per colour scheme.
+/// The chart's Temperature Colours: each colour pinned to a fixed temperature, so a temperature
+/// gets the same colour whatever the day's range. Kept as plain RGB, so picking one doesn't
+/// allocate `UIColor`s; the stops are dynamic system colours, so there's one table per colour scheme.
 struct HeatPalette {
     static let stops: [Color] = [.blue, .cyan, .green, .yellow, .orange, .red]
+
+    /// Where each stop sits, in °F: freezing (0 °C) and below is blue, then each Temperature Feel
+    /// boundary (8, 15, 22 and 29 °C) in turn, up to red at 35 °C and above.
+    static let anchorsF: [Double] = [0, 8, 15, 22, 29, 35].map { $0 * 9 / 5 + 32 }
 
     static let light = HeatPalette(style: .light)
     static let dark = HeatPalette(style: .dark)
@@ -390,19 +403,45 @@ struct HeatPalette {
         }
     }
 
-    /// The colour `fraction` of the way from the coldest stop (0) to the hottest (1).
-    func color(atFraction fraction: Double) -> Color {
-        let clamped = min(max(fraction, 0), 1)
-        let scaled = clamped * Double(components.count - 1)
-        let lowerIndex = Int(scaled)
-        let upperIndex = min(lowerIndex + 1, components.count - 1)
-        let t = scaled - Double(lowerIndex)
-        let from = components[lowerIndex]
+    /// The Temperature Colour of `fahrenheit`, blended between the two stops around it.
+    func color(fahrenheit: Double) -> Color {
+        let anchors = Self.anchorsF
+        guard fahrenheit > anchors[0] else { return color(at: 0) }
+        guard let upperIndex = anchors.firstIndex(where: { fahrenheit <= $0 }) else {
+            return color(at: anchors.count - 1)
+        }
+        let lower = anchors[upperIndex - 1]
+        let t = (fahrenheit - lower) / (anchors[upperIndex] - lower)
+        let from = components[upperIndex - 1]
         let to = components[upperIndex]
         return Color(
             red: from.r + (to.r - from.r) * t,
             green: from.g + (to.g - from.g) * t,
             blue: from.b + (to.b - from.b) * t
         )
+    }
+
+    private func color(at index: Int) -> Color {
+        let stop = components[index]
+        return Color(red: stop.r, green: stop.g, blue: stop.b)
+    }
+
+    /// The stops of a bottom-to-top gradient over `low...high` °F: the colours at both ends, and
+    /// each fixed stop in between at its own height.
+    func gradientStops(fromFahrenheit low: Double, toFahrenheit high: Double) -> [Gradient.Stop] {
+        guard high > low else {
+            let color = color(fahrenheit: low)
+            return [Gradient.Stop(color: color, location: 0), Gradient.Stop(color: color, location: 1)]
+        }
+        let inner = Self.anchorsF.indices
+            .filter { Self.anchorsF[$0] > low && Self.anchorsF[$0] < high }
+            .map { Gradient.Stop(color: color(at: $0), location: (Self.anchorsF[$0] - low) / (high - low)) }
+        return [Gradient.Stop(color: color(fahrenheit: low), location: 0)]
+            + inner
+            + [Gradient.Stop(color: color(fahrenheit: high), location: 1)]
+    }
+
+    func gradient(fromFahrenheit low: Double, toFahrenheit high: Double) -> LinearGradient {
+        LinearGradient(stops: gradientStops(fromFahrenheit: low, toFahrenheit: high), startPoint: .bottom, endPoint: .top)
     }
 }
